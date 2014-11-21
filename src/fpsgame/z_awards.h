@@ -96,7 +96,7 @@ void z_awards()
         tp = " Acc: ";
         str.put(tp, strlen(tp));
         z_awards_print_best(str, best, maxnum);
-        tp = tempformatstring(" \fs\f2(\f6%d\f2)\fr", besta);
+        tp = tempformatstring(" \fs\f2(\f6%d%%\f2)\fr", besta);
         str.put(tp, strlen(tp));
     }
 

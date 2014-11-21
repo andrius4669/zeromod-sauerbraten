@@ -111,8 +111,8 @@ SCOMMANDNAH(emute, PRIV_MASTER, z_servcmd_mute, 2);
 SCOMMANDNAH(eunmute, PRIV_MASTER, z_servcmd_mute, 1);
 SCOMMANDNA(namemute, PRIV_AUTH, z_servcmd_mute, 2);
 SCOMMANDNA(nameunmute, PRIV_AUTH, z_servcmd_mute, 1);
-SCOMMANDNA(nmute, PRIV_AUTH, z_servcmd_mute, 2);
-SCOMMANDNA(nunmute, PRIV_AUTH, z_servcmd_mute, 1);
+SCOMMANDNAH(nmute, PRIV_AUTH, z_servcmd_mute, 2);
+SCOMMANDNAH(nunmute, PRIV_AUTH, z_servcmd_mute, 1);
 
 bool z_autoeditmute = false;
 VARFN(autoeditmute, z_defaultautoeditmute, 0, 0, 1, { if(clients.empty()) z_autoeditmute = z_defaultautoeditmute!=0; });
