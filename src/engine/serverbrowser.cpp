@@ -620,11 +620,11 @@ void clearservers(bool full = false)
 
 void retrieveservers(vector<char> &data)
 {
-    ENetSocket sock = connectmaster(true);
+    ENetSocket sock = connectmaster(0, true);
     if(sock == ENET_SOCKET_NULL) return;
 
-    extern char *mastername;
-    defformatstring(text)("retrieving servers from %s... (esc to abort)", mastername);
+    extern const char *getmastername(int m);
+    defformatstring(text)("retrieving servers from %s... (esc to abort)", getmastername(0));
     renderprogress(0, text);
 
     int starttime = SDL_GetTicks(), timeout = 0;

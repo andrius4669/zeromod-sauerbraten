@@ -21,21 +21,27 @@ struct userinfo
 {
     char *name;
     void *pubkey;
+    char *priv;
 };
 hashtable<char *, userinfo> users;
 
-void adduser(char *name, char *pubkey)
+void adduser(char *name, char *pubkey, char *priv)
 {
     name = newstring(name);
     userinfo &u = users[name];
     u.name = name;
     u.pubkey = parsepubkey(pubkey);
+    u.priv = priv && priv[0] ? newstring(priv) : NULL;
 }
-COMMAND(adduser, "ss");
+ICOMMAND(adduser, "ssssN", (char *name, char *desc, char *key, char *priv, int *n),
+{
+    if(*n > 2) adduser(name, key, priv);
+    else adduser(name, desc, NULL);
+});
 
 void clearusers()
 {
-    enumerate(users, userinfo, u, { delete[] u.name; freepubkey(u.pubkey); });
+    enumerate(users, userinfo, u, { delete[] u.name; freepubkey(u.pubkey); delete[] u.priv; });
     users.clear();
 }
 COMMAND(clearusers, "");
@@ -71,6 +77,7 @@ struct authreq
     enet_uint32 reqtime;
     uint id;
     void *answer;
+    char *priv;
 };
 
 struct gameserver
@@ -438,6 +445,7 @@ void purgeauths(client &c)
         {
             outputf(c, "failauth %u\n", c.authreqs[i].id);
             freechallenge(c.authreqs[i].answer);
+            DELETEA(c.authreqs[i].priv);
             expired = i + 1;
         }
         else break;
@@ -476,6 +484,7 @@ void reqauth(client &c, uint id, char *name)
     {
         outputf(c, "failauth %u\n", c.authreqs[0].id);
         freechallenge(c.authreqs[0].answer);
+        DELETEA(c.authreqs[0].priv);
         c.authreqs.remove(0);
     }
 
@@ -486,6 +495,7 @@ void reqauth(client &c, uint id, char *name)
     static vector<char> buf;
     buf.setsize(0);
     a.answer = genchallenge(u->pubkey, seed, sizeof(seed), buf);
+    a.priv = u->priv && u->priv[0] ? newstring(u->priv) : NULL;
 
     outputf(c, "chalauth %u %s\n", id, buf.getbuf());
 }
@@ -500,6 +510,7 @@ void confauth(client &c, uint id, const char *val)
         if(enet_address_get_host_ip(&c.address, ip, sizeof(ip)) < 0) copystring(ip, "-");
         if(checkchallenge(val, c.authreqs[i].answer))
         {
+            if(c.authreqs[i].priv) outputf(c, "z_priv %s\n", c.authreqs[i].priv);
             outputf(c, "succauth %u\n", id);
             conoutf("succeeded %u from %s", id, ip);
         }
@@ -509,6 +520,7 @@ void confauth(client &c, uint id, const char *val)
             conoutf("failed %u from %s", id, ip);
         }
         freechallenge(c.authreqs[i].answer);
+        DELETEA(c.authreqs[i].priv);
         c.authreqs.remove(i--);
         return;
     }

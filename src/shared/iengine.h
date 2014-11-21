@@ -411,7 +411,9 @@ extern void moveragdoll(dynent *d);
 extern void cleanragdoll(dynent *d);
 
 // server
+#ifndef MAXCLIENTS
 #define MAXCLIENTS 128                 // DO NOT set this any higher
+#endif
 #define MAXTRANS 5000                  // max amount of data to swallow in 1 go
 
 extern int maxclients;
@@ -427,6 +429,8 @@ extern void flushserver(bool force);
 extern int getservermtu();
 extern int getnumclients();
 extern uint getclientip(int n);
+extern uint getserverinfoip();
+extern const char *getclienthostname(int i);
 extern void localconnect();
 extern const char *disconnectreason(int reason);
 extern void disconnect_client(int n, int reason);
@@ -434,8 +438,12 @@ extern void kicknonlocalclients(int reason = DISC_NONE);
 extern bool hasnonlocalclients();
 extern bool haslocalclients();
 extern void sendserverinforeply(ucharbuf &p);
-extern bool requestmaster(const char *req);
-extern bool requestmasterf(const char *fmt, ...) PRINTFARGS(1, 2);
+extern bool requestmasterf(int m, const char *fmt, ...) PRINTFARGS(2, 3);
+extern int findauthmaster(const char *desc, int old = -1);
+extern const char *getmasterauth(int m);
+extern void masterauthpriv_set(int m, int priv);
+extern void masterauthpriv_reset(int m);
+const int *masterauthpriv_get(int m);
 extern bool isdedicatedserver();
 
 // client

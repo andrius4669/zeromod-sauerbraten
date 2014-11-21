@@ -1,10 +1,14 @@
 CXXFLAGS= -O3 -fomit-frame-pointer -ffast-math
-override CXXFLAGS+= -Wall -fsigned-char -fno-exceptions -fno-rtti
+override CXXFLAGS+= -std=gnu++11 -Wall -fsigned-char -fno-exceptions -fno-rtti
 
 PLATFORM= $(shell uname -s | tr '[:lower:]' '[:upper:]')
 PLATFORM_PREFIX= native
 
 INCLUDES= -Ishared -Iengine -Ifpsgame -Ienet/include
+
+ifneq (,$(findstring BSD,$(PLATFORM)))
+  override CXXFLAGS+= -I/usr/local/include -L/usr/local/lib
+endif
 
 STRIP=
 ifeq (,$(findstring -g,$(CXXFLAGS)))
@@ -135,13 +139,19 @@ CLIENT_OBJS= \
 CLIENT_PCH= shared/cube.h.gch engine/engine.h.gch fpsgame/game.h.gch
 
 ifneq (,$(findstring MINGW,$(PLATFORM)))
-SERVER_INCLUDES= -DSTANDALONE $(INCLUDES) -Iinclude
+SERVER_INCLUDES= -DSTANDALONE=1 $(INCLUDES) -Iinclude
 SERVER_LIBS= -mwindows $(STD_LIBS) -L$(WINBIN) -L$(WINLIB) -lzlib1 -lenet -lws2_32 -lwinmm
 MASTER_LIBS= $(STD_LIBS) -L$(WINBIN) -L$(WINLIB) -lzlib1 -lenet -lws2_32 -lwinmm
 else
-SERVER_INCLUDES= -DSTANDALONE $(INCLUDES)
+SERVER_INCLUDES= -DSTANDALONE=1 $(INCLUDES)
 SERVER_LIBS= -Lenet -lenet -lz
 MASTER_LIBS= $(SERVER_LIBS)
+ifeq ($(shell ./check_geoip.sh $(CXX) $(CXXFLAGS) $(SERVER_INCLUDES)),1)
+SERVER_INCLUDES+= -DUSE_GEOIP
+SERVER_LIBS+= -lGeoIP
+CLIENT_INCLUDES+= -DUSE_GEOIP
+CLIENT_LIBS+= -lGeoIP
+endif
 endif
 SERVER_OBJS= \
 	shared/crypto-standalone.o \
@@ -207,7 +217,10 @@ server: $(SERVER_OBJS)
 master: $(MASTER_OBJS)
 	$(CXX) $(CXXFLAGS) -o $(WINBIN)/sauer_master.exe $(MASTER_OBJS) $(MASTER_LIBS)
 
-install: all
+install_client: client
+install_server: server
+install_master: master
+install: install_client install_server
 else
 client:	libenet $(CLIENT_OBJS)
 	$(CXX) $(CXXFLAGS) -o sauer_client $(CLIENT_OBJS) $(CLIENT_LIBS)
@@ -224,13 +237,22 @@ shared/cube2font.o: shared/cube2font.c
 cube2font: shared/cube2font.o
 	$(CXX) $(CXXFLAGS) -o cube2font shared/cube2font.o `freetype-config --libs` -lz
 
-install: all
+install_client: client
 	cp sauer_client	../bin_unix/$(PLATFORM_PREFIX)_client
-	cp sauer_server	../bin_unix/$(PLATFORM_PREFIX)_server
 ifneq (,$(STRIP))
 	$(STRIP) ../bin_unix/$(PLATFORM_PREFIX)_client
+endif
+install_server: server
+	cp sauer_server ../bin_unix/$(PLATFORM_PREFIX)_server
+ifneq (,$(STRIP))
 	$(STRIP) ../bin_unix/$(PLATFORM_PREFIX)_server
 endif
+install_master: master
+	cp sauer_master ../bin_unix/$(PLATFORM_PREFIX)_master
+ifneq (,$(STRIP))
+	$(STRIP) ../bin_unix/$(PLATFORM_PREFIX)_master
+endif
+install: install_client install_server
 endif
 
 enet/libenet.a:
@@ -240,7 +262,7 @@ libenet: enet/libenet.a
 depend:
 	makedepend -Y -Ishared -Iengine -Ifpsgame $(CLIENT_OBJS:.o=.cpp)
 	makedepend -a -o.h.gch -Y -Ishared -Iengine -Ifpsgame $(CLIENT_PCH:.h.gch=.h)
-	makedepend -a -o-standalone.o -Y -DSTANDALONE -Ishared -Iengine -Ifpsgame $(SERVER_MASTER_OBJS:-standalone.o=.cpp)
+	makedepend -a -o-standalone.o -Y -DSTANDALONE=1 -Ishared -Iengine -Ifpsgame $(SERVER_MASTER_OBJS:-standalone.o=.cpp)
 
 # DO NOT DELETE
 
@@ -410,6 +432,7 @@ engine/server.o: shared/ents.h shared/command.h shared/iengine.h
 engine/server.o: shared/igame.h engine/world.h engine/glexts.h engine/octa.h
 engine/server.o: engine/lightmap.h engine/bih.h engine/texture.h
 engine/server.o: engine/model.h engine/varray.h
+engine/server.o: fpsgame/z_ms_engineserver_override.h
 engine/serverbrowser.o: engine/engine.h shared/cube.h shared/tools.h
 engine/serverbrowser.o: shared/geom.h shared/ents.h shared/command.h
 engine/serverbrowser.o: shared/iengine.h shared/igame.h engine/world.h
@@ -479,8 +502,19 @@ fpsgame/scoreboard.o: shared/geom.h shared/ents.h shared/command.h
 fpsgame/scoreboard.o: shared/iengine.h shared/igame.h fpsgame/ai.h
 fpsgame/server.o: fpsgame/game.h shared/cube.h shared/tools.h shared/geom.h
 fpsgame/server.o: shared/ents.h shared/command.h shared/iengine.h
-fpsgame/server.o: shared/igame.h fpsgame/ai.h fpsgame/capture.h fpsgame/ctf.h
-fpsgame/server.o: fpsgame/collect.h fpsgame/extinfo.h fpsgame/aiman.h
+fpsgame/server.o: shared/igame.h fpsgame/ai.h fpsgame/z_geoipstate.h
+fpsgame/server.o: fpsgame/z_triggers.h fpsgame/capture.h fpsgame/ctf.h
+fpsgame/server.o: fpsgame/collect.h fpsgame/z_setmaster_override.h
+fpsgame/server.o: fpsgame/z_servercommands.h fpsgame/z_log.h
+fpsgame/server.o: fpsgame/z_awards.h fpsgame/z_nodamage.h
+fpsgame/server.o: fpsgame/z_announcekills.h fpsgame/z_autosendmap.h
+fpsgame/server.o: fpsgame/z_sendmap.h fpsgame/z_servcmd.h
+fpsgame/server.o: fpsgame/z_gbans_override.h
+fpsgame/server.o: fpsgame/z_ms_gameserver_override.h fpsgame/z_geoip.h
+fpsgame/server.o: fpsgame/z_geoipserver.h fpsgame/z_msgfilter.h
+fpsgame/server.o: fpsgame/z_rename.h fpsgame/extinfo.h fpsgame/aiman.h
+fpsgame/server.o: fpsgame/z_genericservercommands.h fpsgame/z_mutes.h
+fpsgame/server.o: fpsgame/z_loadmap.h fpsgame/z_savemap.h fpsgame/z_spy.h
 fpsgame/waypoint.o: fpsgame/game.h shared/cube.h shared/tools.h shared/geom.h
 fpsgame/waypoint.o: shared/ents.h shared/command.h shared/iengine.h
 fpsgame/waypoint.o: shared/igame.h fpsgame/ai.h
@@ -514,6 +548,7 @@ engine/command-standalone.o: shared/iengine.h shared/igame.h engine/world.h
 engine/server-standalone.o: engine/engine.h shared/cube.h shared/tools.h
 engine/server-standalone.o: shared/geom.h shared/ents.h shared/command.h
 engine/server-standalone.o: shared/iengine.h shared/igame.h engine/world.h
+engine/server-standalone.o: fpsgame/z_ms_engineserver_override.h
 engine/worldio-standalone.o: engine/engine.h shared/cube.h shared/tools.h
 engine/worldio-standalone.o: shared/geom.h shared/ents.h shared/command.h
 engine/worldio-standalone.o: shared/iengine.h shared/igame.h engine/world.h
@@ -523,9 +558,21 @@ fpsgame/entities-standalone.o: shared/iengine.h shared/igame.h fpsgame/ai.h
 fpsgame/server-standalone.o: fpsgame/game.h shared/cube.h shared/tools.h
 fpsgame/server-standalone.o: shared/geom.h shared/ents.h shared/command.h
 fpsgame/server-standalone.o: shared/iengine.h shared/igame.h fpsgame/ai.h
+fpsgame/server-standalone.o: fpsgame/z_geoipstate.h fpsgame/z_triggers.h
 fpsgame/server-standalone.o: fpsgame/capture.h fpsgame/ctf.h
-fpsgame/server-standalone.o: fpsgame/collect.h fpsgame/extinfo.h
-fpsgame/server-standalone.o: fpsgame/aiman.h
+fpsgame/server-standalone.o: fpsgame/collect.h fpsgame/z_setmaster_override.h
+fpsgame/server-standalone.o: fpsgame/z_servercommands.h fpsgame/z_log.h
+fpsgame/server-standalone.o: fpsgame/z_awards.h fpsgame/z_nodamage.h
+fpsgame/server-standalone.o: fpsgame/z_announcekills.h
+fpsgame/server-standalone.o: fpsgame/z_autosendmap.h fpsgame/z_sendmap.h
+fpsgame/server-standalone.o: fpsgame/z_servcmd.h fpsgame/z_gbans_override.h
+fpsgame/server-standalone.o: fpsgame/z_ms_gameserver_override.h
+fpsgame/server-standalone.o: fpsgame/z_geoip.h fpsgame/z_geoipserver.h
+fpsgame/server-standalone.o: fpsgame/z_msgfilter.h fpsgame/z_rename.h
+fpsgame/server-standalone.o: fpsgame/extinfo.h fpsgame/aiman.h
+fpsgame/server-standalone.o: fpsgame/z_genericservercommands.h
+fpsgame/server-standalone.o: fpsgame/z_mutes.h fpsgame/z_loadmap.h
+fpsgame/server-standalone.o: fpsgame/z_savemap.h fpsgame/z_spy.h
 engine/master-standalone.o: shared/cube.h shared/tools.h shared/geom.h
 engine/master-standalone.o: shared/ents.h shared/command.h shared/iengine.h
 engine/master-standalone.o: shared/igame.h

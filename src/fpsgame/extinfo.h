@@ -29,13 +29,20 @@
     B:C:default: 0 command EXT_ACK EXT_VERSION EXT_ERROR
 */
 
+    VAR(extinfo_enable, 0, 1, 1);   // enable extinfo functionality
+    VAR(extinfo_showip, 0, 1, 2);   // show ips of clients
+    VAR(extinfo_showname, 0, 1, 1); // show names of clients
+    VAR(extinfo_showpriv, 0, 1, 2); // show privileges of clients
+    VAR(extinfo_showspy, 0, 0, 1);  // show spy clients
+    static bool z_showip;
+
     void extinfoplayer(ucharbuf &p, clientinfo *ci)
     {
         ucharbuf q = p;
         putint(q, EXT_PLAYERSTATS_RESP_STATS); // send player stats following
         putint(q, ci->clientnum); //add player id
         putint(q, ci->ping);
-        sendstring(ci->name, q);
+        sendstring(extinfo_showname ? ci->name : "", q);
         sendstring(ci->team, q);
         putint(q, ci->state.frags);
         putint(q, ci->state.flags);
@@ -45,9 +52,9 @@
         putint(q, ci->state.health);
         putint(q, ci->state.armour);
         putint(q, ci->state.gunselect);
-        putint(q, ci->privilege);
+        putint(q, (extinfo_showpriv && (extinfo_showpriv > 1 || ci->canseemypriv(NULL))) ? ci->privilege : PRIV_NONE);
         putint(q, ci->state.state);
-        uint ip = getclientip(ci->clientnum);
+        uint ip = z_showip ? getclientip(ci->clientnum) : 0;
         q.put((uchar*)&ip, 3);
         sendserverinforeply(q);
     }
@@ -83,6 +90,7 @@
 
     void extserverinforeply(ucharbuf &req, ucharbuf &p)
     {
+        if(!extinfo_enable) return;
         int extcmd = getint(req); // extended commands  
 
         //Build a new packet
@@ -105,7 +113,7 @@
                 if(cn >= 0)
                 {
                     loopv(clients) if(clients[i]->clientnum == cn) { ci = clients[i]; break; }
-                    if(!ci)
+                    if(!ci || (!extinfo_showspy && ci->spy))
                     {
                         putint(p, EXT_ERROR); //client requested by id was not found
                         sendserverinforeply(p);
@@ -118,11 +126,23 @@
                 ucharbuf q = p; //remember buffer position
                 putint(q, EXT_PLAYERSTATS_RESP_IDS); //send player ids following
                 if(ci) putint(q, ci->clientnum);
-                else loopv(clients) putint(q, clients[i]->clientnum);
+                else loopv(clients) if(extinfo_showspy || !clients[i]->spy) putint(q, clients[i]->clientnum);
                 sendserverinforeply(q);
             
+                if(extinfo_showip < 2) z_showip = extinfo_showip!=0;
+                else
+                {
+                    uint rip = getserverinfoip();
+                    z_showip = false;
+                    loopv(clients) if(clients[i]->state.aitype==AI_NONE && !clients[i]->local && getclientip(clients[i]->clientnum) == rip)
+                    {
+                        z_showip = true;
+                        break;
+                    }
+                }
+
                 if(ci) extinfoplayer(p, ci);
-                else loopv(clients) extinfoplayer(p, clients[i]);
+                else loopv(clients) if(extinfo_showspy || !clients[i]->spy) extinfoplayer(p, clients[i]);
                 return;
             }
 
