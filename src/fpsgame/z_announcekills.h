@@ -70,7 +70,7 @@ void z_announcekill(clientinfo *actor, clientinfo *victim, int fragval)
         if(showactor && announcekills_multikill && actor->state.multikills > 1 &&
             (announcekills_multikill == 1 || ci->clientnum == actor->clientnum))
         {
-            if(!name) name = z_teamcolorname(actor, "you", ci);
+            name = z_teamcolorname(actor, "you", ci);
             const char *mkstr = z_multikillstr(actor->state.multikills);
             if(mkstr) sendf(ci->clientnum, 1, "ris", N_SERVMSG, tempformatstring("\f2%s scored %sKILL!!", name, mkstr));
             else sendf(ci->clientnum, 1, "ris", N_SERVMSG, tempformatstring("\f2%s scored \f3%d MULTIPLE KILLS!!", name, actor->state.multikills));
