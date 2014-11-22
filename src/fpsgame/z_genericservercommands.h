@@ -141,6 +141,13 @@ void z_servcmd_interm(int argc, char **argv, int sender)
 SCOMMANDAH(interm, PRIV_MASTER, z_servcmd_interm, 1);
 SCOMMANDA(intermission, PRIV_MASTER, z_servcmd_interm, 1);
 
+void z_servcmd_wall(int argc, char **argv, int sender)
+{
+    if(argc <= 1) { sendf(sender, 1, "ris", N_SERVMSG, "please specify message"); return; }
+    sendservmsg(argv[1]);
+}
+SCOMMANDA(wall, PRIV_ADMIN, z_servcmd_wall, 1);
+
 #include "z_mutes.h"
 
 #include "z_loadmap.h"

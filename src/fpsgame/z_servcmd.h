@@ -5,9 +5,9 @@
 
 bool z_parseclient(const char *str, int *cn)
 {
-    char *end;
+    char *end = NULL;
     int n = strtol(str, &end, 10);
-    if(*str && !*end) { *cn = n; return true; }
+    if(end && !*end) { *cn = n; return true; }
     loopv(clients) if(!strcmp(str, clients[i]->name)) { *cn = clients[i]->clientnum; return true; }
     loopv(clients) if(!strcasecmp(str, clients[i]->name)) { *cn = clients[i]->clientnum; return true; }
     return false;
@@ -16,7 +16,7 @@ bool z_parseclient(const char *str, int *cn)
 bool z_parseclient_verify(const char *str, int *cn, bool allowall, bool allowbot = false, bool allowspy = false)
 {
     if(!z_parseclient(str, cn)) return false;
-    if(cn < 0) return allowall;
+    if(*cn < 0) return allowall;
     clientinfo *ci = allowbot ? getinfo(*cn) : (clientinfo *)getclientinfo(*cn);
     return ci && ci->connected && (allowspy || !ci->spy);
 }
