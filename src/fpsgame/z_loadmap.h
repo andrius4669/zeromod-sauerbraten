@@ -1,9 +1,13 @@
 #ifndef Z_LOADMAP_H
 #define Z_LOADMAP_H
 
+SVAR(mappath, "packages/base");
+
 bool z_loadmap(const char *mname, stream *&data = mapdata)
 {
-    defformatstring(fname)("media/map/%s.ogz", mname);
+    string fname;
+    if(mappath[0]) formatstring(fname)("%s/%s.ogz", mappath, mname);
+    else formatstring(fname)("%s.ogz", mname);
     stream *map = openrawfile(path(fname), "rb");
     if(!map) return false;
     stream::offset len = map->size();

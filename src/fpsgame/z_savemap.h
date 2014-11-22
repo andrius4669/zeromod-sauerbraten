@@ -3,6 +3,8 @@
 
 #include "z_servcmd.h"
 
+#include "z_loadmap.h"
+
 bool z_savemap(const char *mname, stream *&file = mapdata)
 {
     if(!file) return false;
@@ -13,7 +15,9 @@ bool z_savemap(const char *mname, stream *&file = mapdata)
     file->seek(0, SEEK_SET);
     file->read(data, len);
     delete file;
-    defformatstring(fname)("media/map/%s.ogz", mname);
+    string fname;
+    if(mappath[0]) formatstring(fname)("%s/%s.ogz", mappath, mname);
+    else formatstring(fname)("%s.ogz", mname);
     file = openrawfile(path(fname), "w+b");
     if(file)
     {
