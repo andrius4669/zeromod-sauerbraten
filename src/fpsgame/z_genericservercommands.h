@@ -125,11 +125,11 @@ void z_servcmd_pm(int argc, char **argv, int sender)
     ci = getinfo(cn);
     if(ci->state.aitype!=AI_NONE) { sendf(sender, 1, "ris", N_SERVMSG, "you can not send private message to bot"); return; }
     ci = getinfo(sender);
-    sendf(cn, 1, "ris", N_SERVMSG, tempformatstring("\f2pm: \f7%s \f5(%d)\f7: \f0%s", ci->name, ci->clientnum, argv[2]));
+    sendf(cn, 1, "ris", N_SERVMSG, tempformatstring("\f6pm: \f7%s \f5(%d)\f7: \f0%s", ci->name, ci->clientnum, argv[2]));
     if(servcmd_pm_comfirmation)
     {
         ci = getinfo(cn);
-        sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("\f2your private message successfully sent to %s \f5(%d)", ci->name, ci->clientnum));
+        sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("your private message successfully sent to %s \f5(%d)", ci->name, ci->clientnum));
     }
 }
 SCOMMANDA(pm, PRIV_NONE, z_servcmd_pm, 2);

@@ -5,7 +5,7 @@
 VAR(announcekills, 0, 0, 1);
 
 VAR(announcekills_stopped, 0, 1, 1);
-VAR(announcekills_stopped_min, 0, 10, 100);
+VAR(announcekills_stopped_min, 0, 15, 100);
 VAR(announcekills_stopped_num, 0, 0, 1);
 
 VAR(announcekills_multikill, 0, 2, 2);
@@ -97,7 +97,7 @@ void z_announcekill(clientinfo *actor, clientinfo *victim, int fragval)
                     case 10: msg = "on a \f6RAMPAGE!!"; break;
                     case 15: msg = "\f6DOMINATING!!"; break;
                     case 20: msg = "\f6UNSTOPPABLE!!"; break;
-                    case 30: msg = "\f3GODLIKE!!"; break;
+                    case 30: msg = "\f6GODLIKE!!"; break;
                     default: msg = NULL; break;
                 }
                 if(msg)
