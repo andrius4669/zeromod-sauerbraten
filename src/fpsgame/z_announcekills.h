@@ -6,7 +6,7 @@ VAR(announcekills, 0, 0, 1);
 
 VAR(announcekills_stopped, 0, 1, 1);
 VAR(announcekills_stopped_min, 0, 15, 100);
-VAR(announcekills_stopped_num, 0, 0, 1);
+VAR(announcekills_stopped_num, 0, 1, 1);
 
 VAR(announcekills_multikill, 0, 2, 2);
 
@@ -34,9 +34,9 @@ static const char *z_multikillstr(int i)
         case 3: return "a \f6TRIPLE ";
         case 4: return "a \f6QUAD-";
         case 5: return "a \f6PENTA-";
-        case 6: return "a \f3HEXA-";
-        case 7: return "a \f3HEPTA-";    // sounds weird, but meh
-        case 8: return "an \f3OCTA-";
+        case 6: return "a \f6HEXA-";
+        case 7: return "a \f6HEPTA-";    // sounds weird, but meh
+        case 8: return "an \f6OCTA-";
         default: return NULL;
     }
 }

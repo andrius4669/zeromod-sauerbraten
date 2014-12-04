@@ -3,18 +3,18 @@
 
 #include "z_servcmd.h"
 
-bool z_sendmap(clientinfo *ci, clientinfo *sender = NULL, stream *map = NULL, bool force = false)
+bool z_sendmap(clientinfo *ci, clientinfo *sender = NULL, stream *map = NULL, bool force = false, bool verbose = true)
 {
     if(!map) map = mapdata;
-    if(!map) { if(sender) sendf(sender->clientnum, 1, "ris", N_SERVMSG, "no map to send"); }
+    if(!map) { if(verbose && sender) sendf(sender->clientnum, 1, "ris", N_SERVMSG, "no map to send"); }
     else if(ci->getmap && !force)
     {
-        if(sender) sendf(sender->clientnum, 1, "ris", N_SERVMSG,
+        if(verbose && sender) sendf(sender->clientnum, 1, "ris", N_SERVMSG,
             ci->clientnum == sender->clientnum ? "already sending map" : tempformatstring("already sending map to %s", colorname(ci)));
     }
     else
     {
-        sendservmsgf("[%s is getting the map]", colorname(ci));
+        if(verbose) sendservmsgf("[%s is getting the map]", colorname(ci));
         ENetPacket *getmap = sendfile(ci->clientnum, 2, map, "ri", N_SENDMAP);
         if(getmap)
         {

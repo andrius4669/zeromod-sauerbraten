@@ -1998,13 +1998,16 @@ namespace server
         sendpacket(-1, 1, p.finalize(), ci->clientnum);
     }
 
+    #include "z_racemode.h"
+    raceservmode racemode;
+
     VAR(server_load_ents, 0, 1, 2);
     void loaditems()
     {
         resetitems();
         notgotitems = true;
-        if(!server_load_ents) return;
-        if((server_load_ents < 2 ? m_edit : !smapname[0]) || !loadents(smapname, ments, &mcrc))
+        if(server_load_ents == 0) return;
+        if((server_load_ents != 2 && !z_racemode && m_edit) || !loadents(smapname, ments, &mcrc))
             return;
         loopv(ments) if(canspawnitem(ments[i].type))
         {
@@ -2051,6 +2054,7 @@ namespace server
         if(m_capture) smode = &capturemode;
         else if(m_ctf) smode = &ctfmode;
         else if(m_collect) smode = &collectmode;
+        else if(m_edit && z_racemode) smode = &racemode;
         else smode = NULL;
 
         if(m_timed && smapname[0]) sendf(-1, 1, "ri2", N_TIMEUP, gamemillis < gamelimit && !interm ? max((gamelimit - gamemillis)/1000, 1) : 0);
