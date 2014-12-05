@@ -10,6 +10,11 @@ bool allowmsg(clientinfo *ci, clientinfo *cq, int type)
     switch(type)
     {
         case N_EDITMODE:
+            if(smode==&racemode)
+            {
+                racemode.racecheat(ci, 1);
+                return true;
+            }
             return true;
 
         case N_TEXT:
@@ -30,6 +35,13 @@ bool allowmsg(clientinfo *ci, clientinfo *cq, int type)
         case N_EDITENT: case N_EDITVAR:
         case N_COPY: case N_CLIPBOARD: case N_PASTE:
         case N_REMIP: case N_NEWMAP:
+            if(smode==&racemode)
+            {
+                if(type == N_COPY || type == N_CLIPBOARD) ci->cleanclipboard();
+                if(type == N_REMIP || type == N_EDITVAR) return false;  /* drop messages, but don't disqualify client for them */
+                racemode.racecheat(ci, 2);
+                return false;
+            }
             if(ci->editmute)
             {
                 if(type == N_COPY || type == N_CLIPBOARD) ci->cleanclipboard();

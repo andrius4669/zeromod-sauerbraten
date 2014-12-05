@@ -2535,9 +2535,9 @@ namespace server
             clientinfo *ci = clients[i];
             if(ci->state.state==CS_SPECTATOR || ci->state.aitype != AI_NONE || ci->clientmap[0] || ci->mapcrc >= 0 || (req < 0 && ci->warned)) continue;
             formatstring(msg)("%s has modified map \"%s\"", colorname(ci), smapname);
-            sendf(req, 1, "ris", N_SERVMSG, msg);
+            if(!m_edit || req >= 0) sendf(req, 1, "ris", N_SERVMSG, msg);
             if(req < 0) ci->warned = true;
-            if(req < 0 && m_edit && z_autosendmap >= 2) z_sendmap(ci, NULL);
+            if(req < 0 && m_edit) z_sendmap(ci, NULL);
         }
         if(crcs.length() >= 2) loopv(crcs)
         {
@@ -2547,9 +2547,9 @@ namespace server
                 clientinfo *ci = clients[j];
                 if(ci->state.state==CS_SPECTATOR || ci->state.aitype != AI_NONE || !ci->clientmap[0] || ci->mapcrc != info.crc || (req < 0 && ci->warned)) continue;
                 formatstring(msg)("%s has modified map \"%s\"", colorname(ci), smapname);
-                sendf(req, 1, "ris", N_SERVMSG, msg);
+                if(!m_edit || req >= 0) sendf(req, 1, "ris", N_SERVMSG, msg);
                 if(req < 0) ci->warned = true;
-                if(req < 0 && m_edit && z_autosendmap >= 2) z_sendmap(ci, NULL);
+                if(req < 0 && m_edit) z_sendmap(ci, NULL);
             }
         }
         if(m_edit) return;
@@ -2852,13 +2852,14 @@ namespace server
 #endif
 
     #include "z_sendmap.h"
+    #include "z_mutes.h"
 
     void receivefile(int sender, uchar *data, int len)
     {
         if(!m_edit || len > 4*1024*1024) return;
         clientinfo *ci = getinfo(sender);
         if(ci->state.state==CS_SPECTATOR && !ci->privilege && !ci->local) return;
-        if(ci->editmute) { sendf(sender, 1, "ris", N_SERVMSG, "your sendmap was muted"); return; }
+        if(z_iseditmuted(ci)) { sendf(sender, 1, "ris", N_SERVMSG, "your sendmap was muted"); return; }
         if(mapdata) DELETEP(mapdata);
         if(!len) return;
         mapdata = opentempfile("mapdata", "w+b");
@@ -3550,6 +3551,7 @@ namespace server
                     if((ci->getmap = sendfile(sender, 2, mapdata, "ri", N_SENDMAP)))
                         ci->getmap->freeCallback = freegetmap;
                     ci->needclipboard = totalmillis ? totalmillis : 1;
+                    if(smode==&racemode && ci->state.flags==2) ci->state.flags = 1;
                 }
                 break;
 
