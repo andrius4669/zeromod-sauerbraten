@@ -2011,7 +2011,7 @@ namespace server
         resetitems();
         notgotitems = true;
         if(server_load_ents == 0) return;
-        if((server_load_ents != 2 && !isracemode() && m_edit) || !loadents(smapname, ments, &mcrc))
+        if((server_load_ents != 2 && !z_racemode && m_edit) || !loadents(smapname, ments, &mcrc))
             return;
         loopv(ments) if(canspawnitem(ments[i].type))
         {
