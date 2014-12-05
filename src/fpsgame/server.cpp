@@ -1188,6 +1188,8 @@ namespace server
         loopv(clients)
         {
             clientinfo *ci = clients[i];
+            extern bool isracemode();
+            if(ci->getmap == packet && isracemode() && ci->state.flags > 0) ci->state.flags = ci->state.state==CS_EDITING ? 1 : 0;
             if(ci->getmap == packet) ci->getmap = NULL;
         }
     }
@@ -2448,6 +2450,7 @@ namespace server
                 if(smode) smode->update();
             }
         }
+        if((gamepaused || !shouldstep) && smode==&racemode) smode->update();
 
         while(bannedips.length() && bannedips[0].expire-totalmillis <= 0) bannedips.remove(0);
         loopv(connects) if(totalmillis-connects[i]->connectmillis>15000) disconnect_client(connects[i]->clientnum, DISC_TIMEOUT);
@@ -3551,7 +3554,6 @@ namespace server
                     if((ci->getmap = sendfile(sender, 2, mapdata, "ri", N_SENDMAP)))
                         ci->getmap->freeCallback = freegetmap;
                     ci->needclipboard = totalmillis ? totalmillis : 1;
-                    if(smode==&racemode && ci->state.flags==2) ci->state.flags = 1;
                 }
                 break;
 

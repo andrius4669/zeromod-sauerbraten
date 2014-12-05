@@ -146,11 +146,7 @@ struct raceservmode: servmode
 
     void moved(clientinfo *ci, const vec &oldpos, bool oldclip, const vec &newpos, bool newclip)
     {
-        if(state != ST_STARTED && state != ST_FINISHED)
-        {
-            if(gamepaused) update();    /* ugly hack: rely on N_POS messages since update isn't executed normally if paused */
-            return;
-        }
+        if(state != ST_STARTED && state != ST_FINISHED) return;
         if(ci->state.flags) return;     /* flags are reused for race cheating info */
         int avaiable_place = -1;
         loopv(race_winners)
@@ -181,7 +177,7 @@ struct raceservmode: servmode
 
     void racecheat(clientinfo *ci, int type)
     {
-        if(state < ST_STARTED || state > ST_FINISHED) return;
+        if((state < ST_STARTED && type < 2) || state > ST_FINISHED) return;
         if(ci->state.flags < type)
         {
             sendf(ci->clientnum, 1, "ris", N_SERVMSG, type == 1
@@ -329,5 +325,11 @@ struct raceservmode: servmode
         sendservmsg(buf.getbuf());
     }
 };
+
+bool isracemode()
+{
+    extern raceservmode racemode;
+    return smode==&racemode;
+}
 
 #endif // Z_RACEMODE_H
