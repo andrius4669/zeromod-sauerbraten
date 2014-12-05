@@ -148,6 +148,30 @@ void z_servcmd_wall(int argc, char **argv, int sender)
 }
 SCOMMANDA(wall, PRIV_ADMIN, z_servcmd_wall, 1);
 
+void z_servcmd_reqauth(int argc, char **argv, int sender)
+{
+    if(argc < 2)
+    {
+        if(!serverauth[0]) sendf(sender, 1, "ris", N_SERVMSG, "please specify client and authdesc");
+        else sendf(sender, 1, "ris", N_SERVMSG, "please specify client");
+        return;
+    }
+    if(argc < 3 && !serverauth[0]) { sendf(sender, 1, "ris", N_SERVMSG, "please specify authdesc"); return; }
+
+    int cn;
+    if(!z_parseclient_verify(argv[1], &cn, true, false, true))
+    {
+        sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("unknown client: %s", argv[1]));
+        return;
+    }
+
+    const char *authdesc = argc > 2 ? argv[2] : serverauth;
+
+    if(cn >= 0) sendf(cn, 1, "ris", N_REQAUTH, authdesc);
+    else loopv(clients) if(clients[i]->state.aitype==AI_NONE) sendf(clients[i]->clientnum, 1, "ris", N_REQAUTH, authdesc);
+}
+SCOMMANDA(reqauth, PRIV_ADMIN, z_servcmd_reqauth, 2);
+
 #include "z_mutes.h"
 
 #include "z_loadmap.h"
