@@ -281,6 +281,11 @@ struct raceservmode: servmode
         }
     }
 
+    bool canspawn(clientinfo *ci, bool connecting = false)
+    {
+        return state >= ST_STARTED;
+    }
+
     void intermission()
     {
         vector<char> buf;
