@@ -269,7 +269,11 @@ struct raceservmode: servmode
                     sendservmsg("\f6race: \f7START!!");
                     state = ST_STARTED;
                     pausegame(false, NULL);
-                    loopv(clients) if(clients[i]->state.state != CS_SPECTATOR) sendspawn(clients[i]);
+                    loopv(clients) if(clients[i]->state.state != CS_SPECTATOR)
+                    {
+                        if(clients[i]->state.state!=CS_EDITING) sendspawn(clients[i]);
+                        else racecheat(clients[i], 1);
+                    }
                 }
                 break;
 
