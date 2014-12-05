@@ -229,6 +229,7 @@ struct raceservmode: servmode
         switch(state)
         {
             case ST_NONE:
+                pausegame(true, NULL);
                 if(smapname[0]) z_loadmap(smapname);
                 sendmaptoclients();
                 state = ST_WAITMAP;
@@ -255,6 +256,7 @@ struct raceservmode: servmode
                 {
                     sendservmsg("\f3race: \f7START!!");
                     state = ST_STARTED;
+                    pausegame(false, NULL);
                     loopv(clients) if(clients[i]->state.state != CS_SPECTATOR) sendspawn(clients[i]);
                 }
                 break;
