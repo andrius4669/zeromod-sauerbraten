@@ -167,7 +167,7 @@ struct raceservmode: servmode
             if(r.place > avaiable_place && r.place > minraceend) continue;  /* don't skip is place is already minimal */
             if(!reached_raceend(r, newpos)) continue;
             race_winners[avaiable_place] = ci->clientnum;
-            sendservmsgf("\f6race: \f7%s \f2won \f6%s place!", colorname(ci), placename(avaiable_place));
+            sendservmsgf("\f6race: \f7%s \f2won \f6%s PLACE!!", colorname(ci), placename(avaiable_place));
             for(int j = race_winners.length()-1; j > avaiable_place; j--) if(race_winners[j] == ci->clientnum)
             {
                 race_winners[j] = -1;
