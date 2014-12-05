@@ -51,7 +51,7 @@ ICOMMAND(rend, "sfffii", (char *map, float *x, float *y, float *z, int *r, int *
 struct raceservmode: servmode
 {
     static const int RACE_MAXENDS = 64;
-    enum { ST_NONE = 0, ST_WAITMAP, ST_READY, ST_STARTED, ST_FINISHED };
+    enum { ST_NONE = 0, ST_WAITMAP, ST_READY, ST_STARTED, ST_FINISHED, ST_INT };
 
     int state;
     int statemillis;
@@ -113,19 +113,16 @@ struct raceservmode: servmode
         return dx*dx + dy*dy <= r.radius*r.radius && fabs(dz) <= r.radius;
     }
 
-    string placesbuf;
     const char *placename(int n)
     {
         switch(++n)
         {
-            case 1: return "first";
-            case 2: return "second";
-            case 3: return "thrid";
-            case 4: return "fourth";
-            case 5: return "fifth";
-            default:
-                formatstring(placesbuf)("%dth", n);
-                return placesbuf;
+            case 1: return "FIRST";
+            case 2: return "SECOND";
+            case 3: return "THRID";
+            case 4: return "FOURTH";
+            case 5: return "FIFTH";
+            default: return tempformatstring("%dth", n);
         }
     }
 
@@ -142,8 +139,7 @@ struct raceservmode: servmode
         if(numavaiable <= 0 || numplayers-numfinished <= 0)
         {
             state = ST_FINISHED;
-            statemillis = totalmillis;
-            sendservmsg("\f3race: \f7ending race in 5 seconds...");
+            statemillis = countermillis = totalmillis;
         }
     }
 
@@ -171,7 +167,7 @@ struct raceservmode: servmode
             if(r.place > avaiable_place && r.place > minraceend) continue;  /* don't skip is place is already minimal */
             if(!reached_raceend(r, newpos)) continue;
             race_winners[avaiable_place] = ci->clientnum;
-            sendservmsgf("\f3race: \f7%s won %s place!", colorname(ci), placename(avaiable_place));
+            sendservmsgf("\f6race: \f7%s \f2won \f6%s place!", colorname(ci), placename(avaiable_place));
             for(int j = race_winners.length()-1; j > avaiable_place; j--) if(race_winners[j] == ci->clientnum)
             {
                 race_winners[j] = -1;
@@ -187,7 +183,7 @@ struct raceservmode: servmode
         {
             loopvrev(race_winners) if(race_winners[i] == ci->clientnum)
             {
-                sendservmsgf("\f3race: \f7%s left %s place!", colorname(ci), placename(i));
+                sendservmsgf("\f6race: \f7%s \f2left \f6%s PLACE!!", colorname(ci), placename(i));
                 race_winners[i] = -1;
             }
         }
@@ -250,11 +246,11 @@ struct raceservmode: servmode
                 {
                     countermillis += 1000;
                     int secsleft = (5000 - (totalmillis - statemillis) + 500)/1000;
-                    if(secsleft > 0) sendservmsgf("\f3race: \f7starting race in %d...", secsleft);
+                    if(secsleft > 0) sendservmsgf("\f6race: \f2starting race in %d...", secsleft);
                 }
                 if(totalmillis-statemillis>=5000)
                 {
-                    sendservmsg("\f3race: \f7START!!");
+                    sendservmsg("\f6race: \f7START!!");
                     state = ST_STARTED;
                     pausegame(false, NULL);
                     loopv(clients) if(clients[i]->state.state != CS_SPECTATOR) sendspawn(clients[i]);
@@ -266,7 +262,21 @@ struct raceservmode: servmode
                 break;
 
             case ST_FINISHED:
-                if(totalmillis-statemillis >= 5000) startintermission();
+                if(totalmillis-countermillis >= 0)
+                {
+                    countermillis += 1000;
+                    int secsleft = (5000 - (totalmillis - statemillis) + 500)/1000;
+                    if(secsleft > 0) sendservmsgf("\f6race: \f2ending race in %d...", secsleft);
+                }
+                if(totalmillis-statemillis >= 5000)
+                {
+                    startintermission();
+                    state = ST_INT;
+                }
+                break;
+
+            case ST_INT:
+                /* nothing to do here */
                 break;
         }
     }
@@ -274,8 +284,8 @@ struct raceservmode: servmode
     void intermission()
     {
         vector<char> buf;
-        const char * const msg_win = "\f3Race winners:\f7";
-        const char * const msg_plc = " place: ";
+        const char * const msg_win = "\f6RACE WINNERS:";
+        const char * const msg_plc = " PLACE: \f7";
         const char *msg_p;
         bool won = false;
 
@@ -286,6 +296,8 @@ struct raceservmode: servmode
             if(!won) buf.put(msg_win, strlen(msg_win)); /* first time executing this */
             won = true;
             buf.add(' ');
+            buf.add('\f');
+            buf.add('2');
             msg_p = placename(i);
             buf.put(msg_p, strlen(msg_p));
             buf.put(msg_plc, strlen(msg_plc));
