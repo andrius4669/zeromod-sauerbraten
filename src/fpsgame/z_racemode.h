@@ -152,7 +152,7 @@ struct raceservmode: servmode
         loopv(race_winners)
         {
             int cn = race_winners[i];
-            if(cn == ci->clientnum) return;
+            if(cn == ci->clientnum) break;
             if(cn < 0)
             {
                 avaiable_place = i;
@@ -198,6 +198,7 @@ struct raceservmode: servmode
                 race_winners[i] = -1;
             }
         }
+        if(state == ST_STARTED) checkplaces();
     }
 
     void spawned(clientinfo *ci)
