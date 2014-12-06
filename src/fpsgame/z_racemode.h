@@ -178,7 +178,7 @@ struct raceservmode: servmode
             if(!racemillis) racemillis = gamemillis-ci->state.lastdeath;    /* lastdeath is reused for spawntime */
             race_winners[avaiable_place].cn = ci->clientnum;
             race_winners[avaiable_place].racemillis = racemillis;
-            sendservmsgf("\f6race: \f7%s \f2won \f6%s PLACE!!", colorname(ci), placename(avaiable_place));
+            sendservmsgf("\f6race: \f7%s \f2won \f6%s PLACE!! \f7(%d.%ds)", colorname(ci), placename(avaiable_place), racemillis/1000, racemillis%1000);
             break;
         }
         if(state == ST_STARTED) checkplaces();
@@ -263,12 +263,15 @@ struct raceservmode: servmode
         {
             case ST_NONE:
             {
-                pausegame(true, NULL);
                 bool hasmap = false;
                 if(smapname[0]) hasmap = z_loadmap(smapname);
-                if(hasmap) sendmaptoclients();
-                state = ST_WAITMAP;
-                statemillis = totalmillis;
+                if(hasmap)
+                {
+                    pausegame(true, NULL);
+                    sendmaptoclients();
+                }
+                state = hasmap ? ST_WAITMAP : ST_FINISHED;
+                statemillis = countermillis = totalmillis;
                 break;
             }
 
