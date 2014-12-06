@@ -137,7 +137,7 @@ struct raceservmode: servmode
             else numavaiable++;
         }
         int numplayers = numclients(-1, true, false), unfinished = numplayers-numfinished;
-        if(numavaiable <= 0 || unfinished <= 0 || (numavaiable >= 1 && unfinished == 1))
+        if(numavaiable <= 0 || unfinished <= 0 || (numavaiable >= 1 && unfinished == 1 && numplayers > 1))
         {
             state = ST_FINISHED;
             statemillis = countermillis = totalmillis;
