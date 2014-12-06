@@ -250,7 +250,7 @@ struct raceservmode: servmode
                 break;
 
             case ST_WAITMAP:
-                if(totalmillis-statemillis>=15000 || canstartrace())
+                if(totalmillis-statemillis>=10000 || canstartrace())
                 {
                     state = ST_READY;
                     statemillis = totalmillis;
@@ -262,10 +262,10 @@ struct raceservmode: servmode
                 if(totalmillis-countermillis >= 0)
                 {
                     countermillis += 1000;
-                    int secsleft = (5000 - (totalmillis - statemillis) + 500)/1000;
+                    int secsleft = (3000 - (totalmillis - statemillis) + 500)/1000;
                     if(secsleft > 0) sendservmsgf("\f6race: \f2starting race in %d...", secsleft);
                 }
-                if(totalmillis-statemillis>=5000)
+                if(totalmillis-statemillis>=3000)
                 {
                     sendservmsg("\f6race: \f7START!!");
                     state = ST_STARTED;
