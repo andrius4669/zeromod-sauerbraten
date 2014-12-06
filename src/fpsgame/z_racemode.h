@@ -175,7 +175,7 @@ struct raceservmode: servmode
                 race_winners[j].cn = -1;
                 racemillis = race_winners[j].racemillis;
             }
-            if(!racemillis) racemillis = gamemillis-ci->cq->state.lastdeath;    /* lastdeath is reused for spawntime */
+            if(!racemillis) racemillis = gamemillis-ci->state.lastdeath;    /* lastdeath is reused for spawntime */
             race_winners[avaiable_place].cn = ci->clientnum;
             race_winners[avaiable_place].racemillis = racemillis;
             sendservmsgf("\f6race: \f7%s \f2won \f6%s PLACE!!", colorname(ci), placename(avaiable_place));
