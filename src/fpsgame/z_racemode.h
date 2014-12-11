@@ -20,7 +20,7 @@ void z_servcmd_racemode(int argc, char **argv, int sender)
 SCOMMANDA(racemode, PRIV_ADMIN, z_servcmd_racemode, 1);
 
 VAR(racemode_waitmap, 0, 10000, INT_MAX);
-VAR(racemode_startmillis, 0, 5000, INT_MAX);
+VAR(racemode_startmillis, 0, 10000, INT_MAX);
 VAR(racemode_gamelimit, 0, 0, INT_MAX);
 VAR(racemode_winnerwait, 0, 30000, INT_MAX);
 VAR(racemode_finishmillis, 0, 5000, INT_MAX);
@@ -149,7 +149,7 @@ struct raceservmode: servmode
             else numavaiable++;
         }
         int numplayers = numclients(-1, true, false), unfinished = numplayers-numfinished;
-        if(numavaiable <= 0 || unfinished <= 0 || (numavaiable >= 1 && unfinished == 1 && numplayers > 1))
+        if(numavaiable <= 0 || unfinished <= 0)
         {
             state = ST_FINISHED;
             statemillis = countermillis = totalmillis;
@@ -272,7 +272,7 @@ struct raceservmode: servmode
 
     static bool shouldshowtimer(int secs)
     {
-        return secs >= 60 ? (secs % 60 == 0) : secs >= 30 ? (secs % 10 == 0) : secs >= 10 ? (secs % 5 == 0) : (secs > 0);
+        return secs >= 60 ? (secs % 60 == 0) : secs >= 30 ? (secs % 10 == 0) : secs >= 5 ? (secs % 5 == 0) : (secs > 0);
     }
 
     static const char *formatsecs(int secs)
