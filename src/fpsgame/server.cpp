@@ -2087,15 +2087,23 @@ namespace server
 
     void rotatemap(bool next)
     {
-        curmaprotation = findmaprotation(gamemode, smapname);
-        if(curmaprotation < 0) { if(smapname[0]) curmaprotation = findmaprotation(gamemode, ""); }
-        else if(next) nextmaprotation();
+        if(next) 
+        {
+            curmaprotation = findmaprotation(gamemode, smapname);
+            if(curmaprotation >= 0) nextmaprotation();
+            else if(smapname[0]) curmaprotation = findmaprotation(gamemode, "");
+        }
+        else if(!maprotations.inrange(curmaprotation) || !maprotations[curmaprotation].modes) curmaprotation = 0;
         if(maprotations.inrange(curmaprotation) && maprotations[curmaprotation].modes)
         {
             maprotation &rot = maprotations[curmaprotation];
             changemap(rot.map, rot.findmode(gamemode));
         }
-        else changemap(smapname, gamemode);
+        else
+        {
+            if(smapname[0]) changemap(smapname, gamemode);
+            else changemap("", 1);
+        }
     }
     
     struct votecount
