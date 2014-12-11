@@ -20,7 +20,7 @@ void z_servcmd_racemode(int argc, char **argv, int sender)
 SCOMMANDA(racemode, PRIV_ADMIN, z_servcmd_racemode, 1);
 
 VAR(racemode_waitmap, 0, 10000, INT_MAX);
-VAR(racemode_startmillis, 0, 3000, INT_MAX);
+VAR(racemode_startmillis, 0, 5000, INT_MAX);
 VAR(racemode_gamelimit, 0, 0, INT_MAX);
 VAR(racemode_winnerwait, 0, 30000, INT_MAX);
 VAR(racemode_finishmillis, 0, 5000, INT_MAX);
@@ -325,7 +325,6 @@ struct raceservmode: servmode
                 }
                 if(totalmillis-statemillis>=racemode_startmillis)
                 {
-                    sendservmsg("\f6race: \f7START!!");
                     state = ST_STARTED;
                     if(racemode_gamelimit)
                     {
@@ -335,6 +334,7 @@ struct raceservmode: servmode
                     }
                     else statemillis = 0;
                     pausegame(false, NULL);
+                    sendservmsg("\f6race: \f7START!!");
                     loopv(clients) if(clients[i]->state.state != CS_SPECTATOR)
                     {
                         if(clients[i]->state.state!=CS_EDITING) sendspawn(clients[i]);
@@ -389,6 +389,7 @@ struct raceservmode: servmode
         const char *msg_p;
         bool won = false;
 
+        state = ST_INT;
         loopv(race_winners) if(race_winners[i].cn >= 0)
         {
             clientinfo *ci = getinfo(race_winners[i].cn);
