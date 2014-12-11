@@ -19,6 +19,12 @@ void z_servcmd_racemode(int argc, char **argv, int sender)
 }
 SCOMMANDA(racemode, PRIV_ADMIN, z_servcmd_racemode, 1);
 
+VAR(racemode_waitmap, 0, 10000, INT_MAX);
+VAR(racemode_startmillis, 0, 3000, INT_MAX);
+VAR(racemode_gamelimit, 0, 0, INT_MAX);
+VAR(racemode_winnerwait, 0, 30000, INT_MAX);
+VAR(racemode_finishmillis, 0, 5000, INT_MAX);
+
 #define RACE_DEFAULT_RADIUS     24
 #define RACE_MAXPLACES          20
 
@@ -77,6 +83,7 @@ struct raceservmode: servmode
     {
         state = ST_NONE;
         statemillis = gamemillis;
+        countermillis = gamemillis;
         minraceend = INT_MAX;
         race_winners.shrink(0);
         raceends.shrink(0);
@@ -146,6 +153,12 @@ struct raceservmode: servmode
         {
             state = ST_FINISHED;
             statemillis = countermillis = totalmillis;
+        }
+        else if(racemode_winnerwait && numfinished > 0 && (!statemillis || statemillis-totalmillis > racemode_winnerwait))
+        {
+            statemillis = totalmillis + racemode_winnerwait;
+            if(!statemillis) statemillis = 1;
+            countermillis = totalmillis;
         }
     }
 
@@ -257,6 +270,20 @@ struct raceservmode: servmode
         return true;
     }
 
+    static bool shouldshowtimer(int secs)
+    {
+        return secs >= 60 ? (secs % 60 == 0) : secs >= 30 ? (secs % 10 == 0) : secs >= 10 ? (secs % 5 == 0) : (secs > 0);
+    }
+
+    static const char *formatsecs(int secs)
+    {
+        int mins = secs / 60;
+        secs %= 60;
+        if(!mins) return tempformatstring("%d second%s", secs, secs != 1 ? "s" : "");
+        else if(mins && secs) return tempformatstring("%d minute%s %d second%s", mins, mins != 1 ? "s" : "", secs, secs != 1 ? "s" : "");
+        else return tempformatstring("%d minute%s", mins, mins != 1 ? "s" : "");
+    }
+
     void update()
     {
         switch(state)
@@ -281,7 +308,7 @@ struct raceservmode: servmode
             }
 
             case ST_WAITMAP:
-                if(totalmillis-statemillis>=10000 || canstartrace())
+                if(totalmillis-statemillis>=racemode_waitmap || canstartrace())
                 {
                     state = ST_READY;
                     statemillis = totalmillis;
@@ -293,13 +320,20 @@ struct raceservmode: servmode
                 if(totalmillis-countermillis >= 0)
                 {
                     countermillis += 1000;
-                    int secsleft = (3000 - (totalmillis - statemillis) + 500)/1000;
-                    if(secsleft > 0) sendservmsgf("\f6race: \f2starting race in %d...", secsleft);
+                    int secsleft = (racemode_startmillis - (totalmillis - statemillis) + 500)/1000;
+                    if(shouldshowtimer(secsleft)) sendservmsgf("\f6race: \f2starting race in %s...", formatsecs(secsleft));
                 }
-                if(totalmillis-statemillis>=3000)
+                if(totalmillis-statemillis>=racemode_startmillis)
                 {
                     sendservmsg("\f6race: \f7START!!");
                     state = ST_STARTED;
+                    if(racemode_gamelimit)
+                    {
+                        statemillis = totalmillis + racemode_gamelimit;
+                        if(!statemillis) statemillis = 1;
+                        countermillis = totalmillis;
+                    }
+                    else statemillis = 0;
                     pausegame(false, NULL);
                     loopv(clients) if(clients[i]->state.state != CS_SPECTATOR)
                     {
@@ -310,17 +344,31 @@ struct raceservmode: servmode
                 break;
 
             case ST_STARTED:
-                /* nothing to do here */
+                if(statemillis)
+                {
+                    if(totalmillis-countermillis >= 0)
+                    {
+                        countermillis += 1000;
+                        int secsleft = (statemillis - totalmillis + 500)/1000;
+                        if(shouldshowtimer(secsleft)) sendservmsgf("\f6race: \f2time left: %s", formatsecs(secsleft));
+                    }
+                    if(statemillis-totalmillis <= 0)
+                    {
+                        /* jump straight into intermission */
+                        startintermission();
+                        state = ST_INT;
+                    }
+                }
                 break;
 
             case ST_FINISHED:
                 if(totalmillis-countermillis >= 0)
                 {
                     countermillis += 1000;
-                    int secsleft = (5000 - (totalmillis - statemillis) + 500)/1000;
-                    if(secsleft > 0) sendservmsgf("\f6race: \f2ending race in %d...", secsleft);
+                    int secsleft = (racemode_finishmillis - (totalmillis - statemillis) + 500)/1000;
+                    if(shouldshowtimer(secsleft)) sendservmsgf("\f6race: \f2ending race in %s...", formatsecs(secsleft));
                 }
-                if(totalmillis-statemillis >= 5000)
+                if(totalmillis-statemillis >= racemode_finishmillis)
                 {
                     startintermission();
                     state = ST_INT;
