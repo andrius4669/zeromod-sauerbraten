@@ -70,7 +70,7 @@ void z_awards()
     tp = "\f3Awards:\f6";
     str.put(tp, strlen(tp));
 
-    int bestk;
+    int bestk = 0;
     if(z_awards_best_stat<int>(best, bestk, [](clientinfo *ci) { return ci->state.frags; }))
     {
         tp = " Kills: ";
@@ -80,7 +80,7 @@ void z_awards()
         str.put(tp, strlen(tp));
     }
 
-    double bestp;
+    double bestp = 0.0;
     if(z_awards_best_stat<double>(best, bestp, [](clientinfo *ci) { return double(ci->state.frags)/max(ci->state.deaths, 1); }))
     {
         tp = " KpD: ";
@@ -90,7 +90,7 @@ void z_awards()
         str.put(tp, strlen(tp));
     }
 
-    int besta;
+    int besta = 0;
     if(z_awards_best_stat<int>(best, besta, [](clientinfo *ci) { return ci->state.damage*100/max(ci->state.shotdamage,1); }))
     {
         tp = " Acc: ";
@@ -100,7 +100,7 @@ void z_awards()
         str.put(tp, strlen(tp));
     }
 
-    int bestd;
+    int bestd = 0;
     if(z_awards_best_stat<int>(best, bestd, [](clientinfo *ci) { return ci->state.damage; }))
     {
         tp = " Damage: ";
