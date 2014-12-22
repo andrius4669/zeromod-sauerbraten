@@ -38,7 +38,7 @@ bool allowmsg(clientinfo *ci, clientinfo *cq, int type)
             if(smode==&racemode)
             {
                 if(type == N_COPY || type == N_CLIPBOARD) ci->cleanclipboard();
-                if(type == N_REMIP || type == N_EDITVAR) return false;  /* drop messages, but don't disqualify client for them */
+                if(type == N_REMIP) return false;   /* drop messages, but don't disqualify client for them */
                 racemode.racecheat(ci, 2);
                 return false;
             }
