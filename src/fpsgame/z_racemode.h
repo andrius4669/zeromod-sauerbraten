@@ -20,7 +20,7 @@ void z_servcmd_racemode(int argc, char **argv, int sender)
 SCOMMANDA(racemode, PRIV_ADMIN, z_servcmd_racemode, 1);
 
 VAR(racemode_waitmap, 0, 10000, INT_MAX);
-VAR(racemode_startmillis, 0, 10000, INT_MAX);
+VAR(racemode_startmillis, 0, 5000, INT_MAX);
 VAR(racemode_gamelimit, 0, 0, INT_MAX);
 VAR(racemode_winnerwait, 0, 30000, INT_MAX);
 VAR(racemode_finishmillis, 0, 5000, INT_MAX);
