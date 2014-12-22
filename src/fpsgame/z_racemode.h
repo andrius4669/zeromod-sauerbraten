@@ -297,7 +297,7 @@ struct raceservmode: servmode
         int mins = ms / 60000;
         ms %= 60000;
         if(!mins) return tempformatstring("%d.%03d sec", ms/1000, ms%1000);
-        else if(mins & ms) return tempformatstring("%d min %d.%03d sec", mins, ms/1000, ms%1000);
+        else if(mins && ms) return tempformatstring("%d min %d.%03d sec", mins, ms/1000, ms%1000);
         else return tempformatstring("%d min", mins);
     }
 
@@ -339,6 +339,12 @@ struct raceservmode: servmode
                 else break;
                 /* FALL THROUGH */
             case ST_READY:
+                if(clients.empty())
+                {
+                    statemillis = countermillis = totalmillis;
+                    state = ST_WAITMAP;
+                    break;
+                }
                 if(totalmillis-countermillis >= 0)
                 {
                     countermillis += 1000;
@@ -406,6 +412,7 @@ struct raceservmode: servmode
         const char *msg_p;
         bool won = false;
 
+        if(state < ST_STARTED) pausegame(false, NULL);
         state = ST_INT;
         DELETEP(mapdata);
         loopv(race_winners) if(race_winners[i].cn >= 0)
