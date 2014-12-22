@@ -29,12 +29,13 @@ static int z_checkstandardteam(const char *team, const char * const *teamnames)
     return 0;
 }
 
-void z_autoteam()
+bool z_autoteam()
 {
     static const char * const teamnames[2] = {"good", "evil"};
     vector<clientinfo *> team[2];
     float teamrank[2] = {0, 0};
     int remaining = clients.length();
+    if(z_persistteams == 0) return false;
     if(z_persistteams == 1)
     {
         string sttnames_[2];
@@ -55,6 +56,7 @@ void z_autoteam()
                 team[standard-1].add(ci);
                 if(rank>0) teamrank[standard-1] += rank;
             }
+            else addteaminfo(ci->team);
             remaining--;
         }
         for(int round = 0; remaining>=0; round++)
@@ -87,11 +89,53 @@ void z_autoteam()
                 sendf(-1, 1, "riisi", N_SETTEAM, ci->clientnum, teamnames[i], -1);
             }
         }
+        return true;
     }
-    else if(z_persistteams == 2)
+    if(z_persistteams == 2)
     {
-        //FUKKEN TODO
+        if(m_ctf) return false;
+        loopv(clients) if(clients[i]->team[0])
+        {
+            clientinfo *ci = clients[i];
+            int standard = z_checkstandardteam(ci->team, teamnames);
+            if(standard) continue;
+            addteaminfo(ci->team);
+            ci->state.timeplayed = -1;
+            remaining--;
+        }
+        for(int round = 0; remaining>=0; round++)
+        {
+            int first = round&1, second = (round+1)&1, selected = 0;
+            while(teamrank[first] <= teamrank[second])
+            {
+                float rank;
+                clientinfo *ci = choosebestclient(rank);
+                if(!ci) break;
+                if(smode && smode->hidefrags()) rank = 1;
+                else if(selected && rank<=0) break;
+                ci->state.timeplayed = -1;
+                team[first].add(ci);
+                if(rank>0) teamrank[first] += rank;
+                selected++;
+                if(rank<=0) break;
+            }
+            if(!selected) break;
+            remaining -= selected;
+        }
+        loopi(sizeof(team)/sizeof(team[0]))
+        {
+            addteaminfo(teamnames[i]);
+            loopvj(team[i])
+            {
+                clientinfo *ci = team[i][j];
+                if(!strcmp(ci->team, teamnames[i])) continue;
+                copystring(ci->team, teamnames[i], MAXTEAMLEN+1);
+                sendf(-1, 1, "riisi", N_SETTEAM, ci->clientnum, teamnames[i], -1);
+            }
+        }
+        return true;
     }
+    return false;
 }
 
 #endif // Z_PERSISTTEAMS_H

@@ -1003,7 +1003,7 @@ namespace server
     #include "z_persistteams.h"
     void autoteam()
     {
-        if(z_persistteams) { z_autoteam(); return; }
+        if(z_autoteam()) return;
         static const char * const teamnames[2] = {"good", "evil"};
         vector<clientinfo *> team[2];
         float teamrank[2] = {0, 0};
