@@ -247,10 +247,10 @@ namespace server
         char *authkickreason;
 
         char *disc_reason;
-        bool chatmute, specmute, editmute, spy, invpriv, namemute;
+        bool chatmute, specmute, editmute, spy, invpriv, namemute, slay;
         int lastchat, lastedit, maploaded;
         geoipstate geoip;
-        int nodamage;
+        int nodamage, mapsucks;
 
         clientinfo() : getdemo(NULL), getmap(NULL), clipboard(NULL), authchallenge(NULL), authkickreason(NULL),
             disc_reason(NULL) { reset(); }
@@ -318,6 +318,7 @@ namespace server
             warned = false;
             gameclip = false;
             maploaded = 0;
+            mapsucks = 0;
         }
 
         void reassign()
@@ -364,7 +365,7 @@ namespace server
             cleanauth();
             geoip.cleanup();
             DELETEP(disc_reason);
-            chatmute = specmute = editmute = spy = invpriv = namemute = false;
+            chatmute = specmute = editmute = spy = invpriv = namemute = slay = false;
             lastchat = lastedit = 0;
             nodamage = 0;
             mapchange();
@@ -2302,6 +2303,7 @@ namespace server
             default:
                 return;
         }
+        if(ci->slay) { suicide(ci); return; }
         sendf(-1, 1, "ri4x", N_EXPLODEFX, ci->clientnum, gun, id, ci->ownernum);
         loopv(hits)
         {
@@ -2330,6 +2332,7 @@ namespace server
            gun<GUN_FIST || gun>GUN_PISTOL ||
            gs.ammo[gun]<=0 || (guns[gun].range && from.dist(to) > guns[gun].range + 1))
             return;
+        if(ci->slay) { suicide(ci); return; }
         if(gun!=GUN_FIST) gs.ammo[gun]--;
         gs.lastshot = millis;
         gs.gunwait = guns[gun].attackdelay;

@@ -58,6 +58,6 @@ static void z_servcmd_nodamage(int argc, char **argv, int sender)
         loopv(clients) clients[i]->nodamage = z_nodamage;
     }
 }
-SCOMMANDNA(nodamage, PRIV_NONE, z_servcmd_nodamage, 1);
+SCOMMANDA(nodamage, PRIV_MASTER, z_servcmd_nodamage, 1);
 
 #endif // Z_NODAMAGE_H

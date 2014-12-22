@@ -179,5 +179,7 @@ SCOMMANDA(reqauth, PRIV_ADMIN, z_servcmd_reqauth, 2);
 
 #include "z_rename.h"
 #include "z_spy.h"
+#include "z_mapsucks.h"
+#include "z_slay.h"
 
 #endif //Z_GENERICSERVERCOMMANDS_H

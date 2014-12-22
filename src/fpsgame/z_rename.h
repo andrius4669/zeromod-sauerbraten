@@ -43,7 +43,7 @@ void z_servcmd_rename(int argc, char **argv, int sender)
         copystring(ci->name, name);
         z_rename(ci, name);
     }
-    else loopv(clients)
+    else loopv(clients) if(!clients[i]->spy)
     {
         z_log_rename(clients[i], name, actor);
         copystring(clients[i]->name, name);

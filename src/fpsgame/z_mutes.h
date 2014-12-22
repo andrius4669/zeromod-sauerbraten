@@ -22,12 +22,12 @@ static void z_servcmd_mute(int argc, char **argv, int sender)
     }
     if(cn >= 0) ci = getinfo(cn);
 
-    if(!strcmp(argv[0], "mute")) mutetype = 1;
-    else if(!strcmp(argv[0], "unmute")) { mutetype = 1; val = 0; }
-    else if(!strcmp(argv[0], "editmute") || !strcmp(argv[0], "emute")) mutetype = 2;
-    else if(!strcmp(argv[0], "editunmute") || !strcmp(argv[0], "eunmute")) { mutetype = 2; val = 0; }
-    else if(!strcmp(argv[0], "nmute") || !strcmp(argv[0], "namemute")) { mutetype = 3; val = 1; if(argc > 2) minfo = argv[2]; }
-    else if(!strcmp(argv[0], "nunmute") || !strcmp(argv[0], "nameunmute")) { mutetype = 3; val = 0; }
+    if(!strcasecmp(argv[0], "mute")) mutetype = 1;
+    else if(!strcasecmp(argv[0], "unmute")) { mutetype = 1; val = 0; }
+    else if(!strcasecmp(argv[0], "editmute") || !strcasecmp(argv[0], "emute")) mutetype = 2;
+    else if(!strcasecmp(argv[0], "editunmute") || !strcasecmp(argv[0], "eunmute")) { mutetype = 2; val = 0; }
+    else if(!strcasecmp(argv[0], "nmute") || !strcasecmp(argv[0], "namemute")) { mutetype = 3; val = 1; if(argc > 2) minfo = argv[2]; }
+    else if(!strcasecmp(argv[0], "nunmute") || !strcasecmp(argv[0], "nameunmute")) { mutetype = 3; val = 0; }
 
     if(mutetype == 1)
     {
