@@ -60,5 +60,6 @@ void z_servcmd_mapsucks(int argc, char **argv, int sender)
     if(ci->state.state==CS_SPECTATOR) { sendf(sender, 1, "ris", N_SERVMSG, "Spectators may not rate map"); return; }
     z_mapsucks(ci);
 }
+SCOMMANDA(mapsucks, PRIV_NONE, z_servcmd_mapsucks, 1);
 
 #endif // Z_MAPSUCKS_H
