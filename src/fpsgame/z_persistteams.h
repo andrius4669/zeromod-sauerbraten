@@ -37,13 +37,14 @@ void z_autoteam()
     int remaining = clients.length();
     if(z_persistteams == 1)
     {
-        string sttnames[2];
-        *sttnames[0] = *sttnames[1] = '\0';
+        string sttnames_[2];
+        *sttnames_[0] = *sttnames_[1] = '\0';
+        char * const sttnames[2] = { sttnames_[0], sttnames_[1] };
         loopv(clients) if(clients[i]->team[0])
         {
             clientinfo *ci = clients[i];
             if(m_ctf && !sttnames[0]) copystring(sttnames[0], ci->team);
-            int standard = z_checkstandardteam(ci->team, m_ctf ? (const char * const *)sttnames : teamnames);
+            int standard = z_checkstandardteam(ci->team, m_ctf ? sttnames : teamnames);
             if(m_ctf && !standard && !sttnames[1]) { copystring(sttnames[1], ci->team); standard = 2; }
             if(m_ctf && !standard) continue;
             float rank = ci->state.state!=CS_SPECTATOR ? ci->state.effectiveness/max(ci->state.timeplayed, 1) : -1;
