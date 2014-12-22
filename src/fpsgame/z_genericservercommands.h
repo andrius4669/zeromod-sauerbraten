@@ -17,8 +17,7 @@ static void z_servcmd_commands(int argc, char **argv, int sender)
     loopv(z_servcommands)
     {
         z_servcmdinfo &c = z_servcommands[i];
-        if(!c.valid() || c.hidden) continue;
-        if(ci && !ci->local && ci->privilege < c.privilege) continue;
+        if(!c.cansee(ci->privilege, ci->local)) continue;
         int j = 0;
         if(c.privilege >= PRIV_ADMIN) j = PRIV_ADMIN;
         else if(c.privilege >= PRIV_AUTH) j = PRIV_AUTH;

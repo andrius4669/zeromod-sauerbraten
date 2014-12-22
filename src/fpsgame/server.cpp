@@ -2435,6 +2435,8 @@ namespace server
         ci->timesync = false;
     }
 
+    #include "z_scripting.h"
+
     void serverupdate()
     {
         if(shouldstep && !gamepaused)
@@ -2498,6 +2500,7 @@ namespace server
         }
 
         shouldstep = clients.length() > 0;
+        z_checksleep();
     }
 
     void forcespectator(clientinfo *ci)
