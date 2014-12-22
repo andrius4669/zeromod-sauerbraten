@@ -1,6 +1,7 @@
 #ifndef Z_SERVCMD_H
 #define Z_SERVCMD_H
 
+#include "z_log.h"
 #include "z_servercommands.h"
 
 bool z_parseclient(const char *str, int *cn)
@@ -41,6 +42,9 @@ void z_servcmd_parse(int sender, char *text)
 
     clientinfo *ci = (clientinfo *)getclientinfo(sender);
     if(!ci) return;
+
+    for(char *p = text; *p; p++) if(iscubespace(*p) && *p!='\f') *p = ' ';
+    z_log_servcmd(ci, text);
 
     int argc = 1;
     char *argv[Z_MAXSERVCMDARGS];

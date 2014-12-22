@@ -505,15 +505,16 @@ fpsgame/server.o: shared/ents.h shared/command.h shared/iengine.h
 fpsgame/server.o: shared/igame.h fpsgame/ai.h fpsgame/z_geoipstate.h
 fpsgame/server.o: fpsgame/z_maprotation.h fpsgame/z_triggers.h
 fpsgame/server.o: fpsgame/capture.h fpsgame/ctf.h fpsgame/collect.h
-fpsgame/server.o: fpsgame/z_setmaster_override.h fpsgame/z_servercommands.h
-fpsgame/server.o: fpsgame/z_log.h fpsgame/z_racemode.h fpsgame/z_sendmap.h
+fpsgame/server.o: fpsgame/z_persistteams.h fpsgame/z_servercommands.h
+fpsgame/server.o: fpsgame/z_setmaster_override.h fpsgame/z_log.h
+fpsgame/server.o: fpsgame/z_racemode.h fpsgame/z_sendmap.h
 fpsgame/server.o: fpsgame/z_servcmd.h fpsgame/z_autosendmap.h
 fpsgame/server.o: fpsgame/z_loadmap.h fpsgame/z_awards.h fpsgame/z_nodamage.h
 fpsgame/server.o: fpsgame/z_announcekills.h fpsgame/z_gbans_override.h
 fpsgame/server.o: fpsgame/z_ms_gameserver_override.h fpsgame/z_mutes.h
 fpsgame/server.o: fpsgame/z_rename.h fpsgame/z_geoip.h
 fpsgame/server.o: fpsgame/z_geoipserver.h fpsgame/z_msgfilter.h
-fpsgame/server.o: fpsgame/extinfo.h fpsgame/aiman.h
+fpsgame/server.o: fpsgame/z_maploaded.h fpsgame/extinfo.h fpsgame/aiman.h
 fpsgame/server.o: fpsgame/z_genericservercommands.h fpsgame/z_savemap.h
 fpsgame/server.o: fpsgame/z_spy.h
 fpsgame/waypoint.o: fpsgame/game.h shared/cube.h shared/tools.h shared/geom.h
@@ -562,8 +563,9 @@ fpsgame/server-standalone.o: shared/iengine.h shared/igame.h fpsgame/ai.h
 fpsgame/server-standalone.o: fpsgame/z_geoipstate.h fpsgame/z_maprotation.h
 fpsgame/server-standalone.o: fpsgame/z_triggers.h fpsgame/capture.h
 fpsgame/server-standalone.o: fpsgame/ctf.h fpsgame/collect.h
-fpsgame/server-standalone.o: fpsgame/z_setmaster_override.h
-fpsgame/server-standalone.o: fpsgame/z_servercommands.h fpsgame/z_log.h
+fpsgame/server-standalone.o: fpsgame/z_persistteams.h
+fpsgame/server-standalone.o: fpsgame/z_servercommands.h
+fpsgame/server-standalone.o: fpsgame/z_setmaster_override.h fpsgame/z_log.h
 fpsgame/server-standalone.o: fpsgame/z_racemode.h fpsgame/z_sendmap.h
 fpsgame/server-standalone.o: fpsgame/z_servcmd.h fpsgame/z_autosendmap.h
 fpsgame/server-standalone.o: fpsgame/z_loadmap.h fpsgame/z_awards.h
@@ -572,8 +574,8 @@ fpsgame/server-standalone.o: fpsgame/z_gbans_override.h
 fpsgame/server-standalone.o: fpsgame/z_ms_gameserver_override.h
 fpsgame/server-standalone.o: fpsgame/z_mutes.h fpsgame/z_rename.h
 fpsgame/server-standalone.o: fpsgame/z_geoip.h fpsgame/z_geoipserver.h
-fpsgame/server-standalone.o: fpsgame/z_msgfilter.h fpsgame/extinfo.h
-fpsgame/server-standalone.o: fpsgame/aiman.h
+fpsgame/server-standalone.o: fpsgame/z_msgfilter.h fpsgame/z_maploaded.h
+fpsgame/server-standalone.o: fpsgame/extinfo.h fpsgame/aiman.h
 fpsgame/server-standalone.o: fpsgame/z_genericservercommands.h
 fpsgame/server-standalone.o: fpsgame/z_savemap.h fpsgame/z_spy.h
 engine/master-standalone.o: shared/cube.h shared/tools.h shared/geom.h

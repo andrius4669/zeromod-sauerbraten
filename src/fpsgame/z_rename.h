@@ -1,6 +1,7 @@
 #ifndef Z_RENAME_H
 #define Z_RENAME_H
 
+#include "z_log.h"
 #include "z_servcmd.h"
 
 static void z_rename(clientinfo *ci, const char *name, bool broadcast = true)
@@ -33,23 +34,20 @@ void z_servcmd_rename(int argc, char **argv, int sender)
     if(cn >= 0) ci = getinfo(cn);
 
     name[0] = '\0';
-    if(argc > 2) filtertext(name, argv[2], false, MAXNAMELEN);
+    if(argc > 2) filtertext(name, argv[2], false, false, MAXNAMELEN);
     if(!name[0]) copystring(name, "unnamed");
 
     if(ci)
     {
-        if(isdedicatedserver()) logoutf("rename: %s (%d) is now known as %s by %s (%d)",
-            ci->name, ci->clientnum, name, actor->name, actor->clientnum);
+        z_log_rename(ci, name, actor);
         copystring(ci->name, name);
         z_rename(ci, name);
     }
     else loopv(clients)
     {
-        ci = clients[i];
-        if(isdedicatedserver()) logoutf("rename: %s (%d) is now known as %s by %s (%d)",
-            ci->name, ci->clientnum, name, actor->name, actor->clientnum);
-        copystring(ci->name, name);
-        z_rename(ci, name);
+        z_log_rename(clients[i], name, actor);
+        copystring(clients[i]->name, name);
+        z_rename(clients[i], name);
     }
 }
 SCOMMANDA(rename, PRIV_AUTH, z_servcmd_rename, 2);

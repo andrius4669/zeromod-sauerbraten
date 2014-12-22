@@ -149,6 +149,7 @@ struct raceservmode: servmode
             else numavaiable++;
         }
         int numplayers = numclients(-1, true, false), unfinished = numplayers-numfinished;
+        if(numplayers <= 0) return;
         if(numavaiable <= 0 || unfinished <= 0)
         {
             state = ST_FINISHED;
@@ -236,7 +237,12 @@ struct raceservmode: servmode
 
     void spawned(clientinfo *ci)
     {
-        if(ci->state.flags == 1) ci->state.flags = 0;
+        if(ci->state.flags == 1)
+        {
+            ci->state.flags = 0;
+            if(ci->state.aitype==AI_NONE) sendf(ci->clientnum, 1, "ris", N_SERVMSG, "since you respawned, you may continue racing");
+        }
+        else if(ci->state.flags == 2 && ci->state.aitype==AI_NONE) warnracecheat(ci);
     }
 
     static void sendmaptoclients()
@@ -256,15 +262,15 @@ struct raceservmode: servmode
         {
             if(z_autosendmap == 0)
             {
-                if(!clients[i]->mapcrc) return false;
+                if(!clients[i]->mapcrc || !clients[i]->maploaded) return false;
             }
             else if(z_autosendmap == 1)
             {
-                if(clients[i]->getmap) return false;
+                if(clients[i]->getmap || !clients[i]->maploaded) return false;
             }
             else
             {
-                if(!clients[i]->mapcrc || clients[i]->getmap) return false;
+                if(!clients[i]->mapcrc || clients[i]->getmap || !clients[i]->maploaded) return false;
             }
         }
         return true;
@@ -308,7 +314,12 @@ struct raceservmode: servmode
             }
 
             case ST_WAITMAP:
-                if(totalmillis-statemillis>=racemode_waitmap || canstartrace())
+                if(clients.empty())
+                {
+                    statemillis = totalmillis;
+                    break;
+                }
+                if((racemode_waitmap && totalmillis-statemillis>=racemode_waitmap) || canstartrace())
                 {
                     state = ST_READY;
                     statemillis = totalmillis;
@@ -356,7 +367,6 @@ struct raceservmode: servmode
                     {
                         /* jump straight into intermission */
                         startintermission();
-                        state = ST_INT;
                     }
                 }
                 break;
@@ -368,11 +378,7 @@ struct raceservmode: servmode
                     int secsleft = (racemode_finishmillis - (totalmillis - statemillis) + 500)/1000;
                     if(shouldshowtimer(secsleft)) sendservmsgf("\f6race: \f2ending race in %s...", formatsecs(secsleft));
                 }
-                if(totalmillis-statemillis >= racemode_finishmillis)
-                {
-                    startintermission();
-                    state = ST_INT;
-                }
+                if(totalmillis-statemillis >= racemode_finishmillis) startintermission();
                 break;
 
             case ST_INT:
@@ -390,6 +396,7 @@ struct raceservmode: servmode
         bool won = false;
 
         state = ST_INT;
+        DELETEP(mapdata);
         loopv(race_winners) if(race_winners[i].cn >= 0)
         {
             clientinfo *ci = getinfo(race_winners[i].cn);
@@ -417,6 +424,23 @@ bool isracemode()
 {
     extern raceservmode racemode;
     return smode==&racemode;
+}
+
+void race_gotmap(clientinfo *ci)
+{
+    extern raceservmode racemode;
+    if(smode==&racemode && ci->state.flags > 0)
+    {
+        ci->state.flags = ci->state.state==CS_EDITING ? 1 : 0;
+        if(ci->state.flags) raceservmode::warnracecheat(ci);
+        else sendf(ci->clientnum, 1, "ris", N_SERVMSG, "since you got the map, you may continue racing now");
+    }
+}
+
+bool holdpausecontrol()
+{
+    extern raceservmode racemode;
+    return smode==&racemode && (racemode.state==racemode.ST_WAITMAP || racemode.state==racemode.ST_READY);
 }
 
 #endif // Z_RACEMODE_H

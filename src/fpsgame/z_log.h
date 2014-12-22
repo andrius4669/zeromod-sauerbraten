@@ -20,8 +20,8 @@ void z_log_setmaster(clientinfo *master, bool val, bool pass, const char *aname,
 {
     const char *mode;
     if(by) mode = tempformatstring("%s by %s (%d)", val ? "passed" : "taken", by->name, by->clientnum); // someone else used /setmaster
-    else if(aname) mode = "auth";                   // auth system
-    else if(pass) mode = "password";     // password claim
+    else if(aname) mode = "auth";       // auth system
+    else if(pass) mode = "password";    // password claim
     else mode = NULL;
     if(aname)
     {
@@ -35,8 +35,39 @@ void z_log_setmaster(clientinfo *master, bool val, bool pass, const char *aname,
     }
 }
 
-VAR(discmsg_privacy, 0, 0, 1);  // avoid broadcasting clients' ips
-VAR(discmsg_verbose, 0, 1, 2);
+static inline
+void z_log_say(clientinfo *cq, const char *tp)
+{
+    if(!isdedicatedserver()) return;
+    if(cq->state.aitype==AI_NONE) logoutf("chat: %s (%d): %s", cq->name, cq->clientnum, tp);
+    else logoutf("chat: %s [%d:%d]: %s", cq->name, cq->ownernum, cq->clientnum, tp);
+}
+
+static inline
+void z_log_sayteam(clientinfo *cq, const char *text, const char *team)
+{
+    if(!isdedicatedserver()) return;
+    if(cq->state.aitype==AI_NONE) logoutf("chat: %s (%d) <%s>: %s", cq->name, cq->clientnum, team, text);
+    else logoutf("chat: %s [%d:%d] <%s>: %s", cq->name, cq->ownernum, cq->clientnum, team, text);
+}
+
+static
+void z_log_rename(clientinfo *ci, const char *name, clientinfo *actor = NULL)
+{
+    if(!isdedicatedserver() || ci->state.aitype!=AI_NONE) return;
+    if(actor) logoutf("rename: %s (%d) is now known as %s by %s (%d)", ci->name, ci->clientnum, name, actor->name, actor->clientnum);
+    else logoutf("rename: %s (%d) is now known as %s", ci->name, ci->clientnum, name);
+}
+
+static inline
+void z_log_servcmd(clientinfo *ci, const char *cmd)
+{
+    logoutf("servcmd: %s (%d): %s", ci->name, ci->clientnum, cmd);
+}
+
+VAR(discmsg_privacy, 0, 0, 1);      // avoid broadcasting clients' ips to unauthorized clients
+VAR(discmsg_verbose, 0, 1, 2);      // (only applies for not connected clients) whether show disc msg (2 - force)
+VAR(discmsg_restricted, 0, 1, 1);   // whether we should treat master or admin as authorized client
 
 template<size_t N>
 static void z_discmsg_print(char (&s)[N], clientinfo *ci, int n, const char *msg, bool hideip)
@@ -86,7 +117,7 @@ static void z_discmsg(clientinfo *ci, int n, const char *msg, bool forced)
             *s = *sp = 0;
             loopv(clients) if(clients[i]->state.aitype==AI_NONE)
             {
-                if(clients[i]->local || clients[i]->privilege>=PRIV_ADMIN)
+                if(clients[i]->local || clients[i]->privilege>=(discmsg_restricted ? PRIV_ADMIN : PRIV_MASTER))
                 {
                     if(!*s) z_discmsg_print(s, ci, n, msg, false);
                     sendf(clients[i]->clientnum, 1, "ris", N_SERVMSG, s);
@@ -112,7 +143,7 @@ static void z_discmsg(clientinfo *ci, int n, const char *msg, bool forced)
             *s = *sp = 0;
             loopv(clients) if(clients[i]->state.aitype==AI_NONE)
             {
-                if(clients[i]->local || clients[i]->privilege>=PRIV_ADMIN)
+                if(clients[i]->local || clients[i]->privilege>=(discmsg_restricted ? PRIV_ADMIN : PRIV_MASTER))
                 {
                     if(!*s) z_discmsg_print(s, NULL, n, msg, false);
                     sendf(clients[i]->clientnum, 1, "ris", N_SERVMSG, s);

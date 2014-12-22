@@ -66,7 +66,7 @@ bool tryauth(clientinfo *ci, const char *user, const char *desc)
     ci->cleanauth();
     if(!nextauthreq) nextauthreq = 1;
     ci->authreq = nextauthreq++;
-    filtertext(ci->authname, user, false, 100);
+    filtertext(ci->authname, user, false, false, 100);
     copystring(ci->authdesc, desc);
     userinfo *u = users.access(userkey(ci->authname, ci->authdesc));
     if(u)

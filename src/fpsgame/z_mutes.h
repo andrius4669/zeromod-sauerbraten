@@ -75,7 +75,7 @@ static void z_servcmd_mute(int argc, char **argv, int sender)
                 if(val && minfo)
                 {
                     string name;
-                    filtertext(name, minfo, false, MAXNAMELEN);
+                    filtertext(name, minfo, false, false, MAXNAMELEN);
                     if(!name[0]) copystring(name, "unnamed");
                     if(isdedicatedserver()) logoutf("rename: %s (%d) is now known as %s by %s (%d)",
                         ci->name, ci->clientnum, name, actor->name, actor->clientnum);
@@ -94,7 +94,7 @@ static void z_servcmd_mute(int argc, char **argv, int sender)
             if(val && minfo)
             {
                 string name;
-                filtertext(name, minfo, false, MAXNAMELEN);
+                filtertext(name, minfo, false, false, MAXNAMELEN);
                 if(!name[0]) copystring(name, "unnamed");
                 if(isdedicatedserver()) logoutf("rename: %s (%d) is now known as %s by %s (%d)",
                     ci->name, ci->clientnum, name, actor->name, actor->clientnum);
