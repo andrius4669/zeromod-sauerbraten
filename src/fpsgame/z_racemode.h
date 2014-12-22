@@ -24,8 +24,9 @@ VAR(racemode_startmillis, 0, 10000, INT_MAX);
 VAR(racemode_gamelimit, 0, 0, INT_MAX);
 VAR(racemode_winnerwait, 0, 30000, INT_MAX);
 VAR(racemode_finishmillis, 0, 5000, INT_MAX);
+VAR(racemode_maxents, 0, 2000, MAXENTS);
 
-#define RACE_DEFAULT_RADIUS     24
+#define RACE_DEFAULT_RADIUS     32
 #define RACE_MAXPLACES          20
 
 struct z_raceendinfo
@@ -56,13 +57,12 @@ ICOMMAND(rend, "sfffii", (char *map, float *x, float *y, float *z, int *r, int *
 
 struct raceservmode: servmode
 {
-    static const int RACE_MAXENDS = 64;
     enum { ST_NONE = 0, ST_WAITMAP, ST_READY, ST_STARTED, ST_FINISHED, ST_INT };
 
     int state;
     int statemillis;
     int countermillis;
-    int minraceend;     // used to prevent nasty bug when only non-first places are specified
+    int minraceend;     // used when only non-first places are specified
     struct winner
     {
         int cn, racemillis;
@@ -112,11 +112,13 @@ struct raceservmode: servmode
             r.o = e.o;
             r.radius = e.attr3 > 0 ? e.attr3 : RACE_DEFAULT_RADIUS;
             r.place = min(-e.attr2, RACE_MAXPLACES) - 1;
-            //logoutf("dbg: added mrend (%f; %f; %f) r(%d) p(%d)", r.o.x, r.o.y, r.o.z, r.radius, place);
             while(race_winners.length() <= r.place) race_winners.add();
-            //logoutf("dbg: race_winners.length() = %d", race_winners.length());
             if(r.place < minraceend) minraceend = r.place;
-            if(raceends.length() >= RACE_MAXENDS) break;
+            if(racemode_maxents && raceends.length()>=racemode_maxents)
+            {
+                logoutf("WARNING: map \"%s\" has too much race end entities. only first %d are processed.", smapname, raceends.length());
+                break;
+            }
         }
     }
 
@@ -192,7 +194,7 @@ struct raceservmode: servmode
             if(!racemillis) racemillis = gamemillis-ci->state.lastdeath;    /* lastdeath is reused for spawntime */
             race_winners[avaiable_place].cn = ci->clientnum;
             race_winners[avaiable_place].racemillis = racemillis;
-            sendservmsgf("\f6race: \f7%s \f2won \f6%s PLACE!! \f7(%d.%03ds)", colorname(ci), placename(avaiable_place), racemillis/1000, racemillis%1000);
+            sendservmsgf("\f6race: \f7%s \f2won \f6%s PLACE!! \f7(%s)", colorname(ci), placename(avaiable_place), formatmillisecs(racemillis));
             break;
         }
         if(state == ST_STARTED) checkplaces();
@@ -286,8 +288,17 @@ struct raceservmode: servmode
         int mins = secs / 60;
         secs %= 60;
         if(!mins) return tempformatstring("%d second%s", secs, secs != 1 ? "s" : "");
-        else if(mins && secs) return tempformatstring("%d minute%s %d second%s", mins, mins != 1 ? "s" : "", secs, secs != 1 ? "s" : "");
-        else return tempformatstring("%d minute%s", mins, mins != 1 ? "s" : "");
+        else if(mins && !secs) return tempformatstring("%d minute%s", mins, mins != 1 ? "s" : "");
+        else return tempformatstring("%d minute%s %d second%s", mins, mins != 1 ? "s" : "", secs, secs != 1 ? "s" : "");
+    }
+
+    static const char *formatmillisecs(int ms)
+    {
+        int mins = ms / 60000;
+        ms %= 60000;
+        if(!mins) return tempformatstring("%d.%03d sec", ms/1000, ms%1000);
+        else if(mins & ms) return tempformatstring("%d min %d.%03d sec", mins, ms/1000, ms%1000);
+        else return tempformatstring("%d min", mins);
     }
 
     void update()
@@ -411,8 +422,11 @@ struct raceservmode: servmode
             buf.put(msg_plc, strlen(msg_plc));
             msg_p = colorname(ci);
             buf.put(msg_p, strlen(msg_p));
-            msg_p = tempformatstring(" (%d.%03ds)", race_winners[i].racemillis/1000, race_winners[i].racemillis%1000);
+            buf.add(' ');
+            buf.add('(');
+            msg_p = formatmillisecs(race_winners[i].racemillis);
             buf.put(msg_p, strlen(msg_p));
+            buf.add(')');
         }
         if(!won) return;
         buf.add('\0');
