@@ -37,7 +37,7 @@ static void z_servcmd_mute(int argc, char **argv, int sender)
             sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("you %s %s", val ? "muted" : "unmuted", colorname(ci)));
             if(ci->state.aitype == AI_NONE) sendf(ci->clientnum, 1, "ris", N_SERVMSG, tempformatstring("you got %s", val ? "muted" : "unmuted"));
         }
-        else loopv(clients)
+        else loopv(clients) if(!clients[i]->spy)
         {
             ci = clients[i];
             ci->chatmute = val!=0;
@@ -59,7 +59,7 @@ static void z_servcmd_mute(int argc, char **argv, int sender)
         else loopv(clients)
         {
             ci = clients[i];
-            if(ci->state.aitype != AI_NONE) continue;
+            if(ci->state.aitype != AI_NONE || ci->spy) continue;
             ci->editmute = val!=0;
             sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("you edit-%s %s", val ? "muted" : "unmuted", colorname(ci)));
             sendf(ci->clientnum, 1, "ris", N_SERVMSG, tempformatstring("you got edit-%s", val ? "muted" : "unmuted"));
@@ -89,7 +89,7 @@ static void z_servcmd_mute(int argc, char **argv, int sender)
         else loopv(clients)
         {
             ci = clients[i];
-            if(ci->state.aitype != AI_NONE) continue;
+            if(ci->state.aitype != AI_NONE || ci->spy) continue;
             ci->namemute = val!=0;
             if(val && minfo)
             {

@@ -20,7 +20,7 @@ template<typename T>
 static bool z_awards_best_stat(vector<clientinfo *> &best, T &bests, T (* func)(clientinfo *))
 {
     best.setsize(0);
-    loopv(clients)
+    loopv(clients) if(!clients[i]->spy)
     {
         if(best.empty())
         {
