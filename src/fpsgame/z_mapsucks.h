@@ -42,6 +42,7 @@ void z_mapsucks(clientinfo *ci)
             {
                 gamelimit = gamemillis + mapsucks_time*1000;
                 sendservmsgf("mapsucks voting succeeded, staring intermission in %d seconds", mapsucks_time);
+                sendf(-1, 1, "ri2", N_TIMEUP, max((gamelimit - gamemillis)/1000, 1));
             }
         }
         else
