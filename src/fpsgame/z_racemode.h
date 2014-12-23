@@ -134,7 +134,7 @@ struct raceservmode: servmode
         {
             case 1: return "FIRST";
             case 2: return "SECOND";
-            case 3: return "THRID";
+            case 3: return "THIRD";
             case 4: return "FOURTH";
             case 5: return "FIFTH";
             default: return tempformatstring("%dth", n);
