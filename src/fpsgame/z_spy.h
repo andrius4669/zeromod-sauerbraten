@@ -128,11 +128,11 @@ void z_servcmd_listspy(int argc, char **argv, int sender)
         const char *n = colorname(clients[i]);
         spybuf.put(n, strlen(n));
     }
-    if(spybuf.empty()) sendf(sender, 1, "ris", N_SERVMSG, "\f2no spies in this server");
+    if(spybuf.empty()) sendf(sender, 1, "ris", N_SERVMSG, "no spies in this server");
     else
     {
         spybuf.add('\0');
-        sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("\fs\f2spies list:\fr %s", spybuf.getbuf()));
+        sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("spies list: %s", spybuf.getbuf()));
     }
 }
 SCOMMANDNA(listspy, PRIV_ADMIN, z_servcmd_listspy, 1);
