@@ -3,7 +3,7 @@
 
 VAR(protectteamscores, 0, 0, 2);
 
-int z_calcteamscore(hashset<teaminfo> *&ti, const char *team, int fragval)
+static int z_calcteamscore(hashset<teaminfo> *&ti, const char *team, int fragval)
 {
     if(!ti) ti = new hashset<teaminfo>(1<<7);
     teaminfo *t = ti->access(team);

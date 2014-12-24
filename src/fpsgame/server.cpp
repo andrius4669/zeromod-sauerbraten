@@ -2039,6 +2039,7 @@ namespace server
         notgotitems = false;
     }
         
+    VARN(gamelimit, servergamelimit, 1, 600, 3600); // in seconds
     void changemap(const char *s, int mode)
     {
         stopdemo();
@@ -2049,7 +2050,7 @@ namespace server
 
         gamemode = mode;
         gamemillis = 0;
-        gamelimit = (m_overtime ? 15 : 10)*60000;
+        gamelimit = (m_overtime ? 1500 : 1000)*servergamelimit;
         interm = 0;
         nextexceeded = 0;
         copystring(smapname, s);
