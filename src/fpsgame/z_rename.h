@@ -17,6 +17,7 @@ static void z_rename(clientinfo *ci, const char *name, bool broadcast = true)
     putint(p, b.len);
     p.put(buf, b.len);
     sendpacket(ci->ownernum, 1, p.finalize());
+    if(broadcast) flushserver(true);
 }
 
 void z_servcmd_rename(int argc, char **argv, int sender)
