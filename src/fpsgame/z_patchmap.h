@@ -66,7 +66,7 @@ static void z_sendpatchpacket(clientinfo *ci = NULL)
     packetbuf p(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
     putint(p, N_CLIENT);
     putint(p, ci->clientnum);
-    putint(p, z_patchpacket.length());
+    putuint(p, z_patchpacket.length());
     p.put(z_patchpacket.getbuf(), z_patchpacket.length());
     sendpacket(ci->ownernum, 1, p.finalize());
 }

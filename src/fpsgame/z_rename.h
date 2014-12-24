@@ -6,16 +6,15 @@
 
 static void z_rename(clientinfo *ci, const char *name, bool broadcast = true)
 {
-    uchar buf[MAXSTRLEN];
-    ucharbuf b(buf, MAXSTRLEN);
+    vector<uchar> b;
     putint(b, N_SWITCHNAME);
     sendstring(name, b);
-    if(broadcast) ci->messages.put(buf, b.len);
+    if(broadcast) ci->messages.put(b.getbuf(), b.length());
     packetbuf p(MAXSTRLEN, ENET_PACKET_FLAG_RELIABLE);
     putint(p, N_CLIENT);
     putint(p, ci->clientnum);
-    putint(p, b.len);
-    p.put(buf, b.len);
+    putuint(p, b.length());
+    p.put(b.getbuf(), b.length());
     sendpacket(ci->ownernum, 1, p.finalize());
     if(broadcast) flushserver(true);
 }
