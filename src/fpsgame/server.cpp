@@ -2040,13 +2040,14 @@ namespace server
     }
         
     VARN(gamelimit, servergamelimit, 1, 600, 3600); // in seconds
+    VAR(persistbots, 0, 0, 1);
     void changemap(const char *s, int mode)
     {
         stopdemo();
         pausegame(false);
         changegamespeed(100);
         if(smode) smode->cleanup();
-        aiman::clearai();
+        if(!persistbots) aiman::clearai();
 
         gamemode = mode;
         gamemillis = 0;
@@ -2086,6 +2087,7 @@ namespace server
             if(m_mp(gamemode) && ci->state.state!=CS_SPECTATOR) sendspawn(ci);
         }
 
+        if(persistbots) loopv(bots) if(bots[i] && bots[i]->aireinit < 1) bots[i]->aireinit = 1;
         aiman::changemap();
 
         if(m_demo)

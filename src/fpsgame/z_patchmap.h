@@ -93,7 +93,7 @@ static void z_clearentpatches()
 {
     entity emptyent =
     {
-        vec(0),         // explict vec
+        vec(0),
         0, 0, 0, 0, 0,
         NOTUSED,
         0
