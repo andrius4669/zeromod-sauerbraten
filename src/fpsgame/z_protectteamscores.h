@@ -33,12 +33,12 @@ bool z_acceptfragval(clientinfo *ci, int fragval)
     switch(protectteamscores)
     {
         case 0: default: return true;
-        case 1: return fragval > 0 ? (ci->state.frags > 0) : (ci->state.frags >= 0);
-        case 2:
+        case 1:
         {
             int teamscore = z_calcteamscore(ci->state.teaminfos, ci->team, fragval);
             return fragval > 0 ? (teamscore > 0) : (teamscore >= 0);
         }
+        case 2: return fragval > 0 ? (ci->state.frags > 0) : (ci->state.frags >= 0);
     }
 }
 
