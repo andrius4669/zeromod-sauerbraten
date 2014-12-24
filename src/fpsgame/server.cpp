@@ -2258,7 +2258,7 @@ namespace server
                 actor->state.effectiveness += fragvalue*friends/float(max(enemies, 1));
             }
             teaminfo *t = m_teammode ? teaminfos.access(actor->team) : NULL;
-            if(t && z_acceptfragval(target, fragvalue)) t->frags += fragvalue;
+            if(t && z_acceptfragval(actor, fragvalue)) t->frags += fragvalue;
             sendf(-1, 1, "ri5", N_DIED, target->clientnum, actor->clientnum, actor->state.frags, t ? t->frags : 0);
             z_announcekill(actor, target, fragvalue);
             target->position.setsize(0);
