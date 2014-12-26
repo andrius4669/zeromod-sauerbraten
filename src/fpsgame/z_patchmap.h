@@ -39,10 +39,18 @@ static void z_patchent(int i, const entity &e)
 
 static void z_patchvar(const char *name, const tagval &v)
 {
-    putint(z_patchpacket, N_EDITVAR);
-    putint(z_patchpacket, v.type);
-    sendstring(name, z_patchpacket);
+    int idtype;
     switch(v.type)
+    {
+        case VAL_INT: idtype = ID_VAR; break;
+        case VAL_FLOAT: idtype = ID_FVAR; break;
+        case VAL_STR: idtype = ID_SVAR; break;
+        default: return;
+    }
+    putint(z_patchpacket, N_EDITVAR);
+    putint(z_patchpacket, idtype);
+    sendstring(name, z_patchpacket);
+    switch(idtype)
     {
         case ID_VAR:
             putint(z_patchpacket, v.getint());
