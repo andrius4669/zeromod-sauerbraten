@@ -3316,16 +3316,33 @@ namespace server
             case N_SAYTEAM:
             {
                 getstring(text, p);
-                if(!ci || !cq || (ci->state.state==CS_SPECTATOR && !ci->local && !ci->privilege) || !m_teammode || !cq->team[0]) break;
-                if(ci->spy || !allowmsg(ci, cq, type)) break;
+                if(!ci || !cq || (cq->state.state!=CS_SPECTATOR && !m_teammode) || !cq->team[0]) break;
+                if(!allowmsg(ci, cq, type)) break;
                 filtertext(text, text, true, true);
+                if(cq->spy)
+                {
+                    const char *msg = tempformatstring("\fs\f1[\f4spy\f1]\fr %s: \f1%s", cq->name, text);
+                    loopv(clients)
+                        if(clients[i]!=cq && clients[i]->spy && clients[i]->state.aitype==AI_NONE)
+                            sendf(clients[i]->clientnum, 1, "ris", N_SERVMSG, msg);
+                    z_log_sayteam(cq, text, "spychat");
+                    break;
+                }
+                if(cq->state.state==CS_SPECTATOR)
+                {
+                    loopv(clients)
+                        if(clients[i]!=cq && clients[i]->state.state==CS_SPECTATOR && clients[i]->state.aitype==AI_NONE)
+                            sendf(clients[i]->clientnum, 1, "riis", N_SAYTEAM, cq->clientnum, text);
+                    z_log_sayteam(cq, text, "spectator");
+                    break;
+                }
                 loopv(clients)
                 {
                     clientinfo *t = clients[i];
                     if(t==cq || t->state.state==CS_SPECTATOR || t->state.aitype != AI_NONE || strcmp(cq->team, t->team)) continue;
                     sendf(t->clientnum, 1, "riis", N_SAYTEAM, cq->clientnum, text);
                 }
-                if(cq) z_log_sayteam(cq, text, cq->team);
+                z_log_sayteam(cq, text, cq->team);
                 break;
             }
 
