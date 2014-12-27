@@ -17,7 +17,7 @@ struct z_sleepstruct
 };
 vector<z_sleepstruct> z_sleeps;
 
-void z_addsleep(int offset, int delay, bool reload, z_sleepfunc func, void *val, z_freevalfunc freeval)
+static void z_addsleep(int offset, int delay, bool reload, z_sleepfunc func, void *val, z_freevalfunc freeval)
 {
     z_sleepstruct &ss = z_sleeps.add();
     ss.millis = totalmillis + offset;
@@ -28,10 +28,12 @@ void z_addsleep(int offset, int delay, bool reload, z_sleepfunc func, void *val,
     ss.reload = reload;
 }
 
-void z_clearsleep()
+#if 0
+static void z_clearsleep()
 {
     z_sleeps.shrink(0);
 }
+#endif
 
 void z_checksleep()
 {
@@ -72,12 +74,12 @@ void z_checksleep()
     }
 }
 
-void z_sleepcmd_announce(void *str)
+static void z_sleepcmd_announce(void *str)
 {
     if(str) sendservmsg((char *)str);
 }
 
-void z_freestring(void *str) { delete[] (char *)str; }
+static void z_freestring(void *str) { delete[] (char *)str; }
 
 void s_announce(int *offset, int *delay, char *message)
 {
@@ -90,5 +92,28 @@ void s_clearannounces()
     loopv(z_sleeps) if(z_sleeps[i].func == z_sleepcmd_announce) z_sleeps.remove(i--);
 }
 COMMAND(s_clearannounces, "");
+
+static void z_sleepcmd_cubescript(void *cmd)
+{
+    if(cmd) execute((char *)cmd);
+}
+
+void s_sleep(int *offset, int *delay, char *script)
+{
+    z_addsleep(*offset, *delay, false, z_sleepcmd_cubescript, newstring(script), z_freestring);
+}
+COMMAND(s_sleep, "iis");
+
+void s_sleep_r(int *offset, int *delay, char *script)
+{
+    z_addsleep(*offset, *delay, true, z_sleepcmd_cubescript, newstring(script), z_freestring);
+}
+COMMAND(s_sleep_r, "iis");
+
+void s_clearsleep()
+{
+    loopv(z_sleeps) if(z_sleeps[i].func == z_sleepcmd_cubescript) z_sleeps.remove(i--);
+}
+COMMAND(s_clearsleep, "");
 
 #endif // Z_SCRIPTING_H
