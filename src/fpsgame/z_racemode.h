@@ -165,10 +165,17 @@ struct raceservmode: servmode
         }
     }
 
+    static bool clientready(clientinfo *ci)
+    {
+        if(z_autosendmap == 2) return ci->mapcrc && !ci->getmap && ci->maploaded;
+        if(z_autosendmap == 1) return !ci->getmap && ci->maploaded;
+        return ci->mapcrc && ci->maploaded;
+    }
+
     void moved(clientinfo *ci, const vec &oldpos, bool oldclip, const vec &newpos, bool newclip)
     {
         if(state != ST_STARTED && state != ST_FINISHED) return;
-        if(ci->state.flags) return;     /* flags are reused for race cheating info */
+        if(ci->state.flags || !clientready(ci)) return; /* flags are reused for race cheating info */
         int avaiable_place = -1;
         loopv(race_winners)
         {
@@ -230,7 +237,7 @@ struct raceservmode: servmode
             ci->state.flags = 0;    /* flags field is reused for cheating info */
             loopvrev(race_winners) if(race_winners[i].cn == ci->clientnum)
             {
-                sendservmsgf("\f6race: \f7%s \f2left \f6%s PLACE!!", colorname(ci), placename(i));
+                if(state < ST_INT) sendservmsgf("\f6race: \f7%s \f2left \f6%s PLACE!!", colorname(ci), placename(i));
                 race_winners[i].cn = -1;
             }
         }
@@ -262,18 +269,7 @@ struct raceservmode: servmode
         if(z_autosendmap != 1 && !smapname[0]) return true;
         loopv(clients) if(clients[i]->state.aitype == AI_NONE && clients[i]->state.state != CS_SPECTATOR)
         {
-            if(z_autosendmap == 0)
-            {
-                if(!clients[i]->mapcrc || !clients[i]->maploaded) return false;
-            }
-            else if(z_autosendmap == 1)
-            {
-                if(clients[i]->getmap || !clients[i]->maploaded) return false;
-            }
-            else
-            {
-                if(!clients[i]->mapcrc || clients[i]->getmap || !clients[i]->maploaded) return false;
-            }
+            if(!clientready(clients[i])) return false;
         }
         return true;
     }

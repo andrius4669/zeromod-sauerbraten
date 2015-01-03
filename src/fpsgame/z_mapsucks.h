@@ -15,23 +15,19 @@ Z_TRIGGER(z_mapsucks_trigger, Z_TRIGGER_STARTUP);
 
 void z_mapsucks(clientinfo *ci)
 {
-    vector<uint> msips;
-    int players = 0;
+    vector<uint> plips, msips;
     if(interm) return;
     bool changed = ci->mapsucks <= 0;
     ci->mapsucks = 1;
     loopv(clients) if(clients[i]->state.aitype==AI_NONE && clients[i]->state.state!=CS_SPECTATOR)
     {
-        players++;
-        if(clients[i]->mapsucks > 0)
-        {
-            uint ip = getclientip(clients[i]->clientnum);
-            if(msips.find(ip)<0) msips.add(ip);
-        }
+        uint ip = getclientip(clients[i]->clientnum);
+        if(plips.find(ip)<0) plips.add(ip);
+        if(clients[i]->mapsucks > 0 && msips.find(ip)<0) msips.add(ip);
     }
     int needvotes;
-    if(players > 2) needvotes = (players + 1) / 2;
-    else needvotes = (players + 2) / 2;
+    if(plips.length() > 2) needvotes = (plips.length() + 1) / 2;
+    else needvotes = (plips.length() + 2) / 2;
     if(changed) sendservmsgf("%s thinks this map sucks. current mapsucks votes: [%d/%d]. you can rate this map with #mapsucks",
                                 colorname(ci), msips.length(), needvotes);
     if(msips.length() >= needvotes)
