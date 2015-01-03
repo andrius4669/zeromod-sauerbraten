@@ -11,7 +11,7 @@ void z_setmrt(const char *str)
 }
 SVARF(maprotationmode, "", z_setmrt(maprotationmode));
 
-VAR(maprotation_norepeat, 0, 0, 10);
+VAR(maprotation_norepeat, 0, 0, 256);
 
 vector<char *> z_oldmaps;
 
@@ -32,7 +32,7 @@ bool z_nextmaprotation()
         curmaprotation = rnd(numrots) + minmaprotation;
         found = false;
         loopv(z_oldmaps) if(!strcmp(maprotations[curmaprotation].map, z_oldmaps[i])) { found = true; break; }
-    } while(found && c++ < 100);
+    } while(found && c++ < 1024);
     while(z_oldmaps.length() > max(maprotation_norepeat-1, 0)) delete[] z_oldmaps.remove(0);
     if(maprotation_norepeat) z_oldmaps.add(newstring(maprotations[curmaprotation].map));
     return true;
