@@ -76,4 +76,11 @@ bool allowmsg(clientinfo *ci, clientinfo *cq, int type)
     }
 }
 
+// included here basically because this is included in right place in server.cpp
+int z_timeleft()
+{
+    if(smode==&racemode) return racemode.secsleft();
+    return -1;
+}
+
 #endif // Z_MSGFILTER_H

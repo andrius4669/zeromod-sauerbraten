@@ -400,6 +400,11 @@ struct raceservmode: servmode
         }
     }
 
+    int secsleft() const
+    {
+        return (state == ST_STARTED && statemillis) ? max((statemillis - totalmillis + 500)/1000, 0) : 0;
+    }
+
     void intermission()
     {
         vector<char> buf;

@@ -3809,7 +3809,8 @@ namespace server
         putint(p, gamepaused || gamespeed != 100 ? 7 : 5);                   // number of attrs following
         putint(p, PROTOCOL_VERSION);    // generic attributes, passed back below
         putint(p, gamemode);
-        putint(p, m_timed ? max((gamelimit - gamemillis)/1000, 0) : 0);
+        int z_tl = z_timeleft();
+        putint(p, z_tl >= 0 ? z_tl : m_timed ? max((gamelimit - gamemillis)/1000, 0) : 0);
         putint(p, maxclients);
         putint(p, serverpass[0] ? MM_PASSWORD : (!m_mp(gamemode) ? MM_PRIVATE : (mastermode || mastermask&MM_AUTOAPPROVE ? mastermode : MM_AUTH)));
         if(gamepaused || gamespeed != 100)
