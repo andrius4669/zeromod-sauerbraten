@@ -1,22 +1,72 @@
 #ifndef Z_LOG_H
 #define Z_LOG_H
 
-static inline
-void z_log_kick(clientinfo *actor, const char *aname, const char *adesc, int apriv, clientinfo *victim, const char *reason)
+static struct z_log_kickerinfostruct
+{
+    clientinfo *ci;
+    int priv;
+
+    z_log_kickerinfostruct(): ci(NULL), priv(PRIV_NONE) {}
+
+    void set(clientinfo *i, int p) { ci = i; priv = p; }
+
+    void reset()
+    {
+        ci = NULL;
+        priv = PRIV_NONE;
+    }
+} z_log_kickerinfo;
+
+static inline void z_log_kick(clientinfo *actor, const char *aname, const char *adesc, int priv, clientinfo *victim, const char *reason)
 {
     const char *kicker;
     if(!aname) kicker = tempformatstring("%s (%d)", actor->name, actor->clientnum);
     else
     {
-        if(adesc && adesc[0]) kicker = tempformatstring("%s (%d) as '%s' [%s] (%s)", actor->name, actor->clientnum, aname, adesc, privname(apriv));
-        else kicker = tempformatstring("%s (%d) as '%s' (%s)", actor->name, actor->clientnum, aname, privname(apriv));
+        if(adesc && adesc[0]) kicker = tempformatstring("%s (%d) as '%s' [%s] (%s)", actor->name, actor->clientnum, aname, adesc, privname(priv));
+        else kicker = tempformatstring("%s (%d) as '%s' (%s)", actor->name, actor->clientnum, aname, privname(priv));
     }
     if(reason && *reason) logoutf("kick: %s kicked %s (%d) because: %s", kicker, victim->name, victim->clientnum, reason);
     else logoutf("kick: %s kicked %s (%d)", kicker, victim->name, victim->clientnum);
+    z_log_kickerinfo.set(actor, priv);
 }
 
-static inline
-void z_log_setmaster(clientinfo *master, bool val, bool pass, const char *aname, const char *adesc, const char *priv, clientinfo *by)
+static inline void z_log_kickdone()
+{
+    z_log_kickerinfo.reset();
+}
+
+static inline void z_showkick(const char *kicker, clientinfo *actor, clientinfo *vinfo, const char *reason)
+{
+    const char *kickstr = reason && reason[0]
+        ? tempformatstring("%s kicked %s because: %s", kicker, colorname(vinfo), reason)
+        : tempformatstring("%s kicked %s", kicker, colorname(vinfo));
+    if(!actor->spy) { sendservmsg(kickstr); return; }
+    // if kicker is spy, don't show his name to normal clients
+    const char *spykickstr = reason && reason[0]
+        ? tempformatstring("%s was kicked", colorname(vinfo))
+        : tempformatstring("%s was kicked because: %s", colorname(vinfo), reason);
+    // allocate packetbufs for messages
+    packetbuf kickpack(MAXTRANS, ENET_PACKET_FLAG_RELIABLE), spykickpack(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
+    // fill in packetbuf for admins
+    putint(kickpack, N_SERVMSG);
+    sendstring(kickstr, kickpack);
+    kickpack.finalize();
+    // packetbuf for normal clients (don't show who kicked)
+    putint(spykickpack, N_SERVMSG);
+    sendstring(spykickstr, spykickpack);
+    spykickpack.finalize();
+    // distribute messages
+    recordpacket(1, spykickpack.packet->data, spykickpack.packet->dataLength);
+    loopv(clients) if(clients[i]->state.aitype==AI_NONE)
+    {
+        clientinfo *ci = clients[i];
+        if(ci==actor || ci->local || ci->privilege>=PRIV_ADMIN) sendpacket(ci->clientnum, 1, kickpack.packet);
+        else sendpacket(ci->clientnum, 1, spykickpack.packet);
+    }
+}
+
+static inline void z_log_setmaster(clientinfo *master, bool val, bool pass, const char *aname, const char *adesc, const char *priv, clientinfo *by)
 {
     const char *mode;
     if(by) mode = tempformatstring("%s by %s (%d)", val ? "passed" : "taken", by->name, by->clientnum); // someone else used /setmaster
@@ -35,69 +85,70 @@ void z_log_setmaster(clientinfo *master, bool val, bool pass, const char *aname,
     }
 }
 
-static inline
-void z_log_say(clientinfo *cq, const char *tp)
+static inline void z_log_say(clientinfo *cq, const char *tp)
 {
     if(!isdedicatedserver()) return;
     if(cq->state.aitype==AI_NONE) logoutf("chat: %s (%d): %s", cq->name, cq->clientnum, tp);
     else logoutf("chat: %s [%d:%d]: %s", cq->name, cq->ownernum, cq->clientnum, tp);
 }
 
-static inline
-void z_log_sayteam(clientinfo *cq, const char *text, const char *team)
+static inline void z_log_sayteam(clientinfo *cq, const char *text, const char *team)
 {
     if(!isdedicatedserver()) return;
     if(cq->state.aitype==AI_NONE) logoutf("chat: %s (%d) <%s>: %s", cq->name, cq->clientnum, team, text);
     else logoutf("chat: %s [%d:%d] <%s>: %s", cq->name, cq->ownernum, cq->clientnum, team, text);
 }
 
-static
-void z_log_rename(clientinfo *ci, const char *name, clientinfo *actor = NULL)
+static void z_log_rename(clientinfo *ci, const char *name, clientinfo *actor = NULL)
 {
     if(!isdedicatedserver() || ci->state.aitype!=AI_NONE) return;
     if(actor) logoutf("rename: %s (%d) is now known as %s by %s (%d)", ci->name, ci->clientnum, name, actor->name, actor->clientnum);
     else logoutf("rename: %s (%d) is now known as %s", ci->name, ci->clientnum, name);
 }
 
-static inline
-void z_log_servcmd(clientinfo *ci, const char *cmd)
+static inline void z_log_servcmd(clientinfo *ci, const char *cmd)
 {
     logoutf("servcmd: %s (%d): %s", ci->name, ci->clientnum, cmd);
 }
 
-VAR(discmsg_privacy, 0, 0, 1);      // avoid broadcasting clients' ips to unauthorized clients
-VAR(discmsg_verbose, 0, 1, 2);      // (only applies for not connected clients) whether show disc msg (2 - force)
-VAR(discmsg_restricted, 0, 1, 1);   // whether we should treat master or admin as authorized client
+VAR(discmsg_privacy, 0, 0, 1);          // avoid broadcasting clients' ips to unauthorized clients
+VAR(discmsg_verbose, 0, 1, 2);          // (only applies for not connected clients) whether show disc msg (2 - force)
+VAR(discmsg_showip_admin, 0, 1, 1);     // whether we should treat master or admin as authorized client
+VAR(discmsg_showip_kicker, 0, 0, 1);    // whether we should treat kicker specially
 
-template<size_t N>
-static void z_discmsg_print(char (&s)[N], clientinfo *ci, int n, const char *msg, bool hideip)
+static void z_discmsg_print(char (&s)[MAXSTRLEN], clientinfo *ci, int n, const char *msg, bool hideip)
 {
-    if(ci)
-    {
-        if(hideip)
-        {
+    if(ci) {
+        if(hideip) {
             if(msg) formatstring(s)("client %s disconnected because: %s", colorname(ci), msg);
             else formatstring(s)("client %s disconnected", colorname(ci));
-        }
-        else
-        {
+        } else {
             if(msg) formatstring(s)("client %s (%s) disconnected because: %s", colorname(ci), getclienthostname(n), msg);
             else formatstring(s)("client %s (%s) disconnected", colorname(ci), getclienthostname(n));
         }
-    }
-    else
-    {
-        if(hideip)
-        {
+    } else {
+        if(hideip) {
             if(msg) formatstring(s)("client disconnected because: %s", msg);
             else copystring(s, "client disconnected");
-        }
-        else
-        {
+        } else {
             if(msg) formatstring(s)("client (%s) disconnected because: %s", getclienthostname(n), msg);
             else formatstring(s)("client (%s) disconnected", getclienthostname(n));
         }
     }
+}
+
+static void z_discmsg_recordmsg(const char *msg)
+{
+    vector<uchar> buf;
+    putint(buf, N_SERVMSG);
+    sendstring(msg, buf);
+    recordpacket(1, buf.getbuf(), buf.length());
+}
+
+static bool z_discmsg_canseeip(clientinfo *ci)
+{
+    if(ci == z_log_kickerinfo.ci) return discmsg_showip_kicker || ci->local || z_log_kickerinfo.priv>=(discmsg_showip_admin ? PRIV_ADMIN : PRIV_MASTER);
+    return ci->local || ci->privilege>=(discmsg_showip_admin ? PRIV_ADMIN : PRIV_MASTER);
 }
 
 static void z_discmsg(clientinfo *ci, int n, const char *msg, bool forced)
@@ -117,7 +168,7 @@ static void z_discmsg(clientinfo *ci, int n, const char *msg, bool forced)
             *s = *sp = 0;
             loopv(clients) if(clients[i]->state.aitype==AI_NONE)
             {
-                if(clients[i]->local || clients[i]->privilege>=(discmsg_restricted ? PRIV_ADMIN : PRIV_MASTER))
+                if(z_discmsg_canseeip(clients[i]))
                 {
                     if(!*s) z_discmsg_print(s, ci, n, msg, false);
                     sendf(clients[i]->clientnum, 1, "ris", N_SERVMSG, s);
@@ -127,6 +178,11 @@ static void z_discmsg(clientinfo *ci, int n, const char *msg, bool forced)
                     if(!*sp) z_discmsg_print(sp, ci, n, msg, true);
                     sendf(clients[i]->clientnum, 1, "ris", N_SERVMSG, sp);
                 }
+            }
+            if(demorecord)
+            {
+                if(!*sp) z_discmsg_print(sp, ci, n, msg, true);
+                z_discmsg_recordmsg(sp);
             }
         }
     }
@@ -143,7 +199,7 @@ static void z_discmsg(clientinfo *ci, int n, const char *msg, bool forced)
             *s = *sp = 0;
             loopv(clients) if(clients[i]->state.aitype==AI_NONE)
             {
-                if(clients[i]->local || clients[i]->privilege>=(discmsg_restricted ? PRIV_ADMIN : PRIV_MASTER))
+                if(z_discmsg_canseeip(clients[i]))
                 {
                     if(!*s) z_discmsg_print(s, NULL, n, msg, false);
                     sendf(clients[i]->clientnum, 1, "ris", N_SERVMSG, s);
@@ -153,6 +209,11 @@ static void z_discmsg(clientinfo *ci, int n, const char *msg, bool forced)
                     if(!*sp) z_discmsg_print(sp, NULL, n, msg, true);
                     sendf(clients[i]->clientnum, 1, "ris", N_SERVMSG, sp);
                 }
+            }
+            if(demorecord && discmsg_verbose>=2)
+            {
+                if(!*sp) z_discmsg_print(sp, NULL, n, msg, true);
+                z_discmsg_recordmsg(sp);
             }
         }
     }

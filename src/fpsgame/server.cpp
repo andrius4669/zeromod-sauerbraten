@@ -1528,12 +1528,12 @@ namespace server
                     else formatstring(kicker)("%s as '\fs\f5%s\fr'", colorname(ci), authname);
                 }
                 else copystring(kicker, colorname(ci));
-                if(reason && reason[0]) sendservmsgf("%s kicked %s because: %s", kicker, colorname(vinfo), reason);
-                else sendservmsgf("%s kicked %s", kicker, colorname(vinfo));
-                z_log_kick(ci, authname, authdesc, authpriv, vinfo, reason);
+                z_showkick(kicker, ci, vinfo, reason);
+                z_log_kick(ci, authname, authdesc, priv, vinfo, reason);
                 uint ip = getclientip(victim);
                 addban(ip, 4*60*60000);
                 kickclients(ip, ci, priv);
+                z_log_kickdone();
             }
         }
         return false;
@@ -3187,6 +3187,7 @@ namespace server
 
             case N_TRYSPAWN:
                 if(!ci || !cq || cq->state.state!=CS_DEAD || cq->state.lastspawn>=0 || (smode && !smode->canspawn(cq))) break;
+                z_maploaded(ci);
                 if(!ci->clientmap[0] && !ci->mapcrc)
                 {
                     ci->mapcrc = -1;
@@ -3217,6 +3218,7 @@ namespace server
             {
                 int ls = getint(p), gunselect = getint(p);
                 if(!cq || (cq->state.state!=CS_ALIVE && cq->state.state!=CS_DEAD) || ls!=cq->state.lifesequence || cq->state.lastspawn<0) break;
+                z_maploaded(ci);
                 cq->state.lastspawn = -1;
                 cq->state.state = CS_ALIVE;
                 cq->state.lastdeath = gamemillis; // reuse lastdeath to know spawntime
@@ -3450,7 +3452,6 @@ namespace server
             }
 
             case N_PING:
-                if(!ci->maploaded && totalmillis-ci->connectmillis > 2000) z_maploaded(ci);
                 sendf(sender, 1, "i2", N_PONG, getint(p));
                 break;
 
