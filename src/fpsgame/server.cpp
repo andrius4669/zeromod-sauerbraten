@@ -3137,7 +3137,11 @@ namespace server
             case N_EDITMODE:
             {
                 int val = getint(p);
-                if(!ci->local && !m_edit) break;
+                if(!ci->local && !m_edit)
+                {
+                    if(ci->maploaded) { disconnect_client(sender, DISC_MSGERR); return; }
+                    break;
+                }
                 if(val ? ci->state.state!=CS_ALIVE && ci->state.state!=CS_DEAD : ci->state.state!=CS_EDITING) break;
                 if(!allowmsg(ci, ci, type)) break;
                 if(smode)
