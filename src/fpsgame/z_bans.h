@@ -5,6 +5,7 @@ void z_teamkillspectate(uint ip)
 {
     loopv(clients) if(clients[i]->state.aitype==AI_NONE && clients[i]->state.state!=CS_SPECTATOR && getclientip(clients[i]->clientnum)==ip)
     {
+        if(clients[i]->local || clients[i]->privilege>=PRIV_MASTER) continue;
         extern void forcespectator(clientinfo *);
         forcespectator(clients[i]);
         sendf(clients[i]->clientnum, 1, "ris", N_SERVMSG, "you got spectated because teamkills limit was reached");
