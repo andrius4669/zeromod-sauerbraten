@@ -405,10 +405,29 @@ namespace server
         void setdisconnectreason(const char *reason) { DELETEP(disc_reason); disc_reason = newstring(reason); }
     };
 
+    enum { BAN_KICK = 0, BAN_TEAMKILL, BAN_SPECTATE, BAN_MUTE };
     struct ban
     {
         int time, expire;
         uint ip;
+        int type;
+        char *reason;   // unique pointer
+        ban(): reason(NULL) {}
+        ban(const ban &b): reason(NULL) { *this = b; }
+        ~ban() { delete[] reason; }
+        ban &operator =(const ban &b)
+        {
+            if(&b != this) {
+                time = b.time;
+                expire = b.expire;
+                ip = b.ip;
+                type = b.type;
+                delete[] reason;
+                reason = b.reason;
+                ((ban *)&b)->reason = NULL;    // ugly hack
+            }
+            return *this;
+        }
     };
 
     namespace aiman
@@ -445,13 +464,15 @@ namespace server
     vector<uint> allowedips;
     vector<ban> bannedips;
 
-    void addban(uint ip, int expire)
+    void addban(uint ip, int expire, int type = BAN_KICK, const char *reason = NULL)
     {
         allowedips.removeobj(ip);
         ban b;
         b.time = totalmillis;
         b.expire = totalmillis + expire;
         b.ip = ip;
+        b.type = type;
+        if(reason && reason[0]) b.reason = newstring(reason);
         loopv(bannedips) if(bannedips[i].expire - b.expire > 0) { bannedips.insert(i, b); return; }
         bannedips.add(b);
     }
@@ -731,6 +752,9 @@ namespace server
         tk.teamkills = n;
     }
 
+    VARF(teamkillspectate, 0, 0, 1, { if(!teamkillspectate) loopv(bannedips) if(bannedips[i].type==BAN_TEAMKILL) kickclients(bannedips[i].ip); });
+    #include "z_bans.h"
+
     void checkteamkills()
     {
         teamkillkick *kick = NULL;
@@ -741,8 +765,9 @@ namespace server
             teamkillinfo &tk = teamkills[i];
             if(tk.teamkills >= kick->limit)
             {
-                if(kick->ban > 0) addban(tk.ip, kick->ban);
-                kickclients(tk.ip);
+                if(kick->ban > 0) addban(tk.ip, kick->ban, BAN_TEAMKILL);
+                if(!teamkillspectate) kickclients(tk.ip);
+                else z_teamkillspectate(tk.ip);
                 teamkills.removeunordered(i);
             }
         }
@@ -1531,7 +1556,7 @@ namespace server
                 z_showkick(kicker, ci, vinfo, reason);
                 z_log_kick(ci, authname, authdesc, priv, vinfo, reason);
                 uint ip = getclientip(victim);
-                addban(ip, 4*60*60000);
+                addban(ip, 4*60*60000, BAN_KICK, reason);
                 kickclients(ip, ci, priv);
                 z_log_kickdone();
             }
@@ -2735,7 +2760,7 @@ namespace server
         if(adminpass[0] && checkpassword(ci, adminpass, pwd)) return DISC_NONE;
         if(numclients(-1, false, true)>=maxclients) return DISC_MAXCLIENTS;
         uint ip = getclientip(ci->clientnum);
-        loopv(bannedips) if(bannedips[i].ip==ip) return DISC_IPBAN;
+        if(z_checkban(ip)) return DISC_IPBAN;
         if(checkgban(ip)) return DISC_IPBAN;
         if(mastermode>=MM_PRIVATE && allowedips.find(ip)<0) return DISC_PRIVATE;
         return DISC_NONE;
@@ -2937,7 +2962,7 @@ namespace server
         ci->connectauth = 0;
         ci->connected = true;
         ci->needclipboard = totalmillis ? totalmillis : 1;
-        if(mastermode>=MM_LOCKED) ci->state.state = CS_SPECTATOR;
+        if(mastermode>=MM_LOCKED || z_applyspecban(ci)) ci->state.state = CS_SPECTATOR;
         ci->state.lasttimeplayed = lastmillis;
 
         const char *worst = m_teammode ? chooseworstteam(NULL, ci) : NULL;
@@ -2960,6 +2985,7 @@ namespace server
         if(m_edit && z_autosendmap == 1) z_sendmap(ci, NULL);
         extern bool z_autoeditmute; ci->editmute = z_autoeditmute;
         extern int z_nodamage; ci->nodamage = z_nodamage;
+        if(!ci->local && z_checkmuteban(getclientip(ci->clientnum))) ci->chatmute = true;
     }
 
     #include "z_msgfilter.h"
@@ -3519,7 +3545,7 @@ namespace server
             case N_SPECTATOR:
             {
                 int spectator = getint(p), val = getint(p);
-                if(!ci->privilege && !ci->local && (spectator!=sender || (ci->state.state==CS_SPECTATOR && (mastermode>=MM_LOCKED || ci->specmute)))) break;
+                if(!ci->privilege && !ci->local && (spectator!=sender || (ci->state.state==CS_SPECTATOR && (mastermode>=MM_LOCKED || ci->specmute || z_applyspecban(ci))))) break;
                 clientinfo *spinfo = (clientinfo *)getclientinfo(spectator); // no bots
                 if(!spinfo || !spinfo->connected || (spinfo->state.state==CS_SPECTATOR ? val : !val)) break;
                 if(spinfo->spy) break;
