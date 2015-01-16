@@ -3,12 +3,27 @@
 
 VAR(protectteamscores, 0, 0, 2);
 
+static void z_pruneteaminfos(hashset<teaminfo> *ti)
+{
+    int oldnum = ti->numelems;
+    enumerates(*ti, teaminfo, t,
+               if(!t.frags) ti->remove(t.team);
+    );
+    if(ti->numelems < oldnum) return;
+    enumerates(*ti, teaminfo, t,
+               if(t.frags<=0) ti->remove(t.team);
+    );
+    if(ti->numelems < oldnum) return;
+    ti->clear();
+}
+
 static int z_calcteamscore(hashset<teaminfo> *&ti, const char *team, int fragval)
 {
     if(!ti) ti = new hashset<teaminfo>(1<<7);
     teaminfo *t = ti->access(team);
     if(!t)
     {
+        if(ti->numelems>=64) z_pruneteaminfos(ti);
         t = &ti->operator[](team);
         copystring(t->team, team, sizeof(t->team));
         t->frags = 0;
