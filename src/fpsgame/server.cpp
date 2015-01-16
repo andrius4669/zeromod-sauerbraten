@@ -2239,6 +2239,7 @@ namespace server
     }
 
     #include "z_awards.h"
+    VARN(intermission, serverintermission, 1, 10, 3600);
     void checkintermission()
     {
         if(gamemillis >= gamelimit && !interm)
@@ -2247,7 +2248,7 @@ namespace server
             z_awards();
             if(smode) smode->intermission();
             changegamespeed(100);
-            interm = gamemillis + 10000;
+            interm = gamemillis + serverintermission*1000;
         }
     }
 
