@@ -12,6 +12,8 @@ static GeoIP *z_gi = NULL, *z_gic = NULL;
 
 #endif // USE_GEOIP
 
+VAR(geoip_reload, 0, 1, 1);
+
 static void z_reset_geoip_country()
 {
 #ifdef USE_GEOIP
@@ -32,11 +34,11 @@ static void z_reset_geoip()
     z_reset_geoip_city();
 }
 
-VARF(geoip_enable, 0, 0, 1, z_reset_geoip());
-VARF(geoip_country_enable, 0, 1, 1, z_reset_geoip_country());
-SVARF(geoip_country_database, "GeoIP.dat", z_reset_geoip_country());
-VARF(geoip_city_enable, 0, 0, 1, z_reset_geoip_city());
-SVARF(geoip_city_database, "GeoLiteCity.dat", z_reset_geoip_city());
+VARF(geoip_enable, 0, 0, 1, { if(geoip_reload) z_reset_geoip(); });
+VARF(geoip_country_enable, 0, 1, 1, { if(geoip_reload) z_reset_geoip_country(); });
+SVARF(geoip_country_database, "GeoIP.dat", { if(geoip_reload) z_reset_geoip_country(); });
+VARF(geoip_city_enable, 0, 0, 1, { if(geoip_reload) z_reset_geoip_city(); });
+SVARF(geoip_city_database, "GeoLiteCity.dat", { if(geoip_reload) z_reset_geoip_city(); });
 
 VAR(geoip_show_ip, 0, 2, 2);
 VAR(geoip_show_network, 0, 1, 2);
