@@ -20,11 +20,11 @@ static void z_geoip_print(vector<char> &buf, clientinfo *ci, bool admin)
     const char *comp[] =
     {
         (admin ? geoip_show_ip : geoip_show_ip == 1) ? getclienthostname(ci->clientnum) : NULL,
-        (admin ? geoip_show_network : geoip_show_network == 1) ? ci->geoip.network : NULL,
-        (admin ? geoip_show_city : geoip_show_city == 1) ? ci->geoip.city : NULL,
-        (admin ? geoip_show_region : geoip_show_region == 1) ? ci->geoip.region : NULL,
-        (admin ? geoip_show_country : geoip_show_country == 1) ? ci->geoip.country : NULL,
-        (admin ? geoip_show_continent : geoip_show_continent == 1) ? ci->geoip.continent : NULL
+        (admin ? geoip_show_network : geoip_show_network == 1) ? ci->xi.geoip.network : NULL,
+        (admin ? geoip_show_city : geoip_show_city == 1) ? ci->xi.geoip.city : NULL,
+        (admin ? geoip_show_region : geoip_show_region == 1) ? ci->xi.geoip.region : NULL,
+        (admin ? geoip_show_country : geoip_show_country == 1) ? ci->xi.geoip.country : NULL,
+        (admin ? geoip_show_continent : geoip_show_continent == 1) ? ci->xi.geoip.continent : NULL
     };
     int lastc = -1;
     loopi(sizeof(comp)/sizeof(comp[0])) if(comp[i])
@@ -129,7 +129,7 @@ SCOMMANDH(getip, PRIV_NONE, z_servcmd_geoip);
 
 ICOMMAND(s_geoip_resolveclients, "", (),
 {
-    loopv(clients) if(clients[i]->state.aitype == AI_NONE) z_geoip_resolveclient(clients[i]->geoip, getclientip(clients[i]->clientnum));
+    loopv(clients) if(clients[i]->state.aitype == AI_NONE) z_geoip_resolveclient(clients[i]->xi.geoip, getclientip(clients[i]->clientnum));
 });
 
 #endif // Z_GEOIPSERVER_H

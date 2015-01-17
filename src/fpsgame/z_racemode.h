@@ -20,6 +20,7 @@ void z_servcmd_racemode(int argc, char **argv, int sender)
 SCOMMANDA(racemode, PRIV_ADMIN, z_servcmd_racemode, 1);
 
 VAR(racemode_waitmap, 0, 10000, INT_MAX);
+VAR(racemode_sendspectators, 0, 1, 1);
 VAR(racemode_startmillis, 0, 5000, INT_MAX);
 VAR(racemode_gamelimit, 0, 0, INT_MAX);
 VAR(racemode_winnerwait, 0, 30000, INT_MAX);
@@ -256,12 +257,26 @@ struct raceservmode: servmode
 
     static void sendmaptoclients()
     {
-        if(z_autosendmap == 1)
+        switch(z_autosendmap)
         {
-            sendservmsg("[sending map to clients]");
-            loopv(clients) if(clients[i]->state.aitype==AI_NONE) z_sendmap(clients[i], NULL, NULL, true, false);
+            case 0:
+                sendservmsg("[waiting for clients to load map]");
+                return;
+            case 1:
+                sendservmsg("[sending map to clients]");
+                loopv(clients) if(clients[i]->state.aitype==AI_NONE && (racemode_sendspectators || clients[i]->state.state!=CS_SPECTATOR))
+                {
+                    z_sendmap(clients[i], NULL, NULL, true, false);
+                }
+                return;
+            case 2:
+                sendservmsg("[waiting for clients to load map]");
+                if(racemode_sendspectators) loopv(clients) if(clients[i]->state.aitype==AI_NONE && clients[i]->state.state==CS_SPECTATOR)
+                {
+                    z_sendmap(clients[i], NULL, NULL, true, false);
+                }
+                return;
         }
-        else sendservmsg("[waiting for clients to load map]");
     }
 
     static bool canstartrace()

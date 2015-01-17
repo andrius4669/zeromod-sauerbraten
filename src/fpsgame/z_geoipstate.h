@@ -6,13 +6,13 @@ struct geoipstate
     char *network, *city, *region, *country, *continent;
     // 1 - anonymous proxy, 2 - satellite provider
     int anonymous;
-    
+
     geoipstate(): network(NULL), city(NULL), region(NULL),
         country(NULL), continent(NULL), anonymous(0) {}
     geoipstate(const geoipstate &s): network(NULL), city(NULL), region(NULL),
         country(NULL), continent(NULL), anonymous(0) { *this = s; }
     ~geoipstate() { cleanup(); }
-    
+
     void cleanup()
     {
         DELETEP(network);
@@ -22,7 +22,7 @@ struct geoipstate
         DELETEP(continent);
         anonymous = 0;
     }
-    
+
     geoipstate &operator =(const geoipstate &s)
     {
         if(&s != this)

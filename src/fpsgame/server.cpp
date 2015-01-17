@@ -226,7 +226,7 @@ namespace server
 
     extern int gamemillis, nextexceeded;
 
-    #include "z_geoipstate.h"
+    #include "z_extrainfo.h"
     struct clientinfo
     {
         int clientnum, ownernum, connectmillis, sessionid, overflow;
@@ -256,15 +256,13 @@ namespace server
         int authkickvictim;
         char *authkickreason;
 
-        char *disc_reason;
+        z_extrainfo xi;
         bool chatmute, specmute, editmute, spy, invpriv, namemute, slay;
         int lastchat, lastedit, maploaded;
-        geoipstate geoip;
         int nodamage, mapsucks;
 
-        clientinfo() : getdemo(NULL), getmap(NULL), clipboard(NULL), authchallenge(NULL), authkickreason(NULL),
-            disc_reason(NULL) { reset(); }
-        ~clientinfo() { events.deletecontents(); cleanclipboard(); cleanauth(); DELETEP(disc_reason); }
+        clientinfo() : getdemo(NULL), getmap(NULL), clipboard(NULL), authchallenge(NULL), authkickreason(NULL) { reset(); }
+        ~clientinfo() { events.deletecontents(); cleanclipboard(); cleanauth(); }
 
         void addevent(gameevent *e)
         {
@@ -373,8 +371,7 @@ namespace server
             needclipboard = 0;
             cleanclipboard();
             cleanauth();
-            geoip.cleanup();
-            DELETEP(disc_reason);
+            xi.reset();
             chatmute = specmute = editmute = spy = invpriv = namemute = slay = false;
             lastchat = lastedit = 0;
             nodamage = 0;
@@ -401,8 +398,6 @@ namespace server
             if(isinvpriv(priv, inv)) return ci && (ci->privilege >= priv || ci->local || ci->clientnum == clientnum);
             return true;
         }
-
-        void setdisconnectreason(const char *reason) { DELETEP(disc_reason); disc_reason = newstring(reason); }
     };
 
     enum { BAN_KICK = 0, BAN_TEAMKILL, BAN_SPECTATE, BAN_MUTE };
@@ -2976,7 +2971,7 @@ namespace server
         aiman::addclient(ci);
 
         logoutf("connect: %s (%d) joined", ci->name, ci->clientnum);
-        z_geoip_resolveclient(ci->geoip, getclientip(ci->clientnum));
+        z_geoip_resolveclient(ci->xi.geoip, getclientip(ci->clientnum));
         z_geoip_show(ci);
 
         if(m_demo) setupdemoplayback();
@@ -2992,6 +2987,7 @@ namespace server
     #include "z_msgfilter.h"
     #include "z_servcmd.h"
     #include "z_maploaded.h"
+    #include "z_antiflood.h"
 
     VAR(serverautomaster, 0, 0, 2);
 
@@ -3336,6 +3332,7 @@ namespace server
                 getstring(text, p);
                 char *tp = text;
                 if(z_servcmd_check(tp)) { z_servcmd_parse(sender, tp); break; }
+                Z_ANTIFLOOD(ci, N_TEXT);
                 if(!allowmsg(ci, cq, type)) break;
                 filtertext(text, text, true, true);
                 if(cq) z_log_say(cq, tp);
@@ -3350,6 +3347,7 @@ namespace server
             {
                 getstring(text, p);
                 if(!ci || !cq || (cq->state.state!=CS_SPECTATOR && !m_teammode) || !cq->team[0]) break;
+                Z_ANTIFLOOD(ci, N_SAYTEAM);
                 if(!allowmsg(ci, cq, type)) break;
                 filtertext(text, text, true, true);
                 if(cq->spy)
@@ -3382,6 +3380,7 @@ namespace server
             case N_SWITCHNAME:
             {
                 getstring(text, p);
+                Z_ANTIFLOOD(ci, N_SWITCHNAME);
                 if(!allowmsg(ci, ci, type)) break;
                 filtertext(text, text, false, false, MAXNAMELEN);
                 if(!text[0]) copystring(text, "unnamed");
@@ -3405,6 +3404,7 @@ namespace server
             {
                 getstring(text, p);
                 filtertext(text, text, false, false, MAXTEAMLEN);
+                Z_ANTIFLOOD(ci, N_SWITCHTEAM);
                 if(m_teammode && text[0] && strcmp(ci->team, text) && (!smode || smode->canchangeteam(ci, ci->team, text)) && addteaminfo(text))
                 {
                     if(!allowmsg(ci, ci, type)) break;
