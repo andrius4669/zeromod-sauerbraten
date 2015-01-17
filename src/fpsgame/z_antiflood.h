@@ -3,7 +3,7 @@
 
 #include "z_queue.h"
 
-VAR(antiflood_disconnect, 0, 0, 1);
+VAR(antiflood_mode, 0, 2, 2);   // 0 - disconnect, 1 - rate limit, 2 - block
 VAR(antiflood_text, 0, 10, 8192);
 VAR(antiflood_text_time, 1, 5000, 2*60000);
 VAR(antiflood_rename, 0, 4, 8192);
@@ -11,26 +11,41 @@ VAR(antiflood_rename_time, 0, 4000, 2*60000);
 VAR(antiflood_team, 0, 4, 8192);
 VAR(antiflood_team_time, 1, 4000, 2*60000);
 
-static int z_ratelimit(z_queue<int> &q, int time, int limit)
+static int z_ratelimit(z_queue<int> &q, int time, int limit, bool overwrite)
 {
+    if(!q.capacity()) return 0;
     while(q.length() && time-q.first() >= limit) q.remove();
-    if(q.full()) return q.capacity() ? limit + q.first() - time : 0;
-    q.add(time);
-    return 0;
+    if(!q.full())
+    {
+        q.add(time);
+        return 0;
+    }
+    if(overwrite) q.add(time);
+    return q.first() - time + limit;
 }
-
-static inline void z_fixantifloodsize(z_queue<int> &q, int size) { if(q.capacity() != size) q.resize(size); }
 
 static int z_warnantiflood(int afwait, int cn, const char *typestr)
 {
     if(afwait <= 0) return 0;
-    if(antiflood_disconnect)
+    if(!antiflood_mode)
     {
         disconnect_client(cn, DISC_OVERFLOW);
         return -1;
     }
-    sendf(cn, 1, "ris", N_SERVMSG, tempformatstring("antiflood: %s message was blocked. wait %d milliseconds before resending.", typestr, afwait));
+    sendf(cn, 1, "ris", N_SERVMSG, tempformatstring("\f6antiflood: %s was blocked, wait %d ms before resending", typestr, afwait));
     return 1;
+}
+
+static int z_doantiflood(z_queue<int> &q, int num, int time, int cn, const char *ts)
+{
+    if(q.capacity() != num) q.resize(num);
+    switch(antiflood_mode)
+    {
+        case 0: case 1: default:
+            return z_warnantiflood(z_ratelimit(q, totalmillis, time, false), cn, ts);
+        case 2:
+            return z_warnantiflood(z_ratelimit(q, totalmillis, time, true), cn, ts);
+    }
 }
 
 static int z_antiflood(clientinfo *ci, int type, const char *typestr)
@@ -40,14 +55,13 @@ static int z_antiflood(clientinfo *ci, int type, const char *typestr)
     {
         case N_TEXT:
         case N_SAYTEAM:
-            z_fixantifloodsize(ci->xi.af_text, antiflood_text);
-            return z_warnantiflood(z_ratelimit(ci->xi.af_text, totalmillis, antiflood_text_time), ci->clientnum, typestr);
+            return z_doantiflood(ci->xi.af_text, antiflood_text, antiflood_text_time, ci->clientnum, typestr);
+
         case N_SWITCHNAME:
-            z_fixantifloodsize(ci->xi.af_rename, antiflood_rename);
-            return z_warnantiflood(z_ratelimit(ci->xi.af_rename, totalmillis, antiflood_rename_time), ci->clientnum, typestr);
+            return z_doantiflood(ci->xi.af_rename, antiflood_rename, antiflood_rename_time, ci->clientnum, typestr);
+
         case N_SWITCHTEAM:
-            z_fixantifloodsize(ci->xi.af_team, antiflood_team);
-            return z_warnantiflood(z_ratelimit(ci->xi.af_team, totalmillis, antiflood_team_time), ci->clientnum, typestr);
+            return z_doantiflood(ci->xi.af_team, antiflood_team, antiflood_team_time, ci->clientnum, typestr);
     }
     return 0;
 }
