@@ -20,6 +20,8 @@ VARF(servernodamage_global, 0, 1, 1,
 static int z_hasnodamage(clientinfo *target, clientinfo *actor)
 {
     if(!m_edit || !actor) return 0;
+    extern bool isracemode();
+    if(actor->state.flags && isracemode()) return 2;
     return servernodamage_global ? z_nodamage : max(target->nodamage, actor->nodamage);
 }
 
