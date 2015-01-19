@@ -102,6 +102,7 @@
             case EXT_UPTIME:
             {
                 putint(p, totalsecs); //in seconds
+                if(req.remaining() && req.get() > 0) putint(p, -8); //zeromod
                 break;
             }
 
