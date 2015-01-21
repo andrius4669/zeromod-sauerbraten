@@ -34,6 +34,7 @@
     VAR(extinfo_showname, 0, 1, 1); // show names of clients
     VAR(extinfo_showpriv, 0, 1, 2); // show privileges of clients
     VAR(extinfo_showspy, 0, 0, 1);  // show spy clients
+    VAR(extinfo_noident, 0, 0, 1);  // disable mod identification
     static bool z_showip;
 
     void extinfoplayer(ucharbuf &p, clientinfo *ci)
@@ -102,7 +103,7 @@
             case EXT_UPTIME:
             {
                 putint(p, totalsecs); //in seconds
-                if(req.remaining() && req.get() > 0) putint(p, -8); //zeromod
+                if(!extinfo_noident && req.remaining() && req.get() > 0) putint(p, -8); //zeromod
                 break;
             }
 
