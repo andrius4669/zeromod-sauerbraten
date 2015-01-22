@@ -257,9 +257,9 @@ namespace server
         char *authkickreason;
 
         z_extrainfo xi;
-        bool chatmute, specmute, editmute, spy, invpriv, namemute, slay;
+        bool chatmute, specmute, editmute, spy, namemute;
         int lastchat, lastedit, maploaded;
-        int nodamage, mapsucks;
+        int mapsucks;
 
         clientinfo() : getdemo(NULL), getmap(NULL), clipboard(NULL), authchallenge(NULL), authkickreason(NULL) { reset(); }
         ~clientinfo() { events.deletecontents(); cleanclipboard(); cleanauth(); }
@@ -372,9 +372,8 @@ namespace server
             cleanclipboard();
             cleanauth();
             xi.reset();
-            chatmute = specmute = editmute = spy = invpriv = namemute = slay = false;
+            chatmute = specmute = editmute = spy = namemute = false;
             lastchat = lastedit = 0;
-            nodamage = 0;
             mapchange();
         }
 
@@ -387,16 +386,6 @@ namespace server
                 return servmillis;
             }
             else return gameoffset + clientmillis;
-        }
-
-        bool isinvpriv(int priv, int inv = -1) const { return (inv < 0 ? invpriv : inv!=0) && priv > PRIV_MASTER; }
-
-        bool canseemypriv(clientinfo *ci, int priv = -1, int inv = -1) const
-        {
-            if(priv < 0) priv = privilege;
-            if(spy) return ci && clientnum == ci->clientnum;
-            if(isinvpriv(priv, inv)) return ci && (ci->privilege >= priv || ci->local || ci->clientnum == clientnum);
-            return true;
         }
     };
 
@@ -1920,7 +1909,7 @@ namespace server
             putint(p, mastermode);
             hasmaster = true;
         }
-        loopv(clients) if(clients[i]->privilege >= PRIV_MASTER && clients[i]->canseemypriv(ci))
+        loopv(clients) if(clients[i]->privilege >= PRIV_MASTER && z_canseemypriv(clients[i], ci))
         {
             if(!hasmaster)
             {
@@ -2252,13 +2241,12 @@ namespace server
     #include "z_nodamage.h"
     #include "z_announcekills.h"
     #include "z_protectteamscores.h"
-    VAR(antispawnkill, 0, 0, 5000); // in milliseconds
 
     void dodamage(clientinfo *target, clientinfo *actor, int damage, int gun, const vec &hitpush = vec(0, 0, 0))
     {
         gamestate &ts = target->state;
-        if(antispawnkill && ts.lastdeath && gamemillis-ts.lastdeath < antispawnkill) return; // ts.lastdeath is reused for spawntime
         int hnd = z_hasnodamage(target, actor);
+        if(hnd > 2) return;
         if(!hnd) ts.dodamage(damage);
         if(target!=actor && !isteam(target->team, actor->team)) actor->state.damage += damage;
         sendf(-1, 1, "ri6", N_DAMAGE, target->clientnum, actor->clientnum, damage, ts.armour, ts.health);
@@ -2338,7 +2326,7 @@ namespace server
             default:
                 return;
         }
-        if(ci->slay) { suicide(ci); return; }
+        if(ci->xi.slay) { suicide(ci); return; }
         sendf(-1, 1, "ri4x", N_EXPLODEFX, ci->clientnum, gun, id, ci->ownernum);
         loopv(hits)
         {
@@ -2367,7 +2355,7 @@ namespace server
            gun<GUN_FIST || gun>GUN_PISTOL ||
            gs.ammo[gun]<=0 || (guns[gun].range && from.dist(to) > guns[gun].range + 1))
             return;
-        if(ci->slay) { suicide(ci); return; }
+        if(ci->xi.slay) { suicide(ci); return; }
         if(gun!=GUN_FIST) gs.ammo[gun]--;
         gs.lastshot = millis;
         gs.gunwait = guns[gun].attackdelay;
@@ -2980,7 +2968,7 @@ namespace server
 
         if(m_edit && z_autosendmap == 1) z_sendmap(ci, NULL);
         extern bool z_autoeditmute; ci->editmute = z_autoeditmute;
-        extern int z_nodamage; ci->nodamage = z_nodamage;
+        extern int z_nodamage; ci->xi.nodamage = z_nodamage;
         if(!ci->local && z_checkmuteban(getclientip(ci->clientnum))) ci->chatmute = true;
     }
 

@@ -58,6 +58,11 @@ static int z_awards_print_best(vector<char> &str, vector<clientinfo *> &best, in
     return n;
 }
 
+static int z_client_getfrags(clientinfo *ci) { return ci->state.frags; }
+static double z_client_getkpd(clientinfo *ci) { return double(ci->state.frags)/max(ci->state.deaths, 1); }
+static int z_client_getacc(clientinfo *ci) { return ci->state.damage*100/max(ci->state.shotdamage,1); }
+static int z_client_getdamage(clientinfo *ci) { return ci->state.damage; }
+
 void z_awards()
 {
     const int maxnum = 3;
@@ -71,7 +76,7 @@ void z_awards()
     str.put(tp, strlen(tp));
 
     int bestk = 0;
-    if(z_awards_best_stat<int>(best, bestk, [](clientinfo *ci) { return ci->state.frags; }))
+    if(z_awards_best_stat<int>(best, bestk, z_client_getfrags))
     {
         tp = " Kills: ";
         str.put(tp, strlen(tp));
@@ -81,7 +86,7 @@ void z_awards()
     }
 
     double bestp = 0.0;
-    if(z_awards_best_stat<double>(best, bestp, [](clientinfo *ci) { return double(ci->state.frags)/max(ci->state.deaths, 1); }))
+    if(z_awards_best_stat<double>(best, bestp, z_client_getkpd))
     {
         tp = " KpD: ";
         str.put(tp, strlen(tp));
@@ -91,7 +96,7 @@ void z_awards()
     }
 
     int besta = 0;
-    if(z_awards_best_stat<int>(best, besta, [](clientinfo *ci) { return ci->state.damage*100/max(ci->state.shotdamage,1); }))
+    if(z_awards_best_stat<int>(best, besta, z_client_getacc))
     {
         tp = " Acc: ";
         str.put(tp, strlen(tp));
@@ -101,7 +106,7 @@ void z_awards()
     }
 
     int bestd = 0;
-    if(z_awards_best_stat<int>(best, bestd, [](clientinfo *ci) { return ci->state.damage; }))
+    if(z_awards_best_stat<int>(best, bestd, z_client_getdamage))
     {
         tp = " Damage: ";
         str.put(tp, strlen(tp));

@@ -1,5 +1,5 @@
 CXXFLAGS= -O3 -fomit-frame-pointer -ffast-math
-override CXXFLAGS+= -std=gnu++11 -Wall -fsigned-char -fno-exceptions -fno-rtti
+override CXXFLAGS+= -Wall -fsigned-char -fno-exceptions -fno-rtti
 
 PLATFORM= $(shell uname -s | tr '[:lower:]' '[:upper:]')
 PLATFORM_PREFIX= native
@@ -139,11 +139,11 @@ CLIENT_OBJS= \
 CLIENT_PCH= shared/cube.h.gch engine/engine.h.gch fpsgame/game.h.gch
 
 ifneq (,$(findstring MINGW,$(PLATFORM)))
-SERVER_INCLUDES= -DSTANDALONE=1 $(INCLUDES) -Iinclude
+SERVER_INCLUDES= -DSTANDALONE $(INCLUDES) -Iinclude
 SERVER_LIBS= -mwindows $(STD_LIBS) -L$(WINBIN) -L$(WINLIB) -lzlib1 -lenet -lws2_32 -lwinmm
 MASTER_LIBS= $(STD_LIBS) -L$(WINBIN) -L$(WINLIB) -lzlib1 -lenet -lws2_32 -lwinmm
 else
-SERVER_INCLUDES= -DSTANDALONE=1 $(INCLUDES)
+SERVER_INCLUDES= -DSTANDALONE $(INCLUDES)
 SERVER_LIBS= -Lenet -lenet -lz
 MASTER_LIBS= $(SERVER_LIBS)
 ifeq ($(shell ./check_geoip.sh $(CXX) $(CXXFLAGS) $(SERVER_INCLUDES)),1)
@@ -262,7 +262,7 @@ libenet: enet/libenet.a
 depend:
 	makedepend -Y -Ishared -Iengine -Ifpsgame $(CLIENT_OBJS:.o=.cpp)
 	makedepend -a -o.h.gch -Y -Ishared -Iengine -Ifpsgame $(CLIENT_PCH:.h.gch=.h)
-	makedepend -a -o-standalone.o -Y -DSTANDALONE=1 -Ishared -Iengine -Ifpsgame $(SERVER_MASTER_OBJS:-standalone.o=.cpp)
+	makedepend -a -o-standalone.o -Y -DSTANDALONE -Ishared -Iengine -Ifpsgame $(SERVER_MASTER_OBJS:-standalone.o=.cpp)
 
 # DO NOT DELETE
 
@@ -508,9 +508,10 @@ fpsgame/server.o: fpsgame/z_maprotation.h fpsgame/z_bans.h
 fpsgame/server.o: fpsgame/z_triggers.h fpsgame/capture.h fpsgame/ctf.h
 fpsgame/server.o: fpsgame/collect.h fpsgame/z_persistteams.h
 fpsgame/server.o: fpsgame/z_servercommands.h fpsgame/z_setmaster_override.h
-fpsgame/server.o: fpsgame/z_log.h fpsgame/z_racemode.h fpsgame/z_sendmap.h
-fpsgame/server.o: fpsgame/z_servcmd.h fpsgame/z_autosendmap.h
-fpsgame/server.o: fpsgame/z_loadmap.h fpsgame/z_awards.h fpsgame/z_nodamage.h
+fpsgame/server.o: fpsgame/z_log.h fpsgame/z_invpriv.h fpsgame/z_racemode.h
+fpsgame/server.o: fpsgame/z_sendmap.h fpsgame/z_servcmd.h
+fpsgame/server.o: fpsgame/z_autosendmap.h fpsgame/z_loadmap.h
+fpsgame/server.o: fpsgame/z_awards.h fpsgame/z_nodamage.h
 fpsgame/server.o: fpsgame/z_announcekills.h fpsgame/z_protectteamscores.h
 fpsgame/server.o: fpsgame/z_scripting.h fpsgame/z_gbans_override.h
 fpsgame/server.o: fpsgame/z_ms_gameserver_override.h fpsgame/z_mutes.h
@@ -570,10 +571,11 @@ fpsgame/server-standalone.o: fpsgame/capture.h fpsgame/ctf.h
 fpsgame/server-standalone.o: fpsgame/collect.h fpsgame/z_persistteams.h
 fpsgame/server-standalone.o: fpsgame/z_servercommands.h
 fpsgame/server-standalone.o: fpsgame/z_setmaster_override.h fpsgame/z_log.h
-fpsgame/server-standalone.o: fpsgame/z_racemode.h fpsgame/z_sendmap.h
-fpsgame/server-standalone.o: fpsgame/z_servcmd.h fpsgame/z_autosendmap.h
-fpsgame/server-standalone.o: fpsgame/z_loadmap.h fpsgame/z_awards.h
-fpsgame/server-standalone.o: fpsgame/z_nodamage.h fpsgame/z_announcekills.h
+fpsgame/server-standalone.o: fpsgame/z_invpriv.h fpsgame/z_racemode.h
+fpsgame/server-standalone.o: fpsgame/z_sendmap.h fpsgame/z_servcmd.h
+fpsgame/server-standalone.o: fpsgame/z_autosendmap.h fpsgame/z_loadmap.h
+fpsgame/server-standalone.o: fpsgame/z_awards.h fpsgame/z_nodamage.h
+fpsgame/server-standalone.o: fpsgame/z_announcekills.h
 fpsgame/server-standalone.o: fpsgame/z_protectteamscores.h
 fpsgame/server-standalone.o: fpsgame/z_scripting.h fpsgame/z_gbans_override.h
 fpsgame/server-standalone.o: fpsgame/z_ms_gameserver_override.h

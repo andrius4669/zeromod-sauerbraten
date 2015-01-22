@@ -53,7 +53,7 @@
         putint(q, ci->state.health);
         putint(q, ci->state.armour);
         putint(q, ci->state.gunselect);
-        putint(q, (extinfo_showpriv && (extinfo_showpriv > 1 || ci->canseemypriv(NULL))) ? ci->privilege : PRIV_NONE);
+        putint(q, (extinfo_showpriv && (extinfo_showpriv > 1 || z_canseemypriv(ci, NULL))) ? ci->privilege : PRIV_NONE);
         putint(q, ci->state.state);
         uint ip = z_showip ? getclientip(ci->clientnum) : 0;
         q.put((uchar*)&ip, 3);

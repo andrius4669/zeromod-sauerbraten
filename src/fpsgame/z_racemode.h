@@ -80,6 +80,19 @@ struct raceservmode: servmode
         loopv(clients) clients[i]->state.flags = 0;
     }
 
+    void initclient(clientinfo *ci, packetbuf &p, bool connecting)
+    {
+        if(connecting) ci->state.flags = 0;
+    }
+
+    bool canspawn(clientinfo *ci, bool connecting = false)
+    {
+        return state >= ST_STARTED && state <= ST_INT;
+    }
+
+    bool hidefrags() { return true; }
+    int fragvalue(clientinfo *victim, clientinfo *actor) { return 0; }
+
     void reset()
     {
         state = ST_NONE;

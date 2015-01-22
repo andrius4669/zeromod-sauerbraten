@@ -24,13 +24,13 @@ void z_setspy(clientinfo *ci, bool val)
             for(int i = demorecord ? -1 : 0; i < clients.length(); i++)
             {
                 clientinfo *cx = i >= 0 ? clients[i] : NULL;
-                if(!ci->canseemypriv(cx) || (cx && (cx->clientnum == ci->clientnum || cx->state.aitype != AI_NONE))) continue;
+                if(!z_canseemypriv(ci, cx) || (cx && (cx->clientnum == ci->clientnum || cx->state.aitype != AI_NONE))) continue;
                 packetbuf p(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
                 putint(p, N_SERVMSG);
                 sendstring(msg, p);
                 putint(p, N_CURRENTMASTER);
                 putint(p, mastermode);
-                loopvj(clients) if(clients[j]->privilege >= PRIV_MASTER && clients[j]->canseemypriv(cx))
+                loopvj(clients) if(clients[j]->privilege >= PRIV_MASTER && z_canseemypriv(clients[j], cx))
                 {
                     putint(p, clients[j]->clientnum);
                     putint(p, clients[j]->privilege);
@@ -89,13 +89,13 @@ void z_setspy(clientinfo *ci, bool val)
             for(int i = demorecord ? -1 : 0; i < clients.length(); i++)
             {
                 clientinfo *cx = i >= 0 ? clients[i] : NULL;
-                if(!ci->canseemypriv(cx) || (cx && (cx->clientnum == ci->clientnum || cx->state.aitype != AI_NONE))) continue;
+                if(!z_canseemypriv(ci, cx) || (cx && (cx->clientnum == ci->clientnum || cx->state.aitype != AI_NONE))) continue;
                 packetbuf p(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
                 putint(p, N_SERVMSG);
                 sendstring(msg, p);
                 putint(p, N_CURRENTMASTER);
                 putint(p, mastermode);
-                loopvj(clients) if(clients[j]->privilege >= PRIV_MASTER && clients[j]->canseemypriv(cx))
+                loopvj(clients) if(clients[j]->privilege >= PRIV_MASTER && z_canseemypriv(clients[j], cx))
                 {
                     putint(p, clients[j]->clientnum);
                     putint(p, clients[j]->privilege);

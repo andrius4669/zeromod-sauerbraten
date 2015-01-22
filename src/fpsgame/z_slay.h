@@ -18,12 +18,12 @@ void z_servcmd_slay(int argc, char **argv, int sender)
     if(ci && ci->local) { sendf(sender, 1, "ris", N_SERVMSG, "slaying local client is not allowed"); return; }
     if(ci)
     {
-        ci->slay = val;
+        ci->xi.slay = val;
         sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("\fs\f3%s\fr %s", val ? "slaying" : "unslaying", colorname(ci)));
     }
     else loopv(clients) if(clients[i]->state.aitype==AI_NONE && !clients[i]->local && !clients[i]->spy)
     {
-        clients[i]->slay = val;
+        clients[i]->xi.slay = val;
         sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("\fs\f3%s\fr %s", val ? "slaying" : "unslaying", colorname(clients[i])));
     }
 }

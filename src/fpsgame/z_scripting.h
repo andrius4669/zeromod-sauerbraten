@@ -15,11 +15,11 @@ struct z_sleepstruct
     z_sleepstruct() {}
     ~z_sleepstruct() { if(freeval) freeval(val); }
 };
-vector<z_sleepstruct> z_sleeps;
+vector<z_sleepstruct> z_sleeps, z_announces;
 
-static void z_addsleep(int offset, int delay, bool reload, z_sleepfunc func, void *val, z_freevalfunc freeval)
+static void z_addsleep(vector<z_sleepstruct> &sleeps, int offset, int delay, bool reload, z_sleepfunc func, void *val, z_freevalfunc freeval)
 {
-    z_sleepstruct &ss = z_sleeps.add();
+    z_sleepstruct &ss = sleeps.add();
     ss.millis = totalmillis + offset;
     ss.delay = delay;
     ss.func = func;
@@ -28,18 +28,13 @@ static void z_addsleep(int offset, int delay, bool reload, z_sleepfunc func, voi
     ss.reload = reload;
 }
 
-#if 0
-static void z_clearsleep()
-{
-    z_sleeps.shrink(0);
-}
-#endif
+static void z_clearsleep(vector<z_sleepstruct> &sleeps) { sleeps.shrink(0); }
 
-void z_checksleep()
+static void z_checksleep(vector<z_sleepstruct> &sleeps)
 {
-    loopv(z_sleeps)
+    loopv(sleeps)
     {
-        z_sleepstruct &ss = z_sleeps[i];
+        z_sleepstruct &ss = sleeps[i];
         if(totalmillis-ss.millis >= ss.delay)
         {
             // prepare
@@ -51,7 +46,7 @@ void z_checksleep()
             // execute
             sf(val);
             // check if not cleared
-            if(z_sleeps.inrange(i) && ss.func == NULL)  // its still the same entry
+            if(sleeps.inrange(i) && ss.func == NULL)  // its still the same entry
             {
                 if(ss.reload)
                 {
@@ -62,7 +57,7 @@ void z_checksleep()
                 else
                 {
                     if(fvf) fvf(val);
-                    z_sleeps.remove(i--);
+                    sleeps.remove(i--);
                 }
             }
             else    // sleeps array was modified in function
@@ -74,6 +69,12 @@ void z_checksleep()
     }
 }
 
+void z_checksleep()
+{
+    z_checksleep(z_sleeps);
+    z_checksleep(z_announces);
+}
+
 static void z_sleepcmd_announce(void *str)
 {
     if(str) sendservmsg((char *)str);
@@ -83,13 +84,13 @@ static void z_freestring(void *str) { delete[] (char *)str; }
 
 void s_announce(int *offset, int *delay, char *message)
 {
-    z_addsleep(*offset, *delay, true, z_sleepcmd_announce, newstring(message), z_freestring);
+    z_addsleep(z_announces, *offset, *delay, true, z_sleepcmd_announce, newstring(message), z_freestring);
 }
 COMMAND(s_announce, "iis");
 
 void s_clearannounces()
 {
-    loopv(z_sleeps) if(z_sleeps[i].func == z_sleepcmd_announce) z_sleeps.remove(i--);
+    z_clearsleep(z_announces);
 }
 COMMAND(s_clearannounces, "");
 
@@ -100,19 +101,19 @@ static void z_sleepcmd_cubescript(void *cmd)
 
 void s_sleep(int *offset, int *delay, char *script)
 {
-    z_addsleep(*offset, *delay, false, z_sleepcmd_cubescript, newstring(script), z_freestring);
+    z_addsleep(z_sleeps, *offset, *delay, false, z_sleepcmd_cubescript, newstring(script), z_freestring);
 }
 COMMAND(s_sleep, "iis");
 
 void s_sleep_r(int *offset, int *delay, char *script)
 {
-    z_addsleep(*offset, *delay, true, z_sleepcmd_cubescript, newstring(script), z_freestring);
+    z_addsleep(z_sleeps, *offset, *delay, true, z_sleepcmd_cubescript, newstring(script), z_freestring);
 }
 COMMAND(s_sleep_r, "iis");
 
 void s_clearsleep()
 {
-    loopv(z_sleeps) if(z_sleeps[i].func == z_sleepcmd_cubescript) z_sleeps.remove(i--);
+    z_clearsleep(z_sleeps);
 }
 COMMAND(s_clearsleep, "");
 
