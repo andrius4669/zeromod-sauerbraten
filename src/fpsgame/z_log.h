@@ -44,8 +44,8 @@ static inline void z_showkick(const char *kicker, clientinfo *actor, clientinfo 
     if(!actor->spy) { sendservmsg(kickstr); return; }
     // if kicker is spy, don't show his name to normal clients
     const char *spykickstr = reason && reason[0]
-        ? tempformatstring("%s was kicked", colorname(vinfo))
-        : tempformatstring("%s was kicked because: %s", colorname(vinfo), reason);
+        ? tempformatstring("%s was kicked because: %s", colorname(vinfo), reason)
+        : tempformatstring("%s was kicked", colorname(vinfo));
     // allocate packetbufs for messages
     packetbuf kickpack(MAXTRANS, ENET_PACKET_FLAG_RELIABLE), spykickpack(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
     // fill in packetbuf for admins
