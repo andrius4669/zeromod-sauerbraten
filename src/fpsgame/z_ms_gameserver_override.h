@@ -3,6 +3,13 @@
 
 #include "z_gbans_override.h"
 
+VAR(authconnect, 0, 1, 2);
+
+bool z_allowauthconnect(int priv = PRIV_ADMIN)
+{
+    return authconnect < 2 ? authconnect!=0 : priv>=PRIV_ADMIN;
+}
+
 clientinfo *findauth(int m, uint id)
 {
     loopv(clients) if(clients[i]->authmaster == m && clients[i]->authreq == id) return clients[i];
@@ -44,7 +51,19 @@ void authsucceeded(int m, uint id, int dpriv = PRIV_AUTH)
     if(!ci) return;
     ci->cleanauth(ci->connectauth!=0);
     bool connecting = false;
-    if(ci->connectauth) { connected(ci); connecting = true; }
+    if(ci->connectauth)
+    {
+        if(z_allowauthconnect(priv))
+        {
+            connected(ci);
+            connecting = true;
+        }
+        else
+        {
+            disconnect_client(ci->clientnum, ci->connectauth);
+            return;
+        }
+    }
     if(ci->authkickvictim >= 0)
     {
         if(setmaster(ci, true, "", ci->authname, ci->authdesc, priv, false, true, !connecting))
@@ -111,7 +130,19 @@ bool answerchallenge(clientinfo *ci, uint id, char *val, const char *desc)
             if(u)
             {
                 bool connecting = false;
-                if(ci->connectauth) { connected(ci); connecting = true; }
+                if(ci->connectauth)
+                {
+                    if(z_allowauthconnect(u->privilege))
+                    {
+                        connected(ci);
+                        connecting = true;
+                    }
+                    else
+                    {
+                        ci->cleanauth();
+                        return false;
+                    }
+                }
                 if(ci->authkickvictim >= 0)
                 {
                     if(setmaster(ci, true, "", ci->authname, ci->authdesc, u->privilege, false, true, !connecting))
@@ -136,6 +167,7 @@ bool answerchallenge(clientinfo *ci, uint id, char *val, const char *desc)
             if(!ci->authdesc[0]) sendf(ci->clientnum, 1, "ris", N_SERVMSG, "not connected to authentication server");
         }
     }
+    // return false = disconnect
     return ci->authreq || !ci->connectauth;
 }
 

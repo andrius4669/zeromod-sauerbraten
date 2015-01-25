@@ -8,7 +8,7 @@ struct z_formattemplate
     void *ptr;
 };
 
-int z_format(char *dest, size_t maxlen, const char *fmt, z_formattemplate *ft)
+int z_format(char *dest, size_t maxlen, const char *fmt, const z_formattemplate *ft)
 {
     char *start = dest, *limit = dest+maxlen-1;
     while(dest < limit)

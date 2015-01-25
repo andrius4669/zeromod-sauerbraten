@@ -2656,6 +2656,8 @@ namespace server
         clientdisconnect(n);
     }
 
+    #include "z_geoip.h"
+
     int clientconnect(int n, uint ip)
     {
         clientinfo *ci = getinfo(n);
@@ -2668,6 +2670,7 @@ namespace server
         connects.add(ci);
         if(!m_mp(gamemode)) return DISC_LOCAL;
         sendservinfo(ci);
+        z_geoip_resolveclient(ci->xi.geoip, ip);
         return DISC_NONE;
     }
 
@@ -2746,6 +2749,7 @@ namespace server
         uint ip = getclientip(ci->clientnum);
         if(z_checkban(ip)) return DISC_IPBAN;
         if(checkgban(ip)) return DISC_IPBAN;
+        if(geoip_ban_anonymous && ci->xi.geoip.anonymous) return DISC_IPBAN;
         if(mastermode>=MM_PRIVATE && allowedips.find(ip)<0) return DISC_PRIVATE;
         return DISC_NONE;
     }
@@ -2929,7 +2933,6 @@ namespace server
         }
     }
 
-    #include "z_geoip.h"
     #include "z_geoipserver.h"
 
     void connected(clientinfo *ci)
@@ -2959,7 +2962,6 @@ namespace server
         aiman::addclient(ci);
 
         logoutf("connect: %s (%d) joined", ci->name, ci->clientnum);
-        z_geoip_resolveclient(ci->xi.geoip, getclientip(ci->clientnum));
         z_geoip_show(ci);
 
         if(m_demo) setupdemoplayback();
@@ -3006,7 +3008,7 @@ namespace server
                     int disc = allowconnect(ci, password);
                     if(disc)
                     {
-                        if(disc == DISC_LOCAL || !serverauth[0] || strcmp(serverauth, authdesc) || !tryauth(ci, authname, authdesc))
+                        if(disc == DISC_LOCAL || !serverauth[0] || strcmp(serverauth, authdesc) || !z_allowauthconnect() || !tryauth(ci, authname, authdesc))
                         {
                             disconnect_client(sender, disc);
                             return;

@@ -50,6 +50,7 @@ VAR(geoip_skip_duplicates, 0, 1, 2);
 VAR(geoip_country_use_db, 0, 0, 2);
 VAR(geoip_fix_country, 0, 1, 1);
 SVAR(geoip_color_scheme, "777");
+VAR(geoip_ban_anonymous, 0, 0, 1);
 
 static const struct
 {
