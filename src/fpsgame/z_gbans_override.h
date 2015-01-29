@@ -3,36 +3,144 @@
 
 #include "z_triggers.h"
 #include "z_servcmd.h"
+#include "z_tree.h"
 
-struct gbaninfo: ipmask
+// gban/pban struct optimised for use in tree
+struct gbaninfo
 {
-    int master;
-    int save;
-    char *comment;
-    gbaninfo(): comment(NULL) {}
-    ~gbaninfo() { if(comment) delete[] comment; }
+    // in host byte order, cause easier to compare
+    enet_uint32 ip, mask;   // mask is inverted
+
+    void parse(const char *name)
+    {
+        union { uchar b[sizeof(enet_uint32)]; enet_uint32 i; } ipconv, maskconv;
+        ipconv.i = 0;
+        maskconv.i = 0;
+        loopi(4)
+        {
+            char *end = NULL;
+            int n = strtol(name, &end, 10);
+            if(!end) break;
+            if(end > name) { ipconv.b[i] = n; maskconv.b[i] = 0xFF; }
+            name = end;
+            while(int c = *name)
+            {
+                ++name;
+                if(c == '.') break;
+                if(c == '/')
+                {
+                    int range = clamp(int(strtol(name, NULL, 10)), 0, 32);
+                    mask = ~(range ? (0xFFffFFff << (32 - range)) : ENET_NET_TO_HOST_32(maskconv.i));
+                    ip = ENET_NET_TO_HOST_32(ipconv.i) & ~mask;
+                    return;
+                }
+            }
+        }
+        ip = ENET_NET_TO_HOST_32(ipconv.i);
+        mask = ~ENET_NET_TO_HOST_32(maskconv.i);
+    }
+
+    int print(char *buf) const
+    {
+        char *start = buf;
+        union { uchar b[sizeof(enet_uint32)]; enet_uint32 i; } ipconv, maskconv;
+        ipconv.i = ENET_HOST_TO_NET_32(ip);
+        maskconv.i = ~ENET_HOST_TO_NET_32(mask);
+        int lastdigit = -1;
+        loopi(4) if(maskconv.b[i])
+        {
+            if(lastdigit >= 0) *buf++ = '.';
+            loopj(i - lastdigit - 1) { *buf++ = '*'; *buf++ = '.'; }
+            buf += sprintf(buf, "%d", ipconv.b[i]);
+            lastdigit = i;
+        }
+        enet_uint32 bits = mask;
+        int range = 32;
+        for(; (bits&0xFF) == 0xFF; bits >>= 8) range -= 8;
+        for(; bits&1; bits >>= 1) --range;
+        if(!bits && range%8) buf += sprintf(buf, "/%d", range);
+        return int(buf-start);
+    }
+
+    inline int compare(const gbaninfo &b) const
+    {
+        if((b.ip | b.mask) < ip) return -1;
+        if(b.ip > (ip | mask)) return +1;
+        return 0;   /* ranges overlap */
+    }
+
+    // host byte order
+    inline int compare(enet_uint32 cip) const
+    {
+        if(cip < ip) return -1;
+        if(cip > (ip | mask)) return +1;
+        return 0;
+    }
+
+    // host byte order
+    bool check(enet_uint32 cip) const { return (cip & ~mask) == ip; }
 };
-vector<gbaninfo> gbans;
+
+// basic pban struct with comments
+struct pbaninfo: ipmask
+{
+    char *comment;
+    pbaninfo(): comment(NULL) {}
+    ~pbaninfo() { delete[] comment; }
+};
+
+vector< z_avltree<gbaninfo> > gbans;
+z_avltree<gbaninfo> pbans;
+vector<pbaninfo> sbans;
 
 static void cleargbans(int m = -1)
 {
-    if(m < 0) loopvrev(gbans) { if(gbans[i].master >= 0) gbans.remove(i); }
-    else loopvrev(gbans) if(gbans[i].master == m) gbans.remove(i);
+    if(m < 0) gbans.shrink(0);
+    else if(gbans.inrange(m)) gbans[m].clear();
 }
 
 static bool checkgban(uint ip)
 {
-    loopv(gbans) if(gbans[i].check(ip)) return true;
+    uint hip = ENET_NET_TO_HOST_32(ip);
+    gbaninfo *p;
+    if((p = pbans.find(hip)) && p->check(hip)) return true;
+    loopv(sbans) if(sbans[i].check(ip)) return true;
+    loopv(gbans) if((p = gbans[i].find(hip)) && p->check(hip)) return true;
     return false;
 }
 
-static void addgban(int m, const char *name, clientinfo *actor = NULL, const char *comment = NULL, int save = 0)
+static void addgban(int m, const char *name, clientinfo *actor = NULL, const char *comment = NULL, bool save = false)
 {
-    gbaninfo &ban = gbans.add();
-    ban.parse(name);
-    ban.master = m;
-    ban.save = save;
-    if(comment && *comment) ban.comment = newstring(comment);
+    if(!save)
+    {
+        gbaninfo ban, *old;
+        ban.parse(name);
+        if(m >= 0)
+        {
+            while(gbans.length() <= m) gbans.add();
+            if(!gbans[m].add(ban, &old))
+            {
+                string buf;
+                old->print(buf);
+                logoutf("WARNING: addgban[%d]: %s conflicts with existing %s", m, name, buf);
+            }
+        }
+        else
+        {
+            if(!pbans.add(ban, &old))
+            {
+                string buf;
+                old->print(buf);
+                logoutf("WARNING: pban: %s conflicts with existing %s", name, buf);
+            }
+        }
+    }
+    else
+    {
+        pbaninfo &ban = sbans.add();
+        ban.parse(name);
+        if(comment && *comment) ban.comment = newstring(comment);
+    }
 
     loopvrev(clients)
     {
@@ -43,16 +151,21 @@ static void addgban(int m, const char *name, clientinfo *actor = NULL, const cha
     }
 }
 
-void pban(const char *name, const char *comment, int *save) { addgban(-1, name, NULL, comment, *save); }
-COMMAND(pban, "ssi");
-void clearpbans(int *all) { loopvrev(gbans) if(gbans[i].master < 0 && ((*all)!=0 || !(gbans[i].save & 1))) gbans.remove(i); }
+void pban(char *name, int *save, char *comment) { addgban(-1, name, NULL, comment, (*save)!=0); }
+COMMAND(pban, "sis");
+
+void clearpbans(int *all)
+{
+    pbans.clear();
+    if(*all) sbans.shrink(0);
+}
 COMMAND(clearpbans, "i");
 
 static void z_savepbans()
 {
     stream *f = NULL;
     string buf;
-    loopv(gbans) if(gbans[i].save & 1)
+    loopv(sbans)
     {
         if(!f)
         {
@@ -60,8 +173,9 @@ static void z_savepbans()
             if(!f) return;
             f->printf("// list of persistent bans. do not edit this file directly while server is running\n");
         }
-        gbans[i].print(buf);
-        f->printf("pban %s %s %d\n", buf, gbans[i].comment ? escapestring(gbans[i].comment) : "\"\"", gbans[i].save);
+        sbans[i].print(buf);
+        if(sbans[i].comment) f->printf("pban %s 1 %s\n", buf, escapestring(sbans[i].comment));
+        else f->printf("pban %s 1\n", buf);
     }
     if(f) delete f;
     else remove(findfile(path("pbans.cfg", true), "r"));
@@ -76,40 +190,45 @@ Z_TRIGGER(z_trigger_loadpbans, Z_TRIGGER_STARTUP);
 
 void z_servcmd_listpbans(int argc, char **argv, int sender)
 {
-    int n = 0;
     string buf;
     sendf(sender, 1, "ris", N_SERVMSG, "pbans list:");
-    loopv(gbans) if(gbans[i].master < 0)
+    loopv(sbans)
     {
-        n++;
-        gbans[i].print(buf);
-        sendf(sender, 1, "ris", N_SERVMSG, gbans[i].comment
-            ? tempformatstring("%02d %s [%c] %s", n, buf, (gbans[i].save & 1) ? 's' : 'p', gbans[i].comment)
-            : tempformatstring("%02d %s [%c]",    n, buf, (gbans[i].save & 1) ? 's' : 'p'));
+        sbans[i].print(buf);
+        sendf(sender, 1, "ris", N_SERVMSG, sbans[i].comment
+            ? tempformatstring("%02d %s %s", i, buf, sbans[i].comment)
+            : tempformatstring("%02d %s",    i, buf));
     }
-    if(!n) sendf(sender, 1, "ris", N_SERVMSG, "no pbans found");
+    if(sbans.empty()) sendf(sender, 1, "ris", N_SERVMSG, "no pbans found");
 }
 SCOMMANDA(listpbans, PRIV_ADMIN, z_servcmd_listpbans, 1);
 
 void z_servcmd_unpban(int argc, char **argv, int sender)
 {
-    if(argc < 2) { sendf(sender, 1, "ris", N_SERVMSG, "please specify ban id"); return; }
+    string buf;
+    if(argc < 2) { sendf(sender, 1, "ris", N_SERVMSG, "please specify pban id"); return; }
+
     char *end = NULL;
-    int id = int(strtol(argv[1], &end, 10)), n = 0, r = 0;
-    if(!end) { sendf(sender, 1, "ris", N_SERVMSG, "incorrect ban id"); return; }
-    loopv(gbans) if(gbans[i].master < 0)
+    int id = int(strtol(argv[1], &end, 10));
+    if(!end) { sendf(sender, 1, "ris", N_SERVMSG, "incorrect pban id"); return; }
+
+    if(id < 0)
     {
-        n++;
-        if((gbans[i].save & 1) && (n == id || id <= 0))
+        loopv(sbans)
         {
-            string buf;
-            gbans[i].print(buf);
+            sbans[i].print(buf);
             sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("removing pban for %s", buf));
-            gbans.remove(i--);
-            r = 1;
         }
+        if(sbans.empty()) sendf(sender, 1, "ris", N_SERVMSG, "no pbans found");
+        sbans.shrink(0);
     }
-    if(!r) sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("no pbans removed"));
+    else
+    {
+        if(!sbans.inrange(id)) { sendf(sender, 1, "ris", N_SERVMSG, "incorrect pban id"); return; }
+        sbans[id].print(buf);
+        sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("removing pban for %s", buf));
+        sbans.remove(id);
+    }
 }
 SCOMMANDA(unpban, PRIV_ADMIN, z_servcmd_unpban, 1);
 
@@ -131,11 +250,9 @@ void z_servcmd_pban(int argc, char **argv, int sender)
     }
     else r = 32;
 
-    gbaninfo &b = gbans.add();
+    pbaninfo &b = sbans.add();
     b.mask = ENET_HOST_TO_NET_32(0xFFffFFff << (32 - r));
     b.ip = getclientip(cn) & b.mask;
-    b.master = -1;
-    b.save = 1;
     if(argc > 2 && argv[2] && *argv[2]) b.comment = newstring(argv[2]);
 
     string buf;
@@ -157,7 +274,7 @@ void z_servcmd_pbanip(int argc, char **argv, int sender)
 {
     if(argc < 2) { sendf(sender, 1, "ris", N_SERVMSG, "please specify ip address"); return; }
     sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("adding pban for %s", argv[1]));
-    addgban(-1, argv[1], getinfo(sender), argc > 2 ? argv[2] : NULL, 1);
+    addgban(-1, argv[1], getinfo(sender), argc > 2 ? argv[2] : NULL, true);
 }
 SCOMMANDA(pbanip, PRIV_ADMIN, z_servcmd_pbanip, 2);
 

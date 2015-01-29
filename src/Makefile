@@ -514,7 +514,7 @@ fpsgame/server.o: fpsgame/z_autosendmap.h fpsgame/z_loadmap.h
 fpsgame/server.o: fpsgame/z_awards.h fpsgame/z_nodamage.h
 fpsgame/server.o: fpsgame/z_announcekills.h fpsgame/z_protectteamscores.h
 fpsgame/server.o: fpsgame/z_scripting.h fpsgame/z_geoip.h
-fpsgame/server.o: fpsgame/z_gbans_override.h
+fpsgame/server.o: fpsgame/z_gbans_override.h fpsgame/z_tree.h
 fpsgame/server.o: fpsgame/z_ms_gameserver_override.h fpsgame/z_mutes.h
 fpsgame/server.o: fpsgame/z_rename.h fpsgame/z_geoipserver.h
 fpsgame/server.o: fpsgame/z_msgfilter.h fpsgame/z_maploaded.h
@@ -579,7 +579,7 @@ fpsgame/server-standalone.o: fpsgame/z_awards.h fpsgame/z_nodamage.h
 fpsgame/server-standalone.o: fpsgame/z_announcekills.h
 fpsgame/server-standalone.o: fpsgame/z_protectteamscores.h
 fpsgame/server-standalone.o: fpsgame/z_scripting.h fpsgame/z_geoip.h
-fpsgame/server-standalone.o: fpsgame/z_gbans_override.h
+fpsgame/server-standalone.o: fpsgame/z_gbans_override.h fpsgame/z_tree.h
 fpsgame/server-standalone.o: fpsgame/z_ms_gameserver_override.h
 fpsgame/server-standalone.o: fpsgame/z_mutes.h fpsgame/z_rename.h
 fpsgame/server-standalone.o: fpsgame/z_geoipserver.h fpsgame/z_msgfilter.h
