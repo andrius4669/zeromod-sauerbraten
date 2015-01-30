@@ -21,13 +21,13 @@ int z_format(char *dest, size_t maxlen, const char *fmt, const z_formattemplate 
             if(!c) break;
             if(c != '%')
             {
-                int t;
-                for(t = 0; ft[t].format && ft[t].format != c; t++);
-                if(ft[t].format)
+                const z_formattemplate *ct;
+                for(ct = ft; ct->format && ct->format != c; ct++);
+                if(ct->format)
                 {
                     int mlen, len;
                     mlen = limit-dest;
-                    len = snprintf(dest, mlen+1, ft[t].type, ft[t].ptr);
+                    len = snprintf(dest, mlen+1, ct->type, ct->ptr);
                     if(len > mlen) len = mlen;
                     if(len > 0) dest += len;
                     continue;
