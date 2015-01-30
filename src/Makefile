@@ -511,7 +511,7 @@ fpsgame/server.o: fpsgame/z_servercommands.h fpsgame/z_setmaster_override.h
 fpsgame/server.o: fpsgame/z_log.h fpsgame/z_invpriv.h fpsgame/z_racemode.h
 fpsgame/server.o: fpsgame/z_sendmap.h fpsgame/z_servcmd.h
 fpsgame/server.o: fpsgame/z_autosendmap.h fpsgame/z_loadmap.h
-fpsgame/server.o: fpsgame/z_awards.h fpsgame/z_nodamage.h
+fpsgame/server.o: fpsgame/z_format.h fpsgame/z_awards.h fpsgame/z_nodamage.h
 fpsgame/server.o: fpsgame/z_announcekills.h fpsgame/z_protectteamscores.h
 fpsgame/server.o: fpsgame/z_scripting.h fpsgame/z_geoip.h
 fpsgame/server.o: fpsgame/z_gbans_override.h fpsgame/z_tree.h
@@ -575,8 +575,8 @@ fpsgame/server-standalone.o: fpsgame/z_setmaster_override.h fpsgame/z_log.h
 fpsgame/server-standalone.o: fpsgame/z_invpriv.h fpsgame/z_racemode.h
 fpsgame/server-standalone.o: fpsgame/z_sendmap.h fpsgame/z_servcmd.h
 fpsgame/server-standalone.o: fpsgame/z_autosendmap.h fpsgame/z_loadmap.h
-fpsgame/server-standalone.o: fpsgame/z_awards.h fpsgame/z_nodamage.h
-fpsgame/server-standalone.o: fpsgame/z_announcekills.h
+fpsgame/server-standalone.o: fpsgame/z_format.h fpsgame/z_awards.h
+fpsgame/server-standalone.o: fpsgame/z_nodamage.h fpsgame/z_announcekills.h
 fpsgame/server-standalone.o: fpsgame/z_protectteamscores.h
 fpsgame/server-standalone.o: fpsgame/z_scripting.h fpsgame/z_geoip.h
 fpsgame/server-standalone.o: fpsgame/z_gbans_override.h fpsgame/z_tree.h

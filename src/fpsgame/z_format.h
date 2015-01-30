@@ -5,7 +5,7 @@ struct z_formattemplate
 {
     char format;
     const char *type;
-    void *ptr;
+    const void *ptr;
 };
 
 int z_format(char *dest, size_t maxlen, const char *fmt, const z_formattemplate *ft)
@@ -27,7 +27,7 @@ int z_format(char *dest, size_t maxlen, const char *fmt, const z_formattemplate 
                 {
                     int mlen, len;
                     mlen = limit-dest;
-                    len = snprintf(dest, mlen+1, ft[i].type, ft[i].ptr);
+                    len = snprintf(dest, mlen+1, ft[t].type, ft[t].ptr);
                     if(len > mlen) len = mlen;
                     if(len > 0) dest += len;
                     continue;

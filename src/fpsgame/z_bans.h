@@ -16,11 +16,13 @@ bool z_checkban(uint ip)
 {
     loopv(bannedips) if(bannedips[i].ip==ip) switch(bannedips[i].type)
     {
-        case BAN_MUTE: case BAN_SPECTATE: continue;
         case BAN_TEAMKILL:
             if(teamkillspectate) continue;
             // FALL THROUGH
-        default: return true;
+        case BAN_KICK:
+            return true;
+        default:
+            continue;
     }
     return false;
 }

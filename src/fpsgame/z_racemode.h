@@ -4,6 +4,7 @@
 #include "z_sendmap.h"
 #include "z_autosendmap.h"
 #include "z_loadmap.h"
+#include "z_format.h"
 
 bool z_racemode = false;
 VARFN(racemode, defaultracemode, 0, 0, 1, { if(clients.empty()) z_racemode = defaultracemode!=0; });
@@ -55,6 +56,24 @@ ICOMMAND(rend, "sfffii", (char *map, float *x, float *y, float *z, int *r, int *
     e.rend.radius = *r > 0 ? *r : RACE_DEFAULT_RADIUS;
     e.rend.place = clamp(*p, 1, RACE_MAXPLACES) - 1;    /* in command specified place starts from 1, in struct it starts from 0 */
 });
+
+// styling values
+SVAR(racemode_style_winners, "\f6RACE WINNERS: %W");
+SVAR(racemode_style_winplace, "\f2%P PLACE: \f7%C (%t)");
+vector<char *> racemode_placestrings;
+void racemode_style_places(tagval *args, int numargs)
+{
+    loopv(racemode_placestrings) delete[] racemode_placestrings[i];
+    racemode_placestrings.setsize(0);
+    loopi(numargs) racemode_placestrings.add(newstring(args[i].getstr()));
+}
+COMMAND(racemode_style_places, "sV");
+SVAR(racemode_style_enterplace, "\f6race: \f7%C \f2won \f6%P PLACE!! \f7(%t)");
+SVAR(racemode_style_leaveplace, "\f6race: \f7%C \f2left \f6%P PLACE!!");
+SVAR(racemode_style_starting, "\f6race: \f2starting race in %T...");
+SVAR(racemode_style_start, "\f6race: \f7START!!");
+SVAR(racemode_style_timeleft, "\f2time left: %T");
+SVAR(racemode_style_ending, "\f6race: \f2ending race in %T...");
 
 struct raceservmode: servmode
 {
@@ -144,15 +163,23 @@ struct raceservmode: servmode
 
     const char *placename(int n)
     {
-        switch(++n)
+        static string buf;
+        if(racemode_placestrings.empty())
         {
-            case 1: return "FIRST";
-            case 2: return "SECOND";
-            case 3: return "THIRD";
-            case 4: return "FOURTH";
-            case 5: return "FIFTH";
-            default: return tempformatstring("%dth", n);
+            // fill with default set of values
+            racemode_placestrings.add(newstring("FIRST"));
+            racemode_placestrings.add(newstring("SECOND"));
+            racemode_placestrings.add(newstring("THIRD"));
+            racemode_placestrings.add(newstring("%pth"));
         }
+        const char *fs = racemode_placestrings.inrange(n) ? racemode_placestrings[n] : racemode_placestrings.last();
+        z_formattemplate tmp[] =
+        {
+            { 'p', "%d", (const void *)(long)(n+1) },
+            { 0, NULL, NULL }
+        };
+        z_format(buf, sizeof(buf), fs, tmp);
+        return buf;
     }
 
     void checkplaces()
@@ -215,7 +242,21 @@ struct raceservmode: servmode
             if(!racemillis) racemillis = gamemillis-ci->state.lastdeath;    /* lastdeath is reused for spawntime */
             race_winners[avaiable_place].cn = ci->clientnum;
             race_winners[avaiable_place].racemillis = racemillis;
-            sendservmsgf("\f6race: \f7%s \f2won \f6%s PLACE!! \f7(%s)", colorname(ci), placename(avaiable_place), formatmillisecs(racemillis));
+
+            z_formattemplate ft[] =
+            {
+                { 'C', "%s", (const void *)colorname(ci) },
+                { 'c', "%s", (const void *)ci->name },
+                { 'n', "%d", (const void *)(long)ci->clientnum },
+                { 'P', "%s", (const void *)placename(avaiable_place) },
+                { 'p', "%d", (const void *)(long)(avaiable_place+1) },
+                { 't', "%s", (const void *)formatmillisecs(racemillis) },
+                { 0, NULL, NULL }
+            };
+            string buf;
+            z_format(buf, sizeof buf, racemode_style_enterplace, ft);
+            if(buf[0]) sendservmsg(buf);
+
             break;
         }
         if(state == ST_STARTED) checkplaces();
@@ -251,7 +292,22 @@ struct raceservmode: servmode
             ci->state.flags = 0;    /* flags field is reused for cheating info */
             loopvrev(race_winners) if(race_winners[i].cn == ci->clientnum)
             {
-                if(state < ST_INT) sendservmsgf("\f6race: \f7%s \f2left \f6%s PLACE!!", colorname(ci), placename(i));
+                if(state < ST_INT)
+                {
+                    z_formattemplate ft[] =
+                    {
+                        { 'C', "%s", (const void *)colorname(ci) },
+                        { 'c', "%s", (const void *)ci->name },
+                        { 'n', "%d", (const void *)(long)ci->clientnum },
+                        { 'P', "%s", (const void *)placename(i) },
+                        { 'p', "%d", (const void *)(long)(i+1) },
+                        { 't', "%s", (const void *)formatmillisecs(race_winners[i].racemillis) },
+                        { 0, NULL, NULL }
+                    };
+                    string buf;
+                    z_format(buf, sizeof buf, racemode_style_leaveplace, ft);
+                    if(buf[0]) sendservmsg(buf);
+                }
                 race_winners[i].cn = -1;
             }
         }
@@ -373,7 +429,17 @@ struct raceservmode: servmode
                 {
                     countermillis += 1000;
                     int secsleft = (racemode_startmillis - (totalmillis - statemillis) + 500)/1000;
-                    if(shouldshowtimer(secsleft)) sendservmsgf("\f6race: \f2starting race in %s...", formatsecs(secsleft));
+                    if(shouldshowtimer(secsleft))
+                    {
+                        z_formattemplate ft[] =
+                        {
+                            { 'T', "%s", (const void *)formatsecs(secsleft) },
+                            { 0, NULL, NULL }
+                        };
+                        string buf;
+                        z_format(buf, sizeof buf, racemode_style_starting, ft);
+                        if(buf[0]) sendservmsg(buf);
+                    }
                 }
                 if(totalmillis-statemillis>=racemode_startmillis)
                 {
@@ -386,7 +452,7 @@ struct raceservmode: servmode
                     }
                     else statemillis = 0;
                     pausegame(false, NULL);
-                    sendservmsg("\f6race: \f7START!!");
+                    if(racemode_style_start[0]) sendservmsg(racemode_style_start);
                     loopv(clients) if(clients[i]->state.state != CS_SPECTATOR)
                     {
                         if(clients[i]->state.state!=CS_EDITING) sendspawn(clients[i]);
@@ -402,7 +468,17 @@ struct raceservmode: servmode
                     {
                         countermillis += 1000;
                         int secsleft = (statemillis - totalmillis + 500)/1000;
-                        if(shouldshowtimer(secsleft)) sendservmsgf("\f6race: \f2time left: %s", formatsecs(secsleft));
+                        if(shouldshowtimer(secsleft))
+                        {
+                            z_formattemplate ft[] =
+                            {
+                                { 'T', "%s", (const void *)formatsecs(secsleft) },
+                                { 0, NULL, NULL }
+                            };
+                            string buf;
+                            z_format(buf, sizeof buf, racemode_style_timeleft, ft);
+                            if(buf[0]) sendservmsg(buf);
+                        }
                     }
                     if(statemillis-totalmillis <= 0)
                     {
@@ -417,7 +493,17 @@ struct raceservmode: servmode
                 {
                     countermillis += 1000;
                     int secsleft = (racemode_finishmillis - (totalmillis - statemillis) + 500)/1000;
-                    if(shouldshowtimer(secsleft)) sendservmsgf("\f6race: \f2ending race in %s...", formatsecs(secsleft));
+                    if(shouldshowtimer(secsleft))
+                    {
+                        z_formattemplate ft[] =
+                        {
+                            { 'T', "%s", (const void *)formatsecs(secsleft) },
+                            { 0, NULL, NULL }
+                        };
+                        string buf;
+                        z_format(buf, sizeof buf, racemode_style_ending, ft);
+                        if(buf[0]) sendservmsg(buf);
+                    }
                 }
                 if(totalmillis-statemillis >= racemode_finishmillis) startintermission();
                 break;
@@ -435,38 +521,45 @@ struct raceservmode: servmode
 
     void intermission()
     {
-        vector<char> buf;
-        const char * const msg_win = "\f6RACE WINNERS:";
-        const char * const msg_plc = " PLACE: \f7";
-        const char *msg_p;
-        bool won = false;
-
         if(state < ST_STARTED) pausegame(false, NULL);
         state = ST_INT;
         DELETEP(mapdata);
+
+        string tmp;
+        vector<char> buf;
+
         loopv(race_winners) if(race_winners[i].cn >= 0)
         {
             clientinfo *ci = getinfo(race_winners[i].cn);
             if(!ci) continue;
-            if(!won) buf.put(msg_win, strlen(msg_win)); /* first time executing this */
-            won = true;
-            buf.add(' ');
-            buf.add('\f');
-            buf.add('2');
-            msg_p = placename(i);
-            buf.put(msg_p, strlen(msg_p));
-            buf.put(msg_plc, strlen(msg_plc));
-            msg_p = colorname(ci);
-            buf.put(msg_p, strlen(msg_p));
-            buf.add(' ');
-            buf.add('(');
-            msg_p = formatmillisecs(race_winners[i].racemillis);
-            buf.put(msg_p, strlen(msg_p));
-            buf.add(')');
+
+            z_formattemplate style_tmp[] =
+            {
+                { 'p', "%d", (const void *)(long)(i+1) },
+                { 'P', "%s", (const void *)placename(i) },
+                { 'C', "%s", (const void *)colorname(ci) },
+                { 'c', "%s", (const void *)ci->name },
+                { 'n', "%d", (const void *)(long)ci->clientnum },
+                { 't', "%s", (const void *)formatmillisecs(race_winners[i].racemillis) },
+                { 0, NULL, NULL }
+            };
+
+            if(!buf.empty()) buf.add(' ');  // separate win entries by space
+            z_format(tmp, sizeof tmp, racemode_style_winplace, style_tmp);
+            buf.put(tmp, strlen(tmp));
         }
-        if(!won) return;
-        buf.add('\0');
-        sendservmsg(buf.getbuf());
+
+        if(buf.empty()) return; // no winners
+
+        buf.add(0);
+        z_formattemplate style_tmp[] =
+        {
+            { 'W', "%s", (const void *)buf.getbuf() },
+            { 0, NULL, NULL }
+        };
+        z_format(tmp, sizeof tmp, racemode_style_winners, style_tmp);
+
+        if(tmp[0]) sendservmsg(tmp);
     }
 };
 
