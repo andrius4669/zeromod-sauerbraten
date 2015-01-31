@@ -8,6 +8,7 @@
 #define EXT_UPTIME                      0
 #define EXT_PLAYERSTATS                 1
 #define EXT_TEAMSCORE                   2
+#define EXT_SERVERMOD                   -8
 
 /*
     Client:
@@ -29,15 +30,16 @@
     B:C:default: 0 command EXT_ACK EXT_VERSION EXT_ERROR
 */
 
-    VAR(extinfo_enable, 0, 1, 1);   // enable extinfo functionality
-    VAR(extinfo_showip, 0, 1, 2);   // show ips of clients
-    VAR(extinfo_showname, 0, 1, 1); // show names of clients
-    VAR(extinfo_showpriv, 0, 1, 2); // show privileges of clients
-    VAR(extinfo_showspy, 0, 0, 1);  // show spy clients
-    VAR(extinfo_noident, 0, 0, 1);  // disable mod identification
+    VAR(extinfo_enable, 0, 1, 1);           // enable extinfo functionality
+    VAR(extinfo_showip, 0, 1, 2);           // show ips of clients
+    VAR(extinfo_showname, 0, 1, 1);         // show names of clients
+    VAR(extinfo_showpriv, 0, 1, 2);         // show privileges of clients
+    VAR(extinfo_showspy, 0, 0, 1);          // show spy clients
+    VAR(extinfo_noident, 0, 0, 1);          // disable mod identification
+    VAR(extinfo_noextendedstats, 0, 0, 1);  // disable extended player stats
     static bool z_showip;
 
-    void extinfoplayer(ucharbuf &p, clientinfo *ci)
+    void extinfoplayer(ucharbuf &p, clientinfo *ci, bool z_extended)
     {
         ucharbuf q = p;
         putint(q, EXT_PLAYERSTATS_RESP_STATS); // send player stats following
@@ -57,6 +59,18 @@
         putint(q, ci->state.state);
         uint ip = z_showip ? getclientip(ci->clientnum) : 0;
         q.put((uchar*)&ip, 3);
+        if(z_extended)
+        {
+            putint(q, -1); //for hopmod compatibility
+            putint(q, EXT_SERVERMOD);
+            putint(q, ci->state.suicides);
+            putint(q, ci->state.shotdamage);
+            putint(q, ci->state.damage);
+            putint(q, ci->state.explosivedamage);
+            putint(q, ci->state.hits);
+            putint(q, ci->state.misses);
+            putint(q, ci->state.shots);
+        }
         sendserverinforeply(q);
     }
 
@@ -103,13 +117,14 @@
             case EXT_UPTIME:
             {
                 putint(p, totalsecs); //in seconds
-                if(!extinfo_noident && req.remaining() && req.get() > 0) putint(p, -8); //zeromod
+                if(!extinfo_noident && req.remaining() && req.get() > 0) putint(p, EXT_SERVERMOD); //server mod identification
                 break;
             }
 
             case EXT_PLAYERSTATS:
             {
                 int cn = getint(req); //a special player, -1 for all
+                bool z_extended = !extinfo_noident && !extinfo_noextendedstats && req.remaining() && getint(req) > 0;
                 
                 clientinfo *ci = NULL;
                 if(cn >= 0)
@@ -143,8 +158,8 @@
                     }
                 }
 
-                if(ci) extinfoplayer(p, ci);
-                else loopv(clients) if(extinfo_showspy || !clients[i]->spy) extinfoplayer(p, clients[i]);
+                if(ci) extinfoplayer(p, ci, z_extended);
+                else loopv(clients) if(extinfo_showspy || !clients[i]->spy) extinfoplayer(p, clients[i], z_extended);
                 return;
             }
 
