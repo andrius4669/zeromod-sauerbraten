@@ -35,7 +35,7 @@ bool allowmsg(clientinfo *ci, clientinfo *cq, int type)
         case N_EDITENT: case N_EDITVAR:
         case N_COPY: case N_CLIPBOARD: case N_PASTE:
         case N_REMIP: case N_NEWMAP:
-            if(smode==&racemode)
+            if(smode==&racemode && !racemode_allowedit)
             {
                 if(type == N_COPY || type == N_CLIPBOARD) ci->cleanclipboard();
                 if(type == N_REMIP) return false;   /* drop messages, but don't disqualify client for them */

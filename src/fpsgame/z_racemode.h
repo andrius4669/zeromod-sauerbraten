@@ -21,6 +21,7 @@ void z_servcmd_racemode(int argc, char **argv, int sender)
 SCOMMANDA(racemode, PRIV_ADMIN, z_servcmd_racemode, 1);
 
 VAR(racemode_allowcheat, 0, 0, 1);
+VAR(racemode_allowedit, 0, 0, 1);
 VAR(racemode_alloweditmode, 0, 1, 1);
 
 VAR(racemode_waitmap, 0, 10000, INT_MAX);

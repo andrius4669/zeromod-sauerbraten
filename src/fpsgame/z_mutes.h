@@ -5,7 +5,7 @@
 #include "z_triggers.h"
 #include "z_rename.h"
 
-static inline bool z_iseditmuted(clientinfo *ci) { return ci->editmute || smode==&racemode; }
+static inline bool z_iseditmuted(clientinfo *ci) { return ci->editmute || (smode==&racemode && !racemode_allowedit); }
 
 static void z_servcmd_mute(int argc, char **argv, int sender)
 {
