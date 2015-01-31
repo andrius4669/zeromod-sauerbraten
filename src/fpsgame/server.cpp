@@ -3374,6 +3374,7 @@ namespace server
                 if(!allowmsg(ci, ci, type)) break;
                 filtertext(text, text, false, false, MAXNAMELEN);
                 if(!text[0]) copystring(text, "unnamed");
+                if(!strcmp(ci->name, text)) break;
                 z_log_rename(ci, text);
                 copystring(ci->name, text);
                 if(ci->spy) break;
