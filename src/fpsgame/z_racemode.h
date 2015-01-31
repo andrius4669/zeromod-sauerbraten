@@ -21,6 +21,7 @@ void z_servcmd_racemode(int argc, char **argv, int sender)
 SCOMMANDA(racemode, PRIV_ADMIN, z_servcmd_racemode, 1);
 
 VAR(racemode_allowcheat, 0, 0, 1);
+VAR(racemode_alloweditmode, 0, 1, 1);
 
 VAR(racemode_waitmap, 0, 10000, INT_MAX);
 VAR(racemode_sendspectators, 0, 1, 1);
@@ -275,6 +276,7 @@ struct raceservmode: servmode
     void racecheat(clientinfo *ci, int type)
     {
         if(racemode_allowcheat) { ci->state.flags = 0; return; }
+        if(!racemode_alloweditmode && type == 1) type = 2;
         if((state < ST_STARTED && type < 2) || state > ST_FINISHED) return;
         if(ci->state.flags < type)
         {
@@ -577,7 +579,8 @@ void race_gotmap(clientinfo *ci)
     extern raceservmode racemode;
     if(smode==&racemode && ci->state.flags > 0)
     {
-        ci->state.flags = ci->state.state==CS_EDITING && !racemode_allowcheat ? 1 : 0;
+        if(!racemode_allowcheat) ci->state.flags = ci->state.state!=CS_EDITING ? 0 : racemode_alloweditmode ? 1 : 2;
+        else ci->state.flags = 0;
         if(ci->state.flags) raceservmode::warnracecheat(ci);
         else sendf(ci->clientnum, 1, "ris", N_SERVMSG, "since you got the map, you may continue racing now");
     }
