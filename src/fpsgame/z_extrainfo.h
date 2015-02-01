@@ -11,9 +11,10 @@ struct z_extrainfo
     char *disc_reason;
     int nodamage;
     bool slay, invpriv;
+    char *wlauth;
 
-    z_extrainfo(): disc_reason(NULL) {}
-    ~z_extrainfo() { DELETEA(disc_reason); }
+    z_extrainfo(): disc_reason(NULL), wlauth(NULL) {}
+    ~z_extrainfo() { delete[] disc_reason; delete[] wlauth; }
 
     void reset()
     {
@@ -26,6 +27,11 @@ struct z_extrainfo
         slay = false;
         invpriv = false;
     }
+
+    void setdiscreason(const char *s) { delete[] disc_reason; disc_reason = s && *s ? newstring(s) : NULL; }
+
+    void setwlauth(const char *s) { delete[] wlauth; wlauth = s && *s ? newstring(s) : NULL; }
+    void clearwlauth() { DELETEA(wlauth); }
 };
 
 #endif // Z_EXTRAINFO_H

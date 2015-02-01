@@ -17,18 +17,23 @@ struct msinfo
     int masternum;
     int *masterauthpriv;
     bool masterauthpriv_allow;
+    char *networkident;
+    char *whitelistauth;
+    char *banmessage;
+    int maxauthpriv;
 
     msinfo(): masterport(server::masterport()), mastersock(ENET_SOCKET_NULL),
         lastupdatemaster(0), lastconnectmaster(0), masterconnecting(0), masterconnected(0),
         masteroutpos(0), masterinpos(0), allowupdatemaster(true), masternum(-1),
-        masterauthpriv(NULL), masterauthpriv_allow(false)
+        masterauthpriv(NULL), masterauthpriv_allow(false), networkident(NULL),
+        whitelistauth(NULL), banmessage(NULL), maxauthpriv(3)
     {
         copystring(mastername, server::defaultmaster());
         masterauth[0] = '\0';
         masteraddress.host = ENET_HOST_ANY;
         masteraddress.port = ENET_PORT_ANY;
     }
-    ~msinfo() { disconnectmaster(); }
+    ~msinfo() { disconnectmaster(); delete[] networkident; delete[] whitelistauth; delete[] banmessage; }
 
     void disconnectmaster()
     {
@@ -273,10 +278,7 @@ const char *getmastername(int m)
     return mn;
 }
 
-const char *getmasterauth(int m)
-{
-    return mss.inrange(m) ? mss[m].masterauth : "";
-}
+const char *getmasterauth(int m) { return mss.inrange(m) ? mss[m].masterauth : ""; }
 
 int nummss() { return mss.length(); }
 
@@ -286,21 +288,44 @@ ICOMMAND(masterauthpriv, "i", (int *i),
     mss[currmss].masterauthpriv_allow = *i!=0;
 });
 
+ICOMMAND(mastermaxauthpriv, "i", (int *i),
+{
+    if(!mss.inrange(currmss)) addms();
+    mss[currmss].maxauthpriv = *i;
+});
+
 void masterauthpriv_set(int m, int priv)
 {
     if(!mss.inrange(m)) return;
-    DELETEP(mss[m].masterauthpriv);
-    mss[m].masterauthpriv = new int(priv);
+    delete mss[m].masterauthpriv;
+    mss[m].masterauthpriv = new int(clamp(priv, 0, mss[m].maxauthpriv));
 }
+void masterauthpriv_reset(int m) { if(mss.inrange(m)) DELETEP(mss[m].masterauthpriv); }
+const int *masterauthpriv_get(int m) { return mss.inrange(m) && mss[m].masterauthpriv_allow ? mss[m].masterauthpriv : NULL; }
 
-void masterauthpriv_reset(int m)
+ICOMMAND(masterbanwarn, "s", (char *s),
 {
-    if(mss.inrange(m)) DELETEP(mss[m].masterauthpriv);
-}
+    if(!mss.inrange(currmss)) addms();
+    delete[] mss[currmss].networkident;
+    mss[currmss].networkident = *s ? newstring(s) : NULL;
+});
 
-const int *masterauthpriv_get(int m)
+ICOMMAND(masterwhitelistauth, "s", (char *s),
 {
-    return mss.inrange(m) && mss[m].masterauthpriv_allow ? mss[m].masterauthpriv : NULL;
-}
+    if(!mss.inrange(currmss)) addms();
+    delete[] mss[currmss].whitelistauth;
+    mss[currmss].whitelistauth = *s ? newstring(s) : NULL;
+});
+
+ICOMMAND(masterbanmessage, "s", (char *s),
+{
+    if(!mss.inrange(currmss)) addms();
+    delete[] mss[currmss].banmessage;
+    mss[currmss].banmessage = *s ? newstring(s) : NULL;
+});
+
+const char *getmasternetident(int m) { return mss.inrange(m) ? mss[m].networkident : NULL; }
+const char *getmasterwlauth(int m) { return mss.inrange(m) ? mss[m].whitelistauth : NULL; }
+const char *getmasterbanmsg(int m) { return mss.inrange(m) ? mss[m].banmessage : NULL; }
 
 #endif // Z_MS_ENGINESERVER_OVERRIDE_H

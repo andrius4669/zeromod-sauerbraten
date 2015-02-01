@@ -4,6 +4,7 @@
 #include "z_gbans_override.h"
 
 VAR(authconnect, 0, 1, 2);
+VAR(anyauthconnect, 0, 0, 1);
 
 bool z_allowauthconnect(int priv = PRIV_ADMIN)
 {
@@ -53,8 +54,9 @@ void authsucceeded(int m, uint id, int dpriv = PRIV_AUTH)
     bool connecting = false;
     if(ci->connectauth)
     {
-        if(z_allowauthconnect(priv))
+        if(z_allowauthconnect(priv) || (ci->xi.wlauth && !strcmp(ci->xi.wlauth, ci->authdesc)))
         {
+            ci->xi.clearwlauth();
             connected(ci);
             connecting = true;
         }
@@ -66,11 +68,11 @@ void authsucceeded(int m, uint id, int dpriv = PRIV_AUTH)
     }
     if(ci->authkickvictim >= 0)
     {
-        if(setmaster(ci, true, "", ci->authname, ci->authdesc, priv, false, true, !connecting))
+        if(priv>PRIV_NONE && setmaster(ci, true, "", ci->authname, ci->authdesc, priv, false, true, !connecting))
             trykick(ci, ci->authkickvictim, ci->authkickreason, ci->authname, ci->authdesc, priv);
         ci->cleanauthkick();
     }
-    else setmaster(ci, true, "", ci->authname, ci->authdesc, priv, false, false, !connecting);
+    else if(priv>PRIV_NONE) setmaster(ci, true, "", ci->authname, ci->authdesc, priv, false, false, !connecting);
 }
 
 void authchallenged(int m, uint id, const char *val, const char *desc = "")
@@ -132,8 +134,9 @@ bool answerchallenge(clientinfo *ci, uint id, char *val, const char *desc)
                 bool connecting = false;
                 if(ci->connectauth)
                 {
-                    if(z_allowauthconnect(u->privilege))
+                    if(z_allowauthconnect(u->privilege) || (ci->xi.wlauth && !strcmp(ci->xi.wlauth, desc)))
                     {
+                        ci->xi.clearwlauth();
                         connected(ci);
                         connecting = true;
                     }
@@ -145,10 +148,10 @@ bool answerchallenge(clientinfo *ci, uint id, char *val, const char *desc)
                 }
                 if(ci->authkickvictim >= 0)
                 {
-                    if(setmaster(ci, true, "", ci->authname, ci->authdesc, u->privilege, false, true, !connecting))
+                    if(u->privilege>PRIV_NONE && setmaster(ci, true, "", ci->authname, ci->authdesc, u->privilege, false, true, !connecting))
                         trykick(ci, ci->authkickvictim, ci->authkickreason, ci->authname, ci->authdesc, u->privilege);
                 }
-                else setmaster(ci, true, "", ci->authname, ci->authdesc, u->privilege, false, false, !connecting);
+                else if(u->privilege>PRIV_NONE) setmaster(ci, true, "", ci->authname, ci->authdesc, u->privilege, false, false, !connecting);
             }
         }
         ci->cleanauth();
@@ -204,7 +207,7 @@ void processmasterinput(int m, const char *cmd, int cmdlen, const char *args)
     {
         switch(val[0])
         {
-            case '0': case 'n': case 'N': masterauthpriv_set(m, PRIV_NONE); break;
+            case '0': case 'n': case 'N': case 'i': case 'I': masterauthpriv_set(m, PRIV_NONE); break;
             case '1': case 'c': case 'C': masterauthpriv_set(m, PRIV_MASTER); break;
             case '2': case 'm': case 'M': default: masterauthpriv_set(m, PRIV_AUTH); break;
             case '3': case 'a': case 'A': masterauthpriv_set(m, PRIV_ADMIN); break;

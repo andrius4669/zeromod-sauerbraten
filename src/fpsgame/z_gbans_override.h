@@ -99,13 +99,24 @@ static void cleargbans(int m = -1)
     else if(gbans.inrange(m)) gbans[m].clear();
 }
 
-static bool checkgban(uint ip)
+static bool checkgban(uint ip, clientinfo *ci, bool connect = false)
 {
     uint hip = ENET_NET_TO_HOST_32(ip);
     gbaninfo *p;
     if((p = pbans.find(hip)) && p->check(hip)) return true;
     loopv(sbans) if(sbans[i].check(ip)) return true;
-    loopv(gbans) if((p = gbans[i].find(hip)) && p->check(hip)) return true;
+    loopv(gbans) if((p = gbans[i].find(hip)) && p->check(hip))
+    {
+        const char *p;
+        if((p = getmasternetident(i)))
+        {
+            if(!ci->xi.geoip.network) ci->xi.geoip.network = newstring(p);
+            return false;
+        }
+        if((p = getmasterbanmsg(i))) ci->xi.setdiscreason(p);
+        if(connect && (p = getmasterwlauth(i))) ci->xi.setwlauth(p);
+        return true;
+    }
     return false;
 }
 
@@ -147,7 +158,7 @@ static void addgban(int m, const char *name, clientinfo *actor = NULL, const cha
         clientinfo *ci = clients[i];
         if(ci->state.aitype != AI_NONE || ci->local || ci->privilege >= PRIV_ADMIN) continue;
         if(actor && ((ci->privilege > actor->privilege && !actor->local) || ci->clientnum == actor->clientnum)) continue;
-        if(checkgban(getclientip(ci->clientnum))) disconnect_client(ci->clientnum, DISC_IPBAN);
+        if(checkgban(getclientip(ci->clientnum), ci)) disconnect_client(ci->clientnum, DISC_IPBAN);
     }
 }
 
@@ -265,7 +276,7 @@ void z_servcmd_pban(int argc, char **argv, int sender)
         ci = clients[i];
         if(ci->state.aitype != AI_NONE || ci->local || ci->privilege >= PRIV_ADMIN) continue;
         if((ci->privilege > actor->privilege && !actor->local) || ci->clientnum == actor->clientnum) continue;
-        if(checkgban(getclientip(ci->clientnum))) disconnect_client(ci->clientnum, DISC_IPBAN);
+        if(checkgban(getclientip(ci->clientnum), ci)) disconnect_client(ci->clientnum, DISC_IPBAN);
     }
 }
 SCOMMANDA(pban, PRIV_ADMIN, z_servcmd_pban, 2);

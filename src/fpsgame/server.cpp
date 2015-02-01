@@ -1400,7 +1400,7 @@ namespace server
         u.pubkey = parsepubkey(pubkey);
         switch(priv[0])
         {
-            case 'n': case 'N': case '0': u.privilege = PRIV_NONE; break;
+            case 'n': case 'N': case 'i': case 'I': case '0': u.privilege = PRIV_NONE; break;
             case 'c': case 'C': case '1': u.privilege = PRIV_MASTER; break;
             case 'a': case 'A': case '3': u.privilege = PRIV_ADMIN; break;
             case 'm': case 'M': default: u.privilege = PRIV_AUTH; break;
@@ -1604,7 +1604,7 @@ namespace server
 
         uchar operator[](int msg) const { return msg >= 0 && msg < NUMMSG ? msgmask[msg] : 0; }
     } msgfilter(-1, N_CONNECT, N_SERVINFO, N_INITCLIENT, N_WELCOME, N_MAPCHANGE, N_SERVMSG, N_DAMAGE, N_HITPUSH, N_SHOTFX, N_EXPLODEFX, N_DIED, N_SPAWNSTATE, N_FORCEDEATH, N_TEAMINFO, N_ITEMACC, N_ITEMSPAWN, N_TIMEUP, N_CDIS, N_CURRENTMASTER, N_PONG, N_RESUME, N_BASESCORE, N_BASEINFO, N_BASEREGEN, N_ANNOUNCE, N_SENDDEMOLIST, N_SENDDEMO, N_DEMOPLAYBACK, N_SENDMAP, N_DROPFLAG, N_SCOREFLAG, N_RETURNFLAG, N_RESETFLAG, N_INVISFLAG, N_CLIENT, N_AUTHCHAL, N_INITAI, N_EXPIRETOKENS, N_DROPTOKENS, N_STEALTOKENS, N_DEMOPACKET, -2, N_REMIP, N_NEWMAP, N_GETMAP, N_SENDMAP, N_CLIPBOARD, -3, N_EDITENT, N_EDITF, N_EDITT, N_EDITM, N_FLIP, N_COPY, N_PASTE, N_ROTATE, N_REPLACE, N_DELCUBE, N_EDITVAR, -4, N_POS, NUMMSG),
-      connectfilter(-1, N_CONNECT, -2, N_AUTHANS, -3, N_PING, NUMMSG);
+      connectfilter(-1, N_CONNECT, -2, N_AUTHANS, -3, N_PING, -4, N_AUTHTRY, NUMMSG);
 
     int checktype(int type, clientinfo *ci)
     {
@@ -1618,6 +1618,8 @@ namespace server
                 case 2: return ci->connectauth ? type : -1;
                 // always allow
                 case 3: return type;
+                // allow only before server intiated authconnect
+                case 4: return ci->connectauth && !ci->authreq ? type : -1;
                 // never allow
                 default: return -1;
             }
@@ -2670,7 +2672,6 @@ namespace server
         connects.add(ci);
         if(!m_mp(gamemode)) return DISC_LOCAL;
         sendservinfo(ci);
-        z_geoip_resolveclient(ci->xi.geoip, ip);
         return DISC_NONE;
     }
 
@@ -2739,6 +2740,8 @@ namespace server
     {
         if(ci->local) return DISC_NONE;
         if(!m_mp(gamemode)) return DISC_LOCAL;
+        uint ip = getclientip(ci->clientnum);
+        z_geoip_resolveclient(ci->xi.geoip, ip);
         if(serverpass[0])
         {
             if(!checkpassword(ci, serverpass, pwd)) return DISC_PASSWORD;
@@ -2746,9 +2749,8 @@ namespace server
         }
         if(adminpass[0] && checkpassword(ci, adminpass, pwd)) return DISC_NONE;
         if(numclients(-1, false, true)>=maxclients) return DISC_MAXCLIENTS;
-        uint ip = getclientip(ci->clientnum);
         if(z_checkban(ip)) return DISC_IPBAN;
-        if(checkgban(ip)) return DISC_IPBAN;
+        if(checkgban(ip, ci, true)) return DISC_IPBAN;
         if(geoip_ban_anonymous && ci->xi.geoip.anonymous) return DISC_IPBAN;
         if(mastermode>=MM_PRIVATE && allowedips.find(ip)<0) return DISC_PRIVATE;
         return DISC_NONE;
@@ -3008,10 +3010,20 @@ namespace server
                     int disc = allowconnect(ci, password);
                     if(disc)
                     {
-                        if(disc == DISC_LOCAL || !serverauth[0] || strcmp(serverauth, authdesc) || !z_allowauthconnect() || !tryauth(ci, authname, authdesc))
+                        bool allowauth = z_allowauthconnect() || (ci->xi.wlauth && !strcmp(ci->xi.wlauth, serverauth));
+                        if(disc == DISC_LOCAL || !serverauth[0] || strcmp(serverauth, authdesc) || !allowauth || !tryauth(ci, authname, authdesc))
                         {
-                            disconnect_client(sender, disc);
-                            return;
+                            bool trywhitelist = ci->xi.wlauth && strcmp(ci->xi.wlauth, serverauth);
+                            if((disc != DISC_LOCAL && anyauthconnect && z_allowauthconnect()) || trywhitelist)
+                            {
+                                sendf(ci->clientnum, 1, "ri", N_WELCOME);
+                                if(trywhitelist) sendf(ci->clientnum, 1, "ris", N_REQAUTH, ci->xi.wlauth);
+                            }
+                            else
+                            {
+                                disconnect_client(sender, disc);
+                                return;
+                            }
                         }
                         ci->connectauth = disc;
                     }
@@ -3030,6 +3042,20 @@ namespace server
                     uint id = (uint)getint(p);
                     getstring(ans, p, sizeof(ans));
                     if(!answerchallenge(ci, id, ans, desc)) 
+                    {
+                        disconnect_client(sender, ci->connectauth);
+                        return;
+                    }
+                    break;
+                }
+
+                case N_AUTHTRY:
+                {
+                    string desc, name;
+                    getstring(desc, p, sizeof(desc));
+                    getstring(name, p, sizeof(name));
+                    bool allowauth = anyauthconnect || (ci->xi.wlauth && !strcmp(ci->xi.wlauth, desc));
+                    if(!allowauth || !tryauth(ci, name, desc))
                     {
                         disconnect_client(sender, ci->connectauth);
                         return;
