@@ -99,22 +99,54 @@ static void cleargbans(int m = -1)
     else if(gbans.inrange(m)) gbans[m].clear();
 }
 
+VAR(showbanreason, 0, 0, 1);
+VAR(showbanip, 0, 0, 1);
+
 static bool checkgban(uint ip, clientinfo *ci, bool connect = false)
 {
     uint hip = ENET_NET_TO_HOST_32(ip);
     gbaninfo *p;
     if((p = pbans.find(hip)) && p->check(hip)) return true;
-    loopv(sbans) if(sbans[i].check(ip)) return true;
+    loopv(sbans) if(sbans[i].check(ip))
+    {
+        if(connect && showbanreason && sbans[i].comment)
+        {
+            if(showbanip)
+            {
+                string buf;
+                sbans[i].print(buf);
+                ci->xi.setdiscreason(tempformatstring("ip/range you are connecting from (%s) is banned because: %s", buf, sbans[i].comment));
+            }
+            else ci->xi.setdiscreason(tempformatstring("ip/range you are connecting from is banned because: %s", sbans[i].comment));
+        }
+        return true;
+    }
     loopv(gbans) if((p = gbans[i].find(hip)) && p->check(hip))
     {
-        const char *p;
-        if((p = getmasternetident(i)))
+        const char *s;
+        if((s = getmasternetident(i)))
         {
-            if(!ci->xi.geoip.network) ci->xi.geoip.network = newstring(p);
+            if(!ci->xi.geoip.network) ci->xi.geoip.network = newstring(s);
             return false;
         }
-        if((p = getmasterbanmsg(i))) ci->xi.setdiscreason(p);
-        if(connect && (p = getmasterwlauth(i))) ci->xi.setwlauth(p);
+        if(connect && showbanreason && (s = getmasterbanmsg(i)))
+        {
+            if(showbanip)
+            {
+                string buf;
+                p->print(buf);
+                ci->xi.setdiscreason(tempformatstring("ip/range you are connecting from (%s) is banned because: %s", buf, s));
+            }
+            else ci->xi.setdiscreason(tempformatstring("ip/range you are connecting from is banned because: %s", s));
+        }
+        if((s = getmasterwlauth(i)))
+        {
+            if(!connect)
+            {
+                if(ci->xi.wlauth && !strcmp(ci->xi.wlauth, s)) return false;
+            }
+            else ci->xi.setwlauth(s);
+        }
         return true;
     }
     return false;

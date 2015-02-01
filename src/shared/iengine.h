@@ -433,7 +433,7 @@ extern uint getserverinfoip();
 extern const char *getclienthostname(int i);
 extern void localconnect();
 extern const char *disconnectreason(int reason);
-extern void disconnect_client(int n, int reason);
+extern void disconnect_client(int n, int reason, bool wait = false);
 extern void kicknonlocalclients(int reason = DISC_NONE);
 extern bool hasnonlocalclients();
 extern bool haslocalclients();

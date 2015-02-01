@@ -3010,18 +3010,30 @@ namespace server
                     int disc = allowconnect(ci, password);
                     if(disc)
                     {
+                        if(ci->xi.disc_reason) sendf(ci->clientnum, 1, "ris", N_SERVMSG, ci->xi.disc_reason);
                         bool allowauth = z_allowauthconnect() || (ci->xi.wlauth && !strcmp(ci->xi.wlauth, serverauth));
                         if(disc == DISC_LOCAL || !serverauth[0] || strcmp(serverauth, authdesc) || !allowauth || !tryauth(ci, authname, authdesc))
                         {
                             bool trywhitelist = ci->xi.wlauth && strcmp(ci->xi.wlauth, serverauth);
-                            if((disc != DISC_LOCAL && anyauthconnect && z_allowauthconnect()) || trywhitelist)
+                            if(disc != DISC_LOCAL && ((anyauthconnect && z_allowauthconnect()) || trywhitelist))
                             {
-                                sendf(ci->clientnum, 1, "ri", N_WELCOME);
+                                sendf(ci->clientnum, 1, "ri", N_WELCOME);   // allow client to send N_AUTHTRY
+                                if(anyauthconnect && z_allowauthconnect())
+                                {
+                                    sendf(ci->clientnum, 1, "ris", N_SERVMSG,
+                                          tempformatstring("%suse your (g)auth to bypass ban", ci->xi.disc_reason ? "" : "you are banned; "));
+                                }
+                                else
+                                {
+                                    sendf(ci->clientnum, 1, "ris", N_SERVMSG,
+                                          tempformatstring("%suse [\fs\f0%s\fr] auth to bypass ban",
+                                                           ci->xi.disc_reason ? "" : "you are banned; ", ci->xi.wlauth));
+                                }
                                 if(trywhitelist) sendf(ci->clientnum, 1, "ris", N_REQAUTH, ci->xi.wlauth);
                             }
                             else
                             {
-                                disconnect_client(sender, disc);
+                                disconnect_client(sender, disc, ci->xi.disc_reason!=NULL);
                                 return;
                             }
                         }

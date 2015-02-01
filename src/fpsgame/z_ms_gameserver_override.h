@@ -56,7 +56,6 @@ void authsucceeded(int m, uint id, int dpriv = PRIV_AUTH)
     {
         if(z_allowauthconnect(priv) || (ci->xi.wlauth && !strcmp(ci->xi.wlauth, ci->authdesc)))
         {
-            ci->xi.clearwlauth();
             connected(ci);
             connecting = true;
         }
@@ -136,7 +135,6 @@ bool answerchallenge(clientinfo *ci, uint id, char *val, const char *desc)
                 {
                     if(z_allowauthconnect(u->privilege) || (ci->xi.wlauth && !strcmp(ci->xi.wlauth, desc)))
                     {
-                        ci->xi.clearwlauth();
                         connected(ci);
                         connecting = true;
                     }

@@ -325,10 +325,11 @@ const char *disconnectreason(int reason)
     }
 }
 
-void disconnect_client(int n, int reason)
+void disconnect_client(int n, int reason, bool wait)
 {
     if(!clients.inrange(n) || clients[n]->type!=ST_TCPIP) return;
-    enet_peer_disconnect(clients[n]->peer, reason);
+    if(!wait) enet_peer_disconnect(clients[n]->peer, reason);
+    else enet_peer_disconnect_later(clients[n]->peer, reason);
     server::clientdisconnect(n, true, reason);
     delclient(clients[n]);
 }
