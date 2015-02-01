@@ -2749,7 +2749,7 @@ namespace server
         }
         if(adminpass[0] && checkpassword(ci, adminpass, pwd)) return DISC_NONE;
         if(numclients(-1, false, true)>=maxclients) return DISC_MAXCLIENTS;
-        if(z_checkban(ip)) return DISC_IPBAN;
+        if(z_checkban(ip, ci)) return DISC_IPBAN;
         if(checkgban(ip, ci, true)) return DISC_IPBAN;
         if(geoip_ban_anonymous && ci->xi.geoip.anonymous) return DISC_IPBAN;
         if(mastermode>=MM_PRIVATE && allowedips.find(ip)<0) return DISC_PRIVATE;

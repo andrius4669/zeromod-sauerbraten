@@ -291,7 +291,7 @@ ICOMMAND(masterauthpriv, "i", (int *i),
 ICOMMAND(mastermaxauthpriv, "i", (int *i),
 {
     if(!mss.inrange(currmss)) addms();
-    mss[currmss].maxauthpriv = *i;
+    mss[currmss].maxauthpriv = clamp(*i, 0, 3);
 });
 
 void masterauthpriv_set(int m, int priv)
@@ -301,7 +301,13 @@ void masterauthpriv_set(int m, int priv)
     mss[m].masterauthpriv = new int(clamp(priv, 0, mss[m].maxauthpriv));
 }
 void masterauthpriv_reset(int m) { if(mss.inrange(m)) DELETEP(mss[m].masterauthpriv); }
-const int *masterauthpriv_get(int m) { return mss.inrange(m) && mss[m].masterauthpriv_allow ? mss[m].masterauthpriv : NULL; }
+const int *masterauthpriv_get(int m)
+{
+    if(!mss.inrange(m)) return NULL;
+    if(!mss[m].masterauthpriv_allow) DELETEP(mss[m].masterauthpriv);
+    if(!mss[m].masterauthpriv && mss[m].maxauthpriv < 2) mss[m].masterauthpriv = new int(mss[m].maxauthpriv);
+    return mss[m].masterauthpriv;
+}
 
 ICOMMAND(masterbanwarn, "s", (char *s),
 {
