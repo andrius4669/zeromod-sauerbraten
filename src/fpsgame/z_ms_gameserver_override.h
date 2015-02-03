@@ -28,7 +28,11 @@ void authfailed(clientinfo *ci)
     for(int m = findauthmaster(ci->authdesc, om); m >= 0; m = findauthmaster(ci->authdesc, m))
     {
         if(!ci->authreq) { if(!nextauthreq) nextauthreq = 1; ci->authreq = nextauthreq++; }
-        if(requestmasterf(m, "reqauth %u %s\n", ci->authreq, ci->authname)) { ci->authmaster = m; break; }
+        if(requestmasterf(m, "reqauth %u %s\n", ci->authreq, ci->authname))
+        {
+            ci->authmaster = m;
+            break;
+        }
     }
     if(ci->authmaster < 0)
     {
@@ -67,11 +71,11 @@ void authsucceeded(int m, uint id, int dpriv = PRIV_AUTH)
     }
     if(ci->authkickvictim >= 0)
     {
-        if(priv>PRIV_NONE && setmaster(ci, true, "", ci->authname, ci->authdesc, priv, false, true, !connecting))
+        if(setmaster(ci, true, "", ci->authname, ci->authdesc, priv, false, true, !connecting))
             trykick(ci, ci->authkickvictim, ci->authkickreason, ci->authname, ci->authdesc, priv);
         ci->cleanauthkick();
     }
-    else if(priv>PRIV_NONE) setmaster(ci, true, "", ci->authname, ci->authdesc, priv, false, false, !connecting);
+    else setmaster(ci, true, "", ci->authname, ci->authdesc, priv, false, false, !connecting);
 }
 
 void authchallenged(int m, uint id, const char *val, const char *desc = "")
@@ -98,12 +102,20 @@ bool tryauth(clientinfo *ci, const char *user, const char *desc)
     }
     else
     {
+        bool tried = false;
         for(int m = findauthmaster(desc); m >= 0; m = findauthmaster(desc, m))
-            if(requestmasterf(m, "reqauth %u %s\n", ci->authreq, ci->authname)) { ci->authmaster = m; break; }
+        {
+            tried = true;
+            if(requestmasterf(m, "reqauth %u %s\n", ci->authreq, ci->authname))
+            {
+                ci->authmaster = m;
+                break;
+            }
+        }
         if(ci->authmaster < 0)
         {
             ci->cleanauth();
-            if(!ci->authdesc[0]) sendf(ci->clientnum, 1, "ris", N_SERVMSG, "not connected to authentication server");
+            if(tried) sendf(ci->clientnum, 1, "ris", N_SERVMSG, "not connected to authentication server");
         }
     }
     if(ci->authreq) return true;
@@ -146,26 +158,32 @@ bool answerchallenge(clientinfo *ci, uint id, char *val, const char *desc)
                 }
                 if(ci->authkickvictim >= 0)
                 {
-                    if(u->privilege>PRIV_NONE && setmaster(ci, true, "", ci->authname, ci->authdesc, u->privilege, false, true, !connecting))
+                    if(setmaster(ci, true, "", ci->authname, ci->authdesc, u->privilege, false, true, !connecting))
                         trykick(ci, ci->authkickvictim, ci->authkickreason, ci->authname, ci->authdesc, u->privilege);
                 }
-                else if(u->privilege>PRIV_NONE) setmaster(ci, true, "", ci->authname, ci->authdesc, u->privilege, false, false, !connecting);
+                else setmaster(ci, true, "", ci->authname, ci->authdesc, u->privilege, false, false, !connecting);
             }
         }
         ci->cleanauth();
     }
     else if(!requestmasterf(om, "confauth %u %s\n", id, val))
     {
+        bool tried = false;
         ci->cleanauth(false);
         for(int m = findauthmaster(desc, om); m >= 0; m = findauthmaster(desc, m))
         {
+            tried = true;
             if(!ci->authreq) { if(!nextauthreq) nextauthreq = 1; ci->authreq = nextauthreq++; }
-            if(requestmasterf(m, "reqauth %u %s\n", ci->authreq, ci->authname)) { ci->authmaster = m; break; }
+            if(requestmasterf(m, "reqauth %u %s\n", ci->authreq, ci->authname))
+            {
+                ci->authmaster = m;
+                break;
+            }
         }
         if(ci->authmaster < 0)
         {
             ci->cleanauth();
-            if(!ci->authdesc[0]) sendf(ci->clientnum, 1, "ris", N_SERVMSG, "not connected to authentication server");
+            if(tried) sendf(ci->clientnum, 1, "ris", N_SERVMSG, "not connected to authentication server");
         }
     }
     // return false = disconnect
@@ -205,10 +223,9 @@ void processmasterinput(int m, const char *cmd, int cmdlen, const char *args)
     {
         switch(val[0])
         {
-            case '0': case 'n': case 'N': case 'i': case 'I': masterauthpriv_set(m, PRIV_NONE); break;
-            case '1': case 'c': case 'C': masterauthpriv_set(m, PRIV_MASTER); break;
-            case '2': case 'm': case 'M': default: masterauthpriv_set(m, PRIV_AUTH); break;
-            case '3': case 'a': case 'A': masterauthpriv_set(m, PRIV_ADMIN); break;
+            case 'a': case 'A': masterauthpriv_set(m, PRIV_ADMIN); break;
+            case 'm': case 'M': default: masterauthpriv_set(m, PRIV_AUTH); break;
+            case 'n': case 'N': masterauthpriv_set(m, PRIV_NONE); break;
         }
     }
 }

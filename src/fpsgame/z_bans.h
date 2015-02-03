@@ -70,7 +70,7 @@ bool z_checkban(uint ip, clientinfo *ci)
                     }
                     else
                     {
-                        r = bannedips[i].reason!=NULL
+                        r = bannedips[i].reason
                             ? tempformatstring("ip you are connecting from is banned (%s); ban will expire after %s", bannedips[i].reason, buf.getbuf())
                             : tempformatstring("ip you are connecting from is banned; ban will expire after %s", buf.getbuf());
                     }
@@ -78,6 +78,11 @@ bool z_checkban(uint ip, clientinfo *ci)
                 }
             }
             return true;
+
+        case BAN_MUTE:
+            ci->xi.chatmute = true;
+            continue;
+
         default:
             continue;
     }
@@ -94,12 +99,6 @@ bool z_applyspecban(clientinfo *ci)
         sendf(ci->clientnum, 1, "ris", N_SERVMSG, tempformatstring("you are spectated because of %s ban", b.type==BAN_TEAMKILL ? "teamkills" : "spectate"));
         return true;
     }
-    return false;
-}
-
-bool z_checkmuteban(uint ip)
-{
-    loopv(bannedips) if(bannedips[i].ip==ip && bannedips[i].type==BAN_MUTE) return true;
     return false;
 }
 

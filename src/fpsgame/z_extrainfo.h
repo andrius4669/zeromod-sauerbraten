@@ -12,9 +12,19 @@ struct z_extrainfo
     int nodamage;
     bool slay, invpriv;
     char *wlauth;
+    bool chatmute, specmute, editmute, namemute;
+    int lastchat, lastedit;
+    int maploaded;
+    int mapsucks;
 
     z_extrainfo(): disc_reason(NULL), wlauth(NULL) {}
     ~z_extrainfo() { delete[] disc_reason; delete[] wlauth; }
+
+    void mapchange()
+    {
+        maploaded = 0;
+        mapsucks = 0;
+    }
 
     void reset()
     {
@@ -26,6 +36,8 @@ struct z_extrainfo
         nodamage = 0;
         slay = false;
         invpriv = false;
+        chatmute = specmute = editmute = namemute = false;
+        lastchat = lastedit = 0;
     }
 
     void setdiscreason(const char *s) { delete[] disc_reason; disc_reason = s && *s ? newstring(s) : NULL; }

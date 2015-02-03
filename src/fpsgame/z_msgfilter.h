@@ -19,11 +19,11 @@ bool allowmsg(clientinfo *ci, clientinfo *cq, int type)
 
         case N_TEXT:
         case N_SAYTEAM:
-            if(cq && cq->chatmute)
+            if(cq && cq->xi.chatmute)
             {
-                if(!cq->lastchat || totalmillis-cq->lastchat>=2000)
+                if(!cq->xi.lastchat || totalmillis-cq->xi.lastchat>=2000)
                 {
-                    cq->lastchat = totalmillis ? totalmillis : 1;
+                    cq->xi.lastchat = totalmillis ? totalmillis : 1;
                     if(cq->state.aitype == AI_NONE) sendf(cq->clientnum, 1, "ris", N_SERVMSG, "your text messages are muted");
                 }
                 return false;
@@ -42,7 +42,7 @@ bool allowmsg(clientinfo *ci, clientinfo *cq, int type)
                 racemode.racecheat(ci, 2);
                 return false;
             }
-            if(ci->editmute)
+            if(ci->xi.editmute)
             {
                 if(type == N_COPY || type == N_CLIPBOARD) ci->cleanclipboard();
                 const char *msg;
@@ -51,9 +51,9 @@ bool allowmsg(clientinfo *ci, clientinfo *cq, int type)
                     case N_REMIP: msg = "your remip message was muted"; break;
                     case N_NEWMAP: msg = "your newmap message was muted"; break;
                     default:
-                        if(!ci->lastedit || totalmillis-ci->lastedit>=10000)
+                        if(!ci->xi.lastedit || totalmillis-ci->xi.lastedit>=10000)
                         {
-                            ci->lastedit = totalmillis ? totalmillis : 1;
+                            ci->xi.lastedit = totalmillis ? totalmillis : 1;
                             msg = "your map editing message was muted";
                         }
                         else msg = NULL;
@@ -65,7 +65,7 @@ bool allowmsg(clientinfo *ci, clientinfo *cq, int type)
             return true;
 
         case N_SWITCHNAME:
-            if(ci->namemute)
+            if(ci->xi.namemute)
             {
                 z_rename(ci, ci->name, false);
                 return false;

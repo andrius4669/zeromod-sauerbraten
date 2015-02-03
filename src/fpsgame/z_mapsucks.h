@@ -22,13 +22,13 @@ void z_mapsucks(clientinfo *ci)
 {
     vector<uint> plips, msips;
     if(interm) return;
-    bool changed = ci->mapsucks <= 0;
-    ci->mapsucks = 1;
+    bool changed = ci->xi.mapsucks <= 0;
+    ci->xi.mapsucks = 1;
     loopv(clients) if(clients[i]->state.aitype==AI_NONE && clients[i]->state.state!=CS_SPECTATOR)
     {
         uint ip = getclientip(clients[i]->clientnum);
         if(plips.find(ip)<0) plips.add(ip);
-        if(clients[i]->mapsucks > 0 && msips.find(ip)<0) msips.add(ip);
+        if(clients[i]->xi.mapsucks > 0 && msips.find(ip)<0) msips.add(ip);
     }
     int needvotes;
     if(plips.length() > 2) needvotes = (plips.length() + 1) / 2;

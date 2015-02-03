@@ -212,9 +212,9 @@ struct raceservmode: servmode
 
     static bool clientready(clientinfo *ci)
     {
-        if(z_autosendmap == 2) return ci->mapcrc && !ci->getmap && ci->maploaded;
-        if(z_autosendmap == 1) return !ci->getmap && ci->maploaded;
-        return ci->mapcrc && ci->maploaded;
+        if(z_autosendmap == 2) return ci->mapcrc && !ci->getmap && ci->xi.maploaded;
+        if(z_autosendmap == 1) return !ci->getmap && ci->xi.maploaded;
+        return ci->mapcrc && ci->xi.maploaded;
     }
 
     void moved(clientinfo *ci, const vec &oldpos, bool oldclip, const vec &newpos, bool newclip)

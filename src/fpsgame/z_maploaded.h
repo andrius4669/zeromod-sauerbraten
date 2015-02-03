@@ -7,13 +7,13 @@ VAR(mapload_debug, 0, 0, 1);
 
 static void z_maploaded(clientinfo *ci, bool val = true)
 {
-    if(val && !ci->maploaded)
+    if(val && !ci->xi.maploaded)
     {
-        ci->maploaded = totalmillis ? totalmillis : 1;
+        ci->xi.maploaded = totalmillis ? totalmillis : 1;
         if(mapload_debug) sendservmsgf("%s has loaded map", colorname(ci));
         z_sendallpatches(ci);
     }
-    else if(!val) ci->maploaded = 0;
+    else if(!val) ci->xi.maploaded = 0;
 }
 
 #endif // Z_MAPLOADED_H

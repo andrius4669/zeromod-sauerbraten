@@ -257,9 +257,7 @@ namespace server
         char *authkickreason;
 
         z_extrainfo xi;
-        bool chatmute, specmute, editmute, spy, namemute;
-        int lastchat, lastedit, maploaded;
-        int mapsucks;
+        bool spy;
 
         clientinfo() : getdemo(NULL), getmap(NULL), clipboard(NULL), authchallenge(NULL), authkickreason(NULL) { reset(); }
         ~clientinfo() { events.deletecontents(); cleanclipboard(); cleanauth(); }
@@ -325,8 +323,7 @@ namespace server
             mapcrc = 0;
             warned = false;
             gameclip = false;
-            maploaded = 0;
-            mapsucks = 0;
+            xi.mapchange();
         }
 
         void reassign()
@@ -372,8 +369,7 @@ namespace server
             cleanclipboard();
             cleanauth();
             xi.reset();
-            chatmute = specmute = editmute = spy = namemute = false;
-            lastchat = lastedit = 0;
+            spy = false;
             mapchange();
         }
 
@@ -1212,7 +1208,7 @@ namespace server
         loopv(clients)
         {
             clientinfo *ci = clients[i];
-            if(ci->getmap == packet) ci->maploaded = 0;
+            if(ci->getmap == packet) ci->xi.maploaded = 0;
             extern void race_gotmap(clientinfo *);
             if(ci->getmap == packet) race_gotmap(ci);
             if(ci->getmap == packet) ci->getmap = NULL;
@@ -1400,17 +1396,12 @@ namespace server
         u.pubkey = parsepubkey(pubkey);
         switch(priv[0])
         {
-            case 'n': case 'N': case 'i': case 'I': case '0': u.privilege = PRIV_NONE; break;
-            case 'c': case 'C': case '1': u.privilege = PRIV_MASTER; break;
-            case 'a': case 'A': case '3': u.privilege = PRIV_ADMIN; break;
+            case 'a': case 'A': u.privilege = PRIV_ADMIN; break;
             case 'm': case 'M': default: u.privilege = PRIV_AUTH; break;
+            case 'n': case 'N': u.privilege = PRIV_NONE; break;
         }
     }
-    ICOMMAND(adduser, "ssssN", (char *name, char *desc, char *pubkey, char *priv, int *n),
-    {
-        if(*n > 2) adduser(name, desc, pubkey, priv);
-        else adduser(name, (char *)"", desc, (char *)"");
-    });
+    COMMAND(adduser, "ssss");
 
     void clearusers()
     {
@@ -1451,10 +1442,7 @@ namespace server
         {
             bool haspass = adminpass[0] && checkpassword(ci, adminpass, pass);
             int wantpriv = ci->local || haspass ? PRIV_ADMIN : authpriv;
-            if(ci->privilege)
-            {
-                if(wantpriv <= ci->privilege) return true;
-            }
+            if(wantpriv <= ci->privilege) return true;
             else if(wantpriv <= PRIV_MASTER && !force)
             {
                 if(ci->state.state==CS_SPECTATOR) 
@@ -2621,8 +2609,8 @@ namespace server
         ci->state.respawn();
         ci->state.lasttimeplayed = lastmillis;
         aiman::addclient(ci);
-        if(ci->clientmap[0] || ci->mapcrc) checkmaps();
         sendf(-1, 1, "ri3", N_SPECTATOR, ci->clientnum, 0);
+        if(ci->clientmap[0] || ci->mapcrc) checkmaps();
         if(!hasmap(ci)) rotatemap(true);
     }
 
@@ -2971,9 +2959,8 @@ namespace server
         if(servermotd[0]) sendf(ci->clientnum, 1, "ris", N_SERVMSG, servermotd);
 
         if(m_edit && z_autosendmap == 1) z_sendmap(ci, NULL);
-        extern bool z_autoeditmute; ci->editmute = z_autoeditmute;
+        extern bool z_autoeditmute; ci->xi.editmute = z_autoeditmute;
         extern int z_nodamage; ci->xi.nodamage = z_nodamage;
-        if(!ci->local && z_checkmuteban(getclientip(ci->clientnum))) ci->chatmute = true;
     }
 
     #include "z_msgfilter.h"
@@ -3138,7 +3125,7 @@ namespace server
                         cp->position.setsize(0);
                         while(curmsg<p.length()) cp->position.add(p.buf[curmsg++]);
                     }
-                    if(!ci->maploaded && cp->state.state==CS_ALIVE) z_maploaded(ci);
+                    if(!ci->xi.maploaded && cp->state.state==CS_ALIVE) z_maploaded(ci);
                     if(smode && cp->state.state==CS_ALIVE) smode->moved(cp, cp->state.o, cp->gameclip, pos, (flags&0x80)!=0);
                     cp->state.o = pos;
                     cp->gameclip = (flags&0x80)!=0;
@@ -3190,7 +3177,7 @@ namespace server
                 int val = getint(p);
                 if(!ci->local && !m_edit)
                 {
-                    if(ci->maploaded) { disconnect_client(sender, DISC_MSGERR); return; }
+                    if(ci->xi.maploaded) { disconnect_client(sender, DISC_MSGERR); return; }
                     break;
                 }
                 if(val ? ci->state.state!=CS_ALIVE && ci->state.state!=CS_DEAD : ci->state.state!=CS_EDITING) break;
@@ -3575,7 +3562,7 @@ namespace server
             case N_SPECTATOR:
             {
                 int spectator = getint(p), val = getint(p);
-                if(!ci->privilege && !ci->local && (spectator!=sender || (ci->state.state==CS_SPECTATOR && (mastermode>=MM_LOCKED || ci->specmute || z_applyspecban(ci))))) break;
+                if(!ci->privilege && !ci->local && (spectator!=sender || (ci->state.state==CS_SPECTATOR && (mastermode>=MM_LOCKED || ci->xi.specmute || z_applyspecban(ci))))) break;
                 clientinfo *spinfo = (clientinfo *)getclientinfo(spectator); // no bots
                 if(!spinfo || !spinfo->connected || (spinfo->state.state==CS_SPECTATOR ? val : !val)) break;
                 if(spinfo->spy) break;
