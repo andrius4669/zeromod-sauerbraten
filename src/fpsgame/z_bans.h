@@ -12,41 +12,6 @@ void z_teamkillspectate(uint ip)
     }
 }
 
-static void z_printbantime(vector<char> &buf, int millisecs)
-{
-    const char *s;
-    int secs = millisecs / 1000;
-    int days = secs / 24*60*60;
-    secs %= 24*60*60;
-    int hours = secs / 60*60;
-    secs %= 60*60;
-    int mins = secs / 60;
-    secs %= 60;
-    if(days)
-    {
-        s = tempformatstring("%d day%s", days, days > 1 ? "s" : "");
-        buf.put(s, strlen(s));
-    }
-    if(hours)
-    {
-        if(buf.length()) buf.add(' ');
-        s = tempformatstring("%d hour%s", hours, hours > 1 ? "s" : "");
-        buf.put(s, strlen(s));
-    }
-    if(mins)
-    {
-        if(buf.length()) buf.add(' ');
-        s = tempformatstring("%d minute%s", mins, mins > 1 ? "s" : "");
-        buf.put(s, strlen(s));
-    }
-    if(secs)
-    {
-        if(buf.length()) buf.add(' ');
-        s = tempformatstring("%d second%s", secs, secs > 1 ? "s" : "");
-        buf.put(s, strlen(s));
-    }
-}
-
 bool z_checkban(uint ip, clientinfo *ci)
 {
     extern int showbanreason;
@@ -58,24 +23,8 @@ bool z_checkban(uint ip, clientinfo *ci)
         case BAN_KICK:
             if(showbanreason)
             {
-                vector<char> buf;
-                z_printbantime(buf, bannedips[i].expire-totalmillis);
-                if(buf.length())
-                {
-                    buf.add(0);
-                    const char *r;
-                    if(bannedips[i].type==BAN_TEAMKILL)
-                    {
-                        r = tempformatstring("ip you are connecting from is banned because of teamkills; ban will expire after %s", buf.getbuf());
-                    }
-                    else
-                    {
-                        r = bannedips[i].reason
-                            ? tempformatstring("ip you are connecting from is banned (%s); ban will expire after %s", bannedips[i].reason, buf.getbuf())
-                            : tempformatstring("ip you are connecting from is banned; ban will expire after %s", buf.getbuf());
-                    }
-                    ci->xi.setdiscreason(r);
-                }
+                if(bannedips[i].type==BAN_TEAMKILL) ci->xi.setdiscreason("ip you are connecting from is banned because of teamkills");
+                else if(bannedips[i].reason) ci->xi.setdiscreason(tempformatstring("ip you are connecting from is banned because: %s", bannedips[i].reason));
             }
             return true;
 

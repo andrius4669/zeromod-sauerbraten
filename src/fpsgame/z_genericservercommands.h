@@ -128,7 +128,7 @@ void z_servcmd_pm(int argc, char **argv, int sender)
     if(servcmd_pm_comfirmation)
     {
         ci = getinfo(cn);
-        sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("your private message successfully sent to %s \f5(%d)", ci->name, ci->clientnum));
+        sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("your private message was successfully sent to %s \f5(%d)", ci->name, ci->clientnum));
     }
 }
 SCOMMANDA(pm, PRIV_NONE, z_servcmd_pm, 2);
