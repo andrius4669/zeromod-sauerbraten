@@ -182,7 +182,7 @@ CLIENT_OBJS+= xcode/macutils.o xcode/main.o xcode/Launcher.o
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 endif
 
-ifeq ($(PLATFORM),SunOS)
+ifeq ($(PLATFORM),SUNOS)
 CLIENT_LIBS+= -lsocket -lnsl -lX11
 SERVER_LIBS+= -lsocket -lnsl
 endif
