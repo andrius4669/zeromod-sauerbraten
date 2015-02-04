@@ -119,7 +119,7 @@ namespace server
         int lastdeath, deadflush, lastspawn, lifesequence;
         int lastshot;
         projectilestate<8> rockets, grenades;
-        int frags, flags, deaths, teamkills, shotdamage, damage, tokens;
+        int frags, flags, deaths, suicides, teamkills, shotdamage, damage, explosivedamage, tokens, hits, misses, shots;
         int lasttimeplayed, timeplayed;
         float effectiveness;
         int stolen, returned;
@@ -148,7 +148,7 @@ namespace server
 
             timeplayed = 0;
             effectiveness = 0;
-            frags = flags = deaths = teamkills = shotdamage = damage = tokens = 0;
+            frags = flags = deaths = suicides = teamkills = shotdamage = explosivedamage = damage = hits = misses = shots = tokens = 0;
 
             lastdeath = 0;
             stolen = returned = 0;
@@ -182,7 +182,7 @@ namespace server
     {
         uint ip;
         string name;
-        int maxhealth, frags, flags, deaths, teamkills, shotdamage, damage;
+        int maxhealth, frags, flags, deaths, suicides, teamkills, shotdamage, explosivedamage, damage, hits, misses, shots;
         int timeplayed;
         float effectiveness;
         int stolen, returned;
@@ -196,14 +196,19 @@ namespace server
             frags = gs.frags;
             flags = gs.flags;
             deaths = gs.deaths;
+            suicides = gs.suicides;
             teamkills = gs.teamkills;
             shotdamage = gs.shotdamage;
+            explosivedamage = gs.explosivedamage;
             damage = gs.damage;
             timeplayed = gs.timeplayed;
             effectiveness = gs.effectiveness;
             stolen = gs.stolen;
             returned = gs.returned;
             z_setteaminfos(teaminfos, gs.teaminfos);
+            hits = gs.hits;
+            misses = gs.misses;
+            shots = gs.shots;
         }
 
         void restore(gamestate &gs)
@@ -213,14 +218,19 @@ namespace server
             gs.frags = frags;
             gs.flags = flags;
             gs.deaths = deaths;
+            gs.suicides = suicides;
             gs.teamkills = teamkills;
             gs.shotdamage = shotdamage;
+            gs.explosivedamage = explosivedamage;
             gs.damage = damage;
             gs.timeplayed = timeplayed;
             gs.effectiveness = effectiveness;
             gs.stolen = stolen;
             gs.returned = returned;
             z_setteaminfos(gs.teaminfos, teaminfos);
+            gs.hits = hits;
+            gs.misses = misses;
+            gs.shots = shots;
         }
     };
 
@@ -2237,7 +2247,11 @@ namespace server
         gamestate &ts = target->state;
         int hnd = z_hasnodamage(target, actor);
         if(hnd > 2) return;
-        if(!hnd) ts.dodamage(damage);
+        if(!hnd)
+        {
+            ts.dodamage(damage);
+            actor->state.damage += damage;
+        }
         if(target!=actor && !isteam(target->team, actor->team)) actor->state.damage += damage;
         sendf(-1, 1, "ri6", N_DAMAGE, target->clientnum, actor->clientnum, damage, ts.armour, ts.health);
         if(target==actor) target->setpushed();
@@ -2250,6 +2264,7 @@ namespace server
         if(ts.health<=0)
         {
             target->state.deaths++;
+            target->state.suicides += actor==target;
             int fragvalue = smode ? smode->fragvalue(target, actor) : (target==actor || isteam(target->team, actor->team) ? -1 : 1);
             actor->state.frags += fragvalue;
             if(fragvalue>0)
@@ -2285,6 +2300,7 @@ namespace server
         int fragvalue = smode ? smode->fragvalue(ci, ci) : -1;
         ci->state.frags += fragvalue;
         ci->state.deaths++;
+        ci->state.suicides++;
         teaminfo *t = m_teammode ? teaminfos.access(ci->team) : NULL;
         if(t && z_acceptfragval(ci, fragvalue)) t->frags += fragvalue;
         sendf(-1, 1, "ri5", N_DIED, ci->clientnum, ci->clientnum, gs.frags, t ? t->frags : 0);
@@ -2317,6 +2333,7 @@ namespace server
                 return;
         }
         if(ci->xi.slay) { suicide(ci); return; }
+        gs.explosivedamage += guns[gun].damage * (gs.quadmillis ? 4 : 1);
         sendf(-1, 1, "ri4x", N_EXPLODEFX, ci->clientnum, gun, id, ci->ownernum);
         loopv(hits)
         {
@@ -2327,6 +2344,8 @@ namespace server
             bool dup = false;
             loopj(i) if(hits[j].target==h.target) { dup = true; break; }
             if(dup) continue;
+
+            gs.hits += (ci != target ? 1 : 0);
 
             int damage = guns[gun].damage;
             if(gs.quadmillis) damage *= 4;
@@ -2354,6 +2373,8 @@ namespace server
                 int(to.x*DMF), int(to.y*DMF), int(to.z*DMF),
                 ci->ownernum);
         gs.shotdamage += guns[gun].damage*(gs.quadmillis ? 4 : 1)*guns[gun].rays;
+        gs.shots++;
+        int z_old_hits = gs.hits;
         switch(gun)
         {
             case GUN_RL: gs.rockets.add(id); break;
@@ -2369,6 +2390,7 @@ namespace server
 
                     totalrays += h.rays;
                     if(totalrays>maxrays) continue;
+                    gs.hits += (ci != target ? 1 : 0);
                     int damage = h.rays*guns[gun].damage;
                     if(gs.quadmillis) damage *= 4;
                     dodamage(target, ci, damage, gun, h.dir);
@@ -2376,6 +2398,7 @@ namespace server
                 break;
             }
         }
+        gs.misses += (gs.hits - z_old_hits == 0);
     }
 
     void pickupevent::process(clientinfo *ci)

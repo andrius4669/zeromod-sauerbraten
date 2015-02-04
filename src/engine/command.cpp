@@ -824,6 +824,7 @@ static inline char *conc(tagval *v, int n, bool space)
     return conc(v, n, space, NULL, 0);
 }
 
+UNUSED
 static inline char *conc(tagval *v, int n, bool space, const char *prefix)
 {
     return conc(v, n, space, prefix, strlen(prefix));
