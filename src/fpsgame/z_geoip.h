@@ -129,6 +129,11 @@ static const char *z_geoip_decode_continent(const char *cont)
 }
 #endif
 
+short z_geoip_getextinfo(geoipstate &gs)
+{
+    return geoip_show_country == 1 ? gs.extcountry.s : geoip_show_continent == 1 ? gs.extcontinent.s : 0;
+}
+
 void z_geoip_resolveclient(geoipstate &gs, enet_uint32 ip)
 {
     gs.cleanup();
@@ -220,6 +225,8 @@ void z_geoip_resolveclient(geoipstate &gs, enet_uint32 ip)
             }
             break;
     }
+
+    gs.setextinfo(country_code, continent_code);
 
     uchar buf[MAXSTRLEN];
     size_t len;

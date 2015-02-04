@@ -31,13 +31,11 @@
 */
 
     VAR(extinfo_enable, 0, 1, 1);           // enable extinfo functionality
-    VAR(extinfo_showip, 0, 1, 2);           // show ips of clients
-    VAR(extinfo_showname, 0, 1, 1);         // show names of clients
+    VAR(extinfo_showip, 0, 1, 1);           // show ips of clients
     VAR(extinfo_showpriv, 0, 1, 2);         // show privileges of clients
     VAR(extinfo_showspy, 0, 0, 1);          // show spy clients
     VAR(extinfo_noident, 0, 0, 1);          // disable mod identification
     VAR(extinfo_noextendedstats, 0, 0, 1);  // disable extended player stats
-    static bool z_showip;
 
     void extinfoplayer(ucharbuf &p, clientinfo *ci, bool z_extended)
     {
@@ -45,7 +43,7 @@
         putint(q, EXT_PLAYERSTATS_RESP_STATS); // send player stats following
         putint(q, ci->clientnum); //add player id
         putint(q, ci->ping);
-        sendstring(extinfo_showname ? ci->name : "", q);
+        sendstring(ci->name, q);
         sendstring(ci->team, q);
         putint(q, ci->state.frags);
         putint(q, ci->state.flags);
@@ -57,7 +55,7 @@
         putint(q, ci->state.gunselect);
         putint(q, (extinfo_showpriv && (extinfo_showpriv > 1 || z_canseemypriv(ci, NULL))) ? ci->privilege : PRIV_NONE);
         putint(q, ci->state.state);
-        uint ip = z_showip ? getclientip(ci->clientnum) : 0;
+        uint ip = extinfo_showip ? getclientip(ci->clientnum) : 0;
         q.put((uchar*)&ip, 3);
         if(z_extended)
         {
@@ -70,6 +68,8 @@
             putint(q, ci->state.hits);
             putint(q, ci->state.misses);
             putint(q, ci->state.shots);
+            short gi = z_geoip_getextinfo(ci->xi.geoip);
+            q.put((uchar*)&gi, 2);
         }
         sendserverinforeply(q);
     }
@@ -146,18 +146,6 @@
                 else loopv(clients) if(extinfo_showspy || !clients[i]->spy) putint(q, clients[i]->clientnum);
                 sendserverinforeply(q);
             
-                if(extinfo_showip < 2) z_showip = extinfo_showip!=0;
-                else
-                {
-                    uint rip = getserverinfoip();
-                    z_showip = false;
-                    loopv(clients) if(clients[i]->state.aitype==AI_NONE && !clients[i]->local && getclientip(clients[i]->clientnum) == rip)
-                    {
-                        z_showip = true;
-                        break;
-                    }
-                }
-
                 if(ci) extinfoplayer(p, ci, z_extended);
                 else loopv(clients) if(extinfo_showspy || !clients[i]->spy) extinfoplayer(p, clients[i], z_extended);
                 return;
