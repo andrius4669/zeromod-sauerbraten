@@ -2,6 +2,7 @@
 #define Z_GENERICSERVERCOMMANDS_H 1
 
 #include "z_servcmd.h"
+#include "z_format.h"
 
 static char z_privcolor(int priv)
 {
@@ -37,33 +38,10 @@ static void z_servcmd_commands(int argc, char **argv, int sender)
 SCOMMANDA(commands, PRIV_NONE, z_servcmd_commands, 1);
 SCOMMANDAH(help, PRIV_NONE, z_servcmd_commands, 1);
 
-static const struct z_timedivinfo { const char *name; int timediv; } z_timedivinfos[] =
-{
-    // month is inaccurate 
-    { "week", 60*60*24*7 },
-    { "day", 60*60*24 },
-    { "hour", 60*60 },
-    { "minute", 60 },
-    { "second", 1 }
-};
-
 void z_servcmd_info(int argc, char **argv, int sender)
 {
     vector<char> uptimebuf;
-    uint secs = totalsecs;
-    loopi(sizeof(z_timedivinfos)/sizeof(z_timedivinfos[0]))
-    {
-        uint t = secs / z_timedivinfos[i].timediv;
-        if(!t) continue;
-        secs %= z_timedivinfos[i].timediv;
-        if(uptimebuf.length()) uptimebuf.add(' ');
-        const char *timestr = tempformatstring("%u", t);
-        uptimebuf.put(timestr, strlen(timestr));
-        uptimebuf.add(' ');
-        uptimebuf.put(z_timedivinfos[i].name, strlen(z_timedivinfos[i].name));
-        if(t > 1) uptimebuf.add('s');
-        if(!secs) break;
-    }
+    z_formatsecs(uptimebuf, totalsecs);
     uptimebuf.add('\0');
     sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("server uptime: %s", uptimebuf.getbuf()));
 }

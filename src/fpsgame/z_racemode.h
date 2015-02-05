@@ -369,15 +369,6 @@ struct raceservmode: servmode
         return secs >= 60 ? (secs % 60 == 0) : secs >= 30 ? (secs % 10 == 0) : secs >= 5 ? (secs % 5 == 0) : (secs > 0);
     }
 
-    static const char *formatsecs(int secs)
-    {
-        int mins = secs / 60;
-        secs %= 60;
-        if(!mins) return tempformatstring("%d second%s", secs, secs != 1 ? "s" : "");
-        else if(mins && !secs) return tempformatstring("%d minute%s", mins, mins != 1 ? "s" : "");
-        else return tempformatstring("%d minute%s %d second%s", mins, mins != 1 ? "s" : "", secs, secs != 1 ? "s" : "");
-    }
-
     static const char *formatmillisecs(int ms)
     {
         int mins = ms / 60000;
@@ -437,9 +428,12 @@ struct raceservmode: servmode
                     int secsleft = (racemode_startmillis - (totalmillis - statemillis) + 500)/1000;
                     if(shouldshowtimer(secsleft))
                     {
+                        vector<char> timebuf;
+                        z_formatsecs(timebuf, (uint)secsleft);
+                        timebuf.add(0);
                         z_formattemplate ft[] =
                         {
-                            { 'T', "%s", (const void *)formatsecs(secsleft) },
+                            { 'T', "%s", (const void *)timebuf.getbuf() },
                             { 0, NULL, NULL }
                         };
                         string buf;
@@ -476,9 +470,12 @@ struct raceservmode: servmode
                         int secsleft = (statemillis - totalmillis + 500)/1000;
                         if(shouldshowtimer(secsleft))
                         {
+                            vector<char> timebuf;
+                            z_formatsecs(timebuf, (uint)secsleft);
+                            timebuf.add(0);
                             z_formattemplate ft[] =
                             {
-                                { 'T', "%s", (const void *)formatsecs(secsleft) },
+                                { 'T', "%s", (const void *)timebuf.getbuf() },
                                 { 0, NULL, NULL }
                             };
                             string buf;
@@ -501,9 +498,12 @@ struct raceservmode: servmode
                     int secsleft = (racemode_finishmillis - (totalmillis - statemillis) + 500)/1000;
                     if(shouldshowtimer(secsleft))
                     {
+                        vector<char> timebuf;
+                        z_formatsecs(timebuf, (uint)secsleft);
+                        timebuf.add(0);
                         z_formattemplate ft[] =
                         {
-                            { 'T', "%s", (const void *)formatsecs(secsleft) },
+                            { 'T', "%s", (const void *)timebuf.getbuf() },
                             { 0, NULL, NULL }
                         };
                         string buf;

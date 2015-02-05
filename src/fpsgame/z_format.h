@@ -40,4 +40,34 @@ int z_format(char *dest, size_t maxlen, const char *fmt, const z_formattemplate 
     return dest-start;
 }
 
+static const struct { const char *name; int timediv; } z_timedivinfos[] =
+{
+    // month is inaccurate
+    { "week", 60*60*24*7 },
+    { "day", 60*60*24 },
+    { "hour", 60*60 },
+    { "minute", 60 },
+    { "second", 1 }
+};
+
+void z_formatsecs(vector<char> &timebuf, uint secs)
+{
+    bool moded = false;
+    const size_t tl = sizeof(z_timedivinfos)/sizeof(z_timedivinfos[0]);
+    for(size_t i = 0; i < tl; i++)
+    {
+        uint t = secs / z_timedivinfos[i].timediv;
+        if(!t && (i+1<tl || moded)) continue;
+        secs %= z_timedivinfos[i].timediv;
+        if(!moded) timebuf.add(' ');
+        moded = true;
+        charbuf b = timebuf.reserve(10 + 1);
+        timebuf.advance(sprintf(b.buf, "%u", t));
+        timebuf.add(' ');
+        timebuf.put(z_timedivinfos[i].name, strlen(z_timedivinfos[i].name));
+        if(t != 1) timebuf.add('s');
+        if(!secs) break;
+    }
+}
+
 #endif // Z_FORMAT_H
