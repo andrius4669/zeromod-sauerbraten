@@ -9,7 +9,7 @@
 struct gbaninfo
 {
     // in host byte order, cause easier to compare
-    enet_uint32 ip, mask;   // mask is inverted
+    enet_uint32 first, last;
 
     void parse(const char *name)
     {
@@ -30,22 +30,23 @@ struct gbaninfo
                 if(c == '/')
                 {
                     int range = clamp(int(strtol(name, NULL, 10)), 0, 32);
-                    mask = ~(range ? (0xFFffFFff << (32 - range)) : ENET_NET_TO_HOST_32(maskconv.i));
-                    ip = ENET_NET_TO_HOST_32(ipconv.i) & ~mask;
+                    int mask = range ? 0xFFffFFff << (32 - range) : ENET_NET_TO_HOST_32(maskconv.i);
+                    first = ENET_NET_TO_HOST_32(ipconv.i) & mask;
+                    last = first | ~mask;
                     return;
                 }
             }
         }
-        ip = ENET_NET_TO_HOST_32(ipconv.i);
-        mask = ~ENET_NET_TO_HOST_32(maskconv.i);
+        first = ENET_NET_TO_HOST_32(ipconv.i & maskconv.i);
+        last = ENET_NET_TO_HOST_32(ipconv.i | ~maskconv.i);
     }
 
     int print(char *buf) const
     {
         char *start = buf;
         union { uchar b[sizeof(enet_uint32)]; enet_uint32 i; } ipconv, maskconv;
-        ipconv.i = ENET_HOST_TO_NET_32(ip);
-        maskconv.i = ~ENET_HOST_TO_NET_32(mask);
+        ipconv.i = ENET_HOST_TO_NET_32(first);
+        maskconv.i = ~ENET_HOST_TO_NET_32(first ^ last);
         int lastdigit = -1;
         loopi(4) if(maskconv.b[i])
         {
@@ -54,7 +55,7 @@ struct gbaninfo
             buf += sprintf(buf, "%d", ipconv.b[i]);
             lastdigit = i;
         }
-        enet_uint32 bits = mask;
+        enet_uint32 bits = first ^ last;
         int range = 32;
         for(; (bits&0xFF) == 0xFF; bits >>= 8) range -= 8;
         for(; bits&1; bits >>= 1) --range;
@@ -64,21 +65,21 @@ struct gbaninfo
 
     inline int compare(const gbaninfo &b) const
     {
-        if((b.ip | b.mask) < ip) return -1;
-        if(b.ip > (ip | mask)) return +1;
+        if(b.last < first) return -1;
+        if(b.first > last) return +1;
         return 0;   /* ranges overlap */
     }
 
     // host byte order
-    inline int compare(enet_uint32 cip) const
+    inline int compare(enet_uint32 ip) const
     {
-        if(cip < ip) return -1;
-        if(cip > (ip | mask)) return +1;
+        if(ip < first) return -1;
+        if(ip > last) return +1;
         return 0;
     }
 
     // host byte order
-    bool check(enet_uint32 cip) const { return (cip & ~mask) == ip; }
+    bool check(enet_uint32 ip) const { return (ip | (first ^ last)) == last; }
 };
 
 // basic pban struct with comments
