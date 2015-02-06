@@ -127,7 +127,7 @@ namespace server
         hashset<teaminfo> *teaminfos;
 
         gamestate() : state(CS_DEAD), editstate(CS_DEAD), lifesequence(0), teaminfos(NULL) {}
-        ~gamestate() { if(teaminfos) delete teaminfos; }
+        ~gamestate() { delete teaminfos; }
 
         bool isalive(int gamemillis)
         {
@@ -2245,11 +2245,7 @@ namespace server
         gamestate &ts = target->state;
         int hnd = z_hasnodamage(target, actor);
         if(hnd > 2) return;
-        if(!hnd)
-        {
-            ts.dodamage(damage);
-            actor->state.damage += damage;
-        }
+        if(!hnd) ts.dodamage(damage);
         if(target!=actor && !isteam(target->team, actor->team)) actor->state.damage += damage;
         sendf(-1, 1, "ri6", N_DAMAGE, target->clientnum, actor->clientnum, damage, ts.armour, ts.health);
         if(target==actor) target->setpushed();
@@ -2372,7 +2368,7 @@ namespace server
                 ci->ownernum);
         gs.shotdamage += guns[gun].damage*(gs.quadmillis ? 4 : 1)*guns[gun].rays;
         gs.shots++;
-        int z_old_hits = gs.hits;
+        int oldhits = gs.hits;
         switch(gun)
         {
             case GUN_RL: gs.rockets.add(id); break;
@@ -2396,7 +2392,7 @@ namespace server
                 break;
             }
         }
-        gs.misses += (gs.hits - z_old_hits == 0);
+        gs.misses += (gs.hits - oldhits == 0);
     }
 
     void pickupevent::process(clientinfo *ci)
@@ -2716,7 +2712,6 @@ namespace server
 
     #include "z_gbans_override.h"
 #if 0
-
     vector<ipmask> gbans;
 
     void cleargbans()
