@@ -47,7 +47,7 @@ VAR(geoip_show_region, 0, 0, 2);
 VAR(geoip_show_country, 0, 1, 2);
 VAR(geoip_show_continent, 0, 0, 2);
 VAR(geoip_skip_duplicates, 0, 1, 2);
-VAR(geoip_country_use_db, 0, 0, 2);
+VAR(geoip_country_use_db, 0, 2, 2);
 VAR(geoip_fix_country, 0, 1, 1);
 SVAR(geoip_color_scheme, "777");
 VAR(geoip_ban_anonymous, 0, 0, 1);
@@ -137,10 +137,9 @@ short z_geoip_getextinfo(geoipstate &gs)
 void z_geoip_resolveclient(geoipstate &gs, enet_uint32 ip)
 {
     gs.cleanup();
-    if(!geoip_enable) return;
+    if(!geoip_enable || !ip) return;
     z_init_geoip();
     ip = ENET_NET_TO_HOST_32(ip);   // geoip uses host byte order
-    if(!ip) return;
     // look in list of reserved ips
     loopi(sizeof(reservedips)/sizeof(reservedips[0])) if((ip & reservedips[i].mask) == reservedips[i].ip)
     {
@@ -158,7 +157,7 @@ void z_geoip_resolveclient(geoipstate &gs, enet_uint32 ip)
         int id = GeoIP_id_by_ipnum(z_gi, ip);
         if(id >= 0) country_id = id;
     }
-    if(z_gic && (geoip_show_city || geoip_show_region || (country_id <= 0 || geoip_country_use_db)))
+    if(z_gic && (geoip_show_city || geoip_show_region || country_id <= 0 || geoip_country_use_db))
     {
         gir = GeoIP_record_by_ipnum(z_gic, ip);
     }

@@ -742,7 +742,6 @@ namespace server
         tk.teamkills = n;
     }
 
-    VARF(teamkillspectate, 0, 0, 1, { if(!teamkillspectate) loopv(bannedips) if(bannedips[i].type==BAN_TEAMKILL) kickclients(bannedips[i].ip); });
     #include "z_bans.h"
 
     void checkteamkills()
@@ -756,8 +755,7 @@ namespace server
             if(tk.teamkills >= kick->limit)
             {
                 if(kick->ban > 0) addban(tk.ip, kick->ban, BAN_TEAMKILL);
-                if(!teamkillspectate) kickclients(tk.ip);
-                else z_teamkillspectate(tk.ip);
+                z_kickteamkillers(tk.ip);
                 teamkills.removeunordered(i);
             }
         }

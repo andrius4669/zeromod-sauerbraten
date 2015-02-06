@@ -9,7 +9,7 @@
 struct gbaninfo
 {
     // in host byte order, cause easier to compare
-    enet_uint32 first, last;
+    uint first, last;
 
     void parse(const char *name)
     {
@@ -71,7 +71,7 @@ struct gbaninfo
     }
 
     // host byte order
-    inline int compare(enet_uint32 ip) const
+    inline int compare(uint ip) const
     {
         if(ip < first) return -1;
         if(ip > last) return +1;
@@ -79,7 +79,7 @@ struct gbaninfo
     }
 
     // host byte order
-    bool check(enet_uint32 ip) const { return (ip | (first ^ last)) == last; }
+    bool check(uint ip) const { return (ip | (first ^ last)) == last; }
 };
 
 // basic pban struct with comments
@@ -101,7 +101,7 @@ static void cleargbans(int m = -1)
 }
 
 VAR(showbanreason, 0, 0, 1);
-VAR(showbanip, 0, 0, 1);
+VAR(showbanrange, 0, 0, 1);
 
 static bool checkgban(uint ip, clientinfo *ci, bool connect = false)
 {
@@ -112,7 +112,7 @@ static bool checkgban(uint ip, clientinfo *ci, bool connect = false)
     {
         if(connect && showbanreason && sbans[i].comment)
         {
-            if(showbanip)
+            if(showbanrange)
             {
                 string buf;
                 sbans[i].print(buf);
@@ -132,7 +132,7 @@ static bool checkgban(uint ip, clientinfo *ci, bool connect = false)
         }
         if(connect && showbanreason && (s = getmasterbanmsg(i)))
         {
-            if(showbanip)
+            if(showbanrange)
             {
                 string buf;
                 p->print(buf);

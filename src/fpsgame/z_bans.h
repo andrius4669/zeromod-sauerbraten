@@ -1,14 +1,35 @@
 #ifndef Z_BANS_H
 #define Z_BANS_H
 
-void z_teamkillspectate(uint ip)
+#include "z_format.h"
+#include "z_servercommands.h"
+
+VARF(teamkillspectate, 0, 0, 1,
 {
-    loopv(clients) if(clients[i]->state.aitype==AI_NONE && clients[i]->state.state!=CS_SPECTATOR && getclientip(clients[i]->clientnum)==ip)
+    if(!teamkillspectate) loopv(bannedips) if(bannedips[i].type==BAN_TEAMKILL)
     {
-        if(clients[i]->local || clients[i]->privilege>=PRIV_MASTER) continue;
-        extern void forcespectator(clientinfo *);
-        forcespectator(clients[i]);
-        sendf(clients[i]->clientnum, 1, "ris", N_SERVMSG, "you got spectated because teamkills limit was reached");
+        uint ip = bannedips[i].ip;
+        loopv(clients)
+        {
+            clientinfo *ci = clients[i];
+            if(ci->state.aitype != AI_NONE || ci->privilege >= PRIV_MASTER || ci->local) continue;
+            if(getclientip(ci->clientnum) == ip) disconnect_client(ci->clientnum, DISC_IPBAN);
+        }
+    }
+});
+
+void z_kickteamkillers(uint ip)
+{
+    if(!teamkillspectate) kickclients(ip);
+    else
+    {
+        loopv(clients) if(clients[i]->state.aitype==AI_NONE && clients[i]->state.state!=CS_SPECTATOR && getclientip(clients[i]->clientnum)==ip)
+        {
+            if(clients[i]->local || clients[i]->privilege >= PRIV_MASTER) continue;
+            extern void forcespectator(clientinfo *);
+            forcespectator(clients[i]);
+            sendf(clients[i]->clientnum, 1, "ris", N_SERVMSG, "you got spectated because teamkills limit was reached");
+        }
     }
 }
 
@@ -50,5 +71,50 @@ bool z_applyspecban(clientinfo *ci)
     }
     return false;
 }
+
+static const char *z_bantypestr(int type)
+{
+    switch(type)
+    {
+        case BAN_KICK: return "kick";
+        case BAN_TEAMKILL: return "teamkill";
+        case BAN_MUTE: return "mute";
+        case BAN_SPECTATE: return "spectate";
+        default: return "unknown";
+    }
+}
+
+static void z_sendbanlist(int cn)
+{
+    string buf;
+    vector<char> msgbuf;
+    ipmask im;
+    im.mask = ~0;
+    int n;
+    loopv(bannedips)
+    {
+        im.ip = bannedips[i].ip;
+        n = sprintf(buf, "\f2id: \f7%d\f2, ip: \f7", i);
+        msgbuf.put(buf, n);
+        n = im.print(buf);
+        msgbuf.put(buf, n);
+        n = sprintf(buf, "\f2, type: \f7%s\f2, expires in: \f7", z_bantypestr(bannedips[i].type));
+        msgbuf.put(buf, n);
+        z_formatsecs(msgbuf, (uint)((bannedips[i].expire-totalmillis)/1000));
+        if(bannedips[i].reason)
+        {
+            n = snprintf(buf, sizeof(buf), "\f2, reason: \f7%s", bannedips[i].reason);
+            msgbuf.put(buf, clamp(n, 0, int(sizeof(buf)-1)));
+        }
+        msgbuf.add(0);
+        sendf(cn, 1, "ris", N_SERVMSG, msgbuf.getbuf());
+    }
+}
+
+void z_servcmd_listbans(int argc, char **argv, int sender)
+{
+    z_sendbanlist(sender);
+}
+SCOMMANDA(listbans, PRIV_MASTER, z_servcmd_listbans, 1);
 
 #endif // Z_BANS_H
