@@ -59,10 +59,12 @@ void z_formatsecs(vector<char> &timebuf, uint secs)
         uint t = secs / z_timedivinfos[i].timediv;
         if(!t && (i+1<tl || moded)) continue;
         secs %= z_timedivinfos[i].timediv;
-        if(!moded) timebuf.add(' ');
+        if(moded) timebuf.add(' ');
         moded = true;
         charbuf b = timebuf.reserve(10 + 1);
-        timebuf.advance(sprintf(b.buf, "%u", t));
+        int blen = b.remaining();
+        int plen = snprintf(b.buf, blen, "%u", t);
+        timebuf.advance(clamp(plen, 0, blen-1));
         timebuf.add(' ');
         timebuf.put(z_timedivinfos[i].name, strlen(z_timedivinfos[i].name));
         if(t != 1) timebuf.add('s');
