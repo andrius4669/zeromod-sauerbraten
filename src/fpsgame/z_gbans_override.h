@@ -235,7 +235,7 @@ Z_TRIGGER(z_trigger_loadpbans, Z_TRIGGER_STARTUP);
 void z_servcmd_listpbans(int argc, char **argv, int sender)
 {
     string buf;
-    sendf(sender, 1, "ris", N_SERVMSG, "pbans list:");
+    sendf(sender, 1, "ris", N_SERVMSG, sbans.empty() ? "pbans list is empty" : "pbans list:");
     loopv(sbans)
     {
         sbans[i].print(buf);
@@ -243,7 +243,6 @@ void z_servcmd_listpbans(int argc, char **argv, int sender)
             ? tempformatstring("%02d %s %s", i, buf, sbans[i].comment)
             : tempformatstring("%02d %s",    i, buf));
     }
-    if(sbans.empty()) sendf(sender, 1, "ris", N_SERVMSG, "no pbans found");
 }
 SCOMMANDA(listpbans, PRIV_ADMIN, z_servcmd_listpbans, 1);
 

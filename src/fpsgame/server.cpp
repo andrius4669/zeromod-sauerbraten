@@ -661,6 +661,8 @@ namespace server
     vector<demofile> demos;
 
     bool demonextmatch = false;
+    VAR(serverrecorddemo, 0, 0, 1);
+    bool demonextmatch_set = false;
     stream *demotmp = NULL, *demorecord = NULL, *demoplayback = NULL;
     int nextplayback = 0, demomillis = 0;
 
@@ -1162,7 +1164,8 @@ namespace server
 
     void setupdemorecord()
     {
-        if(!m_mp(gamemode) || m_edit) return;
+        extern bool isracemode();
+        if(!m_mp(gamemode) || (m_edit && !isracemode())) return;
 
         demotmp = opentempfile("demorecord", "w+b");
         if(!demotmp) return;
@@ -2101,9 +2104,10 @@ namespace server
         {
             if(clients.length()) setupdemoplayback();
         }
-        else if(demonextmatch)
+        else if(demonextmatch_set ? demonextmatch : serverrecorddemo)
         {
             demonextmatch = false;
+            demonextmatch_set = false;
             setupdemorecord();
         }
 
@@ -2983,6 +2987,7 @@ namespace server
     #include "z_servcmd.h"
     #include "z_maploaded.h"
     #include "z_antiflood.h"
+    //#include "z_checkpos.h"
 
     VAR(serverautomaster, 0, 0, 2);
 
@@ -3145,6 +3150,7 @@ namespace server
                     if(smode && cp->state.state==CS_ALIVE) smode->moved(cp, cp->state.o, cp->gameclip, pos, (flags&0x80)!=0);
                     cp->state.o = pos;
                     cp->gameclip = (flags&0x80)!=0;
+                    //z_processpos(ci, cp);
                 }
                 break;
             }
@@ -3623,6 +3629,7 @@ namespace server
                     break;
                 }
                 demonextmatch = val!=0;
+                demonextmatch_set = true;
                 sendservmsgf("demo recording is %s for next match", demonextmatch ? "enabled" : "disabled");
                 break;
             }

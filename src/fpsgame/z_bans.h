@@ -91,8 +91,10 @@ static void z_sendbanlist(int cn)
     ipmask im;
     im.mask = ~0;
     int n;
+    sendf(cn, 1, "ris", N_SERVMSG, bannedips.empty() ? "banlist is empty" : "banlist:");
     loopv(bannedips)
     {
+        msgbuf.setsize(0);
         im.ip = bannedips[i].ip;
         n = sprintf(buf, "\f2id: \f7%d\f2, ip: \f7", i);
         msgbuf.put(buf, n);
