@@ -105,7 +105,11 @@ struct raceservmode: servmode
 
     void initclient(clientinfo *ci, packetbuf &p, bool connecting)
     {
-        if(connecting) ci->state.flags = 0;
+        // TODO: possibly notify client about modified mode
+        if(ci)
+        {
+            if(connecting) ci->state.flags = 0;
+        }
     }
 
     bool canspawn(clientinfo *ci, bool connecting = false)
