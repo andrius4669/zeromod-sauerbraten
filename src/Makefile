@@ -6,10 +6,6 @@ PLATFORM_PREFIX= native
 
 INCLUDES= -Ishared -Iengine -Ifpsgame -Ienet/include
 
-ifneq (,$(findstring BSD,$(PLATFORM)))
-  override CXXFLAGS+= -I/usr/local/include -L/usr/local/lib
-endif
-
 STRIP=
 ifeq (,$(findstring -g,$(CXXFLAGS)))
 ifeq (,$(findstring -pg,$(CXXFLAGS)))
@@ -145,11 +141,21 @@ MASTER_LIBS= $(STD_LIBS) -L$(WINBIN) -L$(WINLIB) -lzlib1 -lenet -lws2_32 -lwinmm
 else
 SERVER_INCLUDES= -DSTANDALONE $(INCLUDES)
 SERVER_LIBS= -Lenet -lenet -lz
-MASTER_LIBS= $(SERVER_LIBS)
+ifeq ($(PLATFORM),SUNOS)
+CLIENT_LIBS+= -lsocket -lnsl
+SERVER_LIBS+= -lsocket -lnsl
+endif
+ifneq (,$(findstring BSD,$(PLATFORM)))
+SERVER_INCLUDES+= -I/usr/local/include
+CLIENT_INCLUDES+= -I/usr/local/include
+SERVER_LIBS+= -L/usr/local/lib
+CLIENT_LIBS+= -L/usr/local/lib
+endif
+MASTER_LIBS:= $(SERVER_LIBS)
 ifeq ($(shell ./check_geoip.sh $(CXX) $(CXXFLAGS) $(SERVER_INCLUDES)),1)
 SERVER_INCLUDES+= -DUSE_GEOIP
-SERVER_LIBS+= -lGeoIP
 CLIENT_INCLUDES+= -DUSE_GEOIP
+SERVER_LIBS+= -lGeoIP
 CLIENT_LIBS+= -lGeoIP
 endif
 endif
@@ -180,11 +186,6 @@ CLIENT_OBJS+= xcode/macutils.o xcode/main.o xcode/Launcher.o
 
 %.o: %.m
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
-endif
-
-ifeq ($(PLATFORM),SUNOS)
-CLIENT_LIBS+= -lsocket -lnsl -lX11
-SERVER_LIBS+= -lsocket -lnsl
 endif
 
 default: all

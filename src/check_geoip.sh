@@ -2,14 +2,11 @@
 
 CXX=$*
 
-cat > check_geoip.cpp << EOF
+$CXX -o /dev/null -x c++ '-lGeoIP' '-' 2>/dev/null << EOF
 #include "GeoIP.h"
 #include "GeoIPCity.h"
-
 int main() { GeoIP *gi = NULL; GeoIP_delete(gi); return 0; }
 EOF
-
-$CXX check_geoip.cpp -o check_geoip "-lGeoIP" 2>/dev/null
-if [ $? -eq 0 ]; then printf "1"; rm check_geoip; fi
+if [ $? -eq 0 ]; then printf '1'; fi
 echo ''
-rm check_geoip.cpp
+unset CXX
