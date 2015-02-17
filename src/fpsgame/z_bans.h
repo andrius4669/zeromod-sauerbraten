@@ -4,6 +4,18 @@
 #include "z_format.h"
 #include "z_servercommands.h"
 
+VAR(serverautounban, -1, 1, 1); // -1 = depends whether authed mode, 0 - off, 1 - on
+
+void z_clearbans(bool force)
+{
+    force = force || (serverautounban >= 0 ? serverautounban!=0 : mastermask&MM_AUTOAPPROVE);
+    if(force) bannedips.shrink(0);
+    else
+    {
+        loopvrev(bannedips) if(bannedips[i].type==BAN_TEAMKILL) bannedips.remove(i);
+    }
+}
+
 VARF(teamkillspectate, 0, 0, 1,
 {
     if(!teamkillspectate) loopv(bannedips) if(bannedips[i].type==BAN_TEAMKILL)

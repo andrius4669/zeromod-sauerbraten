@@ -2642,7 +2642,7 @@ namespace server
 
     void noclients()
     {
-        bannedips.shrink(0);
+        z_clearbans(false);
         aiman::clearai();
         z_exectrigger(Z_TRIGGER_NOCLIENTS);
     }
