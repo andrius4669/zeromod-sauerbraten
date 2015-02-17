@@ -47,6 +47,18 @@ void z_servcmd_info(int argc, char **argv, int sender)
 }
 SCOMMANDA(info, PRIV_NONE, z_servcmd_info, 1);
 
+static void z_putstats(char (&buf)[MAXSTRLEN], clientinfo *ci)
+{
+    if(m_ctf) formatstring(buf)(
+        "\f6stats: \f7%s: \f2frags: \f7%d\f2, flags: \f7%d\f2, deaths: \f7%d\f2, suicides: \f7%d\f2, teamkills: \f7%d\f2, accuracy(%%): \f7%d\f2, kpd: \f7%.2f",
+        colorname(ci), ci->state.frags, ci->state.flags, ci->state.deaths, ci->state.suicides, ci->state.teamkills,
+        ci->state.damage*100/max(ci->state.shotdamage,1), float(ci->state.frags)/max(ci->state.deaths,1));
+    else formatstring(buf)(
+        "\f6stats: \f7%s: \f2frags: \f7%d\f2, deaths: \f7%d\f2, suicides: \f7%d\f2, teamkills: \f7%d\f2, accuracy(%%): \f7%d\f2, kpd: \f7%.2f",
+        colorname(ci), ci->state.frags, ci->state.deaths, ci->state.suicides, ci->state.teamkills,
+        ci->state.damage*100/max(ci->state.shotdamage,1), float(ci->state.frags)/max(ci->state.deaths,1));
+}
+
 void z_servcmd_stats(int argc, char **argv, int sender)
 {
     int cn, i;
@@ -71,18 +83,10 @@ void z_servcmd_stats(int argc, char **argv, int sender)
 
     if(cis.empty() && senderci) cis.add(senderci);
 
+    string buf;
     for(i = 0; i < cis.length(); i++)
     {
-        ci = cis[i];
-        string buf;
-        if(m_ctf) formatstring(buf)(
-            "\f6stats: \f7%s: \f2frags: \f7%d\f2, flags: \f7%d\f2, deaths: \f7%d\f2, teamkills: \f7%d\f2, accuracy(%%): \f7%d\f2, kpd: \f7%.2f",
-            colorname(ci), ci->state.frags, ci->state.flags, ci->state.deaths, ci->state.teamkills,
-            ci->state.damage*100/max(ci->state.shotdamage,1), float(ci->state.frags)/max(ci->state.deaths,1));
-        else formatstring(buf)(
-            "\f6stats: \f7%s: \f2frags: \f7%d\f2, deaths: \f7%d\f2, teamkills: \f7%d\f2, accuracy(%%): \f7%d\f2, kpd: \f7%.2f",
-            colorname(ci), ci->state.frags, ci->state.deaths, ci->state.teamkills,
-            ci->state.damage*100/max(ci->state.shotdamage,1), float(ci->state.frags)/max(ci->state.deaths,1));
+        z_putstats(buf, cis[i]);
         sendf(sender, 1, "ris", N_SERVMSG, buf);
     }
 }
