@@ -7,7 +7,6 @@
 #include "z_invpriv.h"
 
 VAR(defaultmastermode, -1, 0, 3);
-SVAR(masterpass, "");
 
 static void z_trigger_defaultmastermode(int type)
 {
@@ -31,7 +30,6 @@ bool setmaster(clientinfo *ci, bool val, const char *pass = "",
     {
         haspass = adminpass[0] && checkpassword(ci, adminpass, pass);
         int wantpriv = ci->local || haspass ? PRIV_ADMIN : authpriv;
-        if(!force && wantpriv <= PRIV_MASTER && masterpass[0] && checkpassword(ci, masterpass, pass)) { force = true; haspass = true; }
         if(wantpriv <= ci->privilege) return true;
         else if(wantpriv <= PRIV_MASTER && !force)
         {

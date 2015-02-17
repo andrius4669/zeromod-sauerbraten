@@ -7,8 +7,20 @@
 #include "z_format.h"
 
 bool z_racemode = false;
-VARFN(racemode, defaultracemode, 0, 0, 1, { if(clients.empty()) z_racemode = defaultracemode!=0; });
-static void z_racemode_trigger(int type) { z_racemode = defaultracemode!=0; }
+VARF(racemode_enabled, 0, 0, 1,
+{
+    if(!racemode_enabled) z_racemode = false;
+});
+VARF(racemode_default, 0, 0, 1,
+{
+    if(!racemode_enabled) z_racemode = false;
+    else if(clients.empty()) z_racemode = !!racemode_default;
+});
+static void z_racemode_trigger(int type)
+{
+    z_enable_command("racemode", !!racemode_enabled);
+    z_racemode = racemode_enabled && racemode_default;
+}
 Z_TRIGGER(z_racemode_trigger, Z_TRIGGER_STARTUP);
 Z_TRIGGER(z_racemode_trigger, Z_TRIGGER_NOCLIENTS);
 

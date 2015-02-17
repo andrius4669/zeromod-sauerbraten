@@ -1,0 +1,12 @@
+installation on unix-like systems:
+to compile this mod on unix-like systems you may need to install additional packages.
+this mod requires zlib library and headers, and optionally geoip library and headers (for geoip support)
+on debian-like systems you may use:
+sudo apt-get install zlib1g-dev libgeoip-dev build-essential
+to compile this mod on unix-like systems, use:
+make -C src install_server
+modifying default server-init.cfg is not recomended, copy it to separate folder where you want to run server from, and edit it there.
+install_server installs server binary into bin_unix/ directory, feel free to copy this binary whether you need.
+you can get list of server-init.cfg options by changing to src directory and typing:
+grep -E '(^COMMAND|^ICOMMAND|^VAR|^SVAR)' engine/server.cpp fpsgame/server.cpp fpsgame/aiman.h fpsgame/ctf.h fpsgame/z_*
+in case you want geoip support, you need to download geoip databases. download_geoip.sh script can do it for you.

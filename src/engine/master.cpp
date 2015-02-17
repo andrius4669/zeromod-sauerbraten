@@ -13,7 +13,7 @@
 #define PING_TIME 3000
 #define PING_RETRY 5
 #define KEEPALIVE_TIME (65*60*1000)
-#define SERVER_LIMIT (10*1024)
+#define SERVER_LIMIT 4096
 #define SERVER_DUP_LIMIT 10
 
 FILE *logfile = NULL;
@@ -691,7 +691,7 @@ volatile int reloadcfg = 1;
 #ifndef WIN32
 void reloadsignal(int signum)
 {
-    reloadcfg = signum == SIGUSR1 ? 1 : -1;
+    reloadcfg = 1;
 }
 #endif
 
@@ -714,7 +714,6 @@ int main(int argc, char **argv)
     setvbuf(logfile, NULL, _IOLBF, BUFSIZ);
 #ifndef WIN32
     signal(SIGUSR1, reloadsignal);
-    signal(SIGUSR2, reloadsignal);
 #endif
     setupserver(port, ip);
     for(;;)
@@ -725,7 +724,7 @@ int main(int argc, char **argv)
             execfile(cfgname);
             bangameservers();
             banclients();
-            if(reloadcfg > 0) gengbanlist();
+            gengbanlist();
             reloadcfg = 0;
         }
 
