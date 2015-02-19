@@ -21,7 +21,7 @@ bool allowmsg(clientinfo *ci, clientinfo *cq, int type)
         case N_SAYTEAM:
             if(cq && cq->xi.chatmute)
             {
-                if(!cq->xi.lastchat || totalmillis-cq->xi.lastchat>=2000)
+                if(!cq->xi.lastchat || totalmillis-cq->xi.lastchat>=1000)
                 {
                     cq->xi.lastchat = totalmillis ? totalmillis : 1;
                     if(cq->state.aitype == AI_NONE) sendf(cq->clientnum, 1, "ris", N_SERVMSG, "your text messages are muted");

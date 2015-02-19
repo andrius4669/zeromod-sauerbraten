@@ -45,9 +45,10 @@ void z_servcmd_info(int argc, char **argv, int sender)
     uptimebuf.add('\0');
     sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("server uptime: %s", uptimebuf.getbuf()));
 }
-SCOMMANDA(info, PRIV_NONE, z_servcmd_info, 1);
+SCOMMANDAH(info, PRIV_NONE, z_servcmd_info, 1);
+SCOMMANDA(uptime, PRIV_NONE, z_servcmd_info, 1);
 
-static void z_putstats(char (&buf)[MAXSTRLEN], clientinfo *ci)
+static inline void z_putstats(char (&buf)[MAXSTRLEN], clientinfo *ci)
 {
     if(m_ctf) formatstring(buf)(
         "\f6stats: \f7%s: \f2frags: \f7%d\f2, flags: \f7%d\f2, deaths: \f7%d\f2, suicides: \f7%d\f2, teamkills: \f7%d\f2, accuracy(%%): \f7%d\f2, kpd: \f7%.2f",
@@ -106,6 +107,7 @@ void z_servcmd_pm(int argc, char **argv, int sender)
     ci = getinfo(cn);
     if(ci->state.aitype!=AI_NONE) { sendf(sender, 1, "ris", N_SERVMSG, "you can not send private message to bot"); return; }
     ci = getinfo(sender);
+    if(ci->xi.chatmute) { sendf(sender, 1, "ris", N_SERVMSG, "your pms are muted"); return; }
     sendf(cn, 1, "ris", N_SERVMSG, tempformatstring("\f6pm: \f7%s \f5(%d)\f7: \f0%s", ci->name, ci->clientnum, argv[2]));
     if(servcmd_pm_comfirmation)
     {
@@ -128,6 +130,16 @@ void z_servcmd_wall(int argc, char **argv, int sender)
     sendservmsg(argv[1]);
 }
 SCOMMANDA(wall, PRIV_ADMIN, z_servcmd_wall, 1);
+
+void z_servcmd_achat(int argc, char **argv, int sender)
+{
+    if(argc <= 1) { sendf(sender, 1, "ris", N_SERVMSG, "please specify message"); return; }
+    loopv(clients) if(clients[i]->state.aitype==AI_NONE && (clients[i]->local || clients[i]->privilege >= PRIV_ADMIN))
+    {
+        sendf(clients[i]->clientnum, 1, "ris", N_SERVMSG, tempformatstring("\f6achat: \f7%s: \f0%s", colorname(clients[i]), argv[1]));
+    }
+}
+SCOMMANDA(achat, PRIV_ADMIN, z_servcmd_achat, 1);
 
 void z_servcmd_reqauth(int argc, char **argv, int sender)
 {
