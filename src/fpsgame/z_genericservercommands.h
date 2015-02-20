@@ -134,9 +134,10 @@ SCOMMANDA(wall, PRIV_ADMIN, z_servcmd_wall, 1);
 void z_servcmd_achat(int argc, char **argv, int sender)
 {
     if(argc <= 1) { sendf(sender, 1, "ris", N_SERVMSG, "please specify message"); return; }
+    clientinfo *ci = getinfo(sender);
     loopv(clients) if(clients[i]->state.aitype==AI_NONE && (clients[i]->local || clients[i]->privilege >= PRIV_ADMIN))
     {
-        sendf(clients[i]->clientnum, 1, "ris", N_SERVMSG, tempformatstring("\f6achat: \f7%s: \f0%s", colorname(clients[i]), argv[1]));
+        sendf(clients[i]->clientnum, 1, "ris", N_SERVMSG, tempformatstring("\f6achat: \f7%s: \f0%s", colorname(ci), argv[1]));
     }
 }
 SCOMMANDA(achat, PRIV_ADMIN, z_servcmd_achat, 1);
