@@ -16,8 +16,10 @@ struct z_posqueue: z_queue<z_posrecord>
     // total x and y values
     float tx, ty;
     int gametime, totaltime;
+    int lastpos;
+    bool exceededrate;
 
-    z_posqueue(): tx(0.0f), ty(0.0f), gametime(0), totaltime(0) {}
+    z_posqueue(): tx(0.0f), ty(0.0f), gametime(0), totaltime(0), lastpos(0), exceededrate(false) {}
 
     void removefirst()
     {
@@ -63,6 +65,7 @@ struct z_posqueue: z_queue<z_posrecord>
             n.o = o;
             n.tmillis = tmillis;
             n.gmillis = gmillis;
+            lastpos = tmillis;
             return true;
         }
         return false;
@@ -73,6 +76,7 @@ struct z_posqueue: z_queue<z_posrecord>
         resize(s);
         tx = ty = 0.0f;
         gametime = totaltime = 0;
+        lastpos = 0;
     }
 };
 

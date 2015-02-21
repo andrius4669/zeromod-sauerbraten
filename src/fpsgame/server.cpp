@@ -2243,6 +2243,7 @@ namespace server
     #include "z_nodamage.h"
     #include "z_announcekills.h"
     #include "z_protectteamscores.h"
+    #include "z_checkpos.h"
 
     void dodamage(clientinfo *target, clientinfo *actor, int damage, int gun, const vec &hitpush = vec(0, 0, 0))
     {
@@ -2279,6 +2280,7 @@ namespace server
             target->position.setsize(0);
             if(smode) smode->died(target, actor);
             ts.state = CS_DEAD;
+            z_clientdied(target);
             ts.lastdeath = gamemillis;
             if(actor!=target && isteam(actor->team, target->team)) 
             {
@@ -2305,6 +2307,7 @@ namespace server
         ci->position.setsize(0);
         if(smode) smode->died(ci, NULL);
         gs.state = CS_DEAD;
+        z_clientdied(ci);
         gs.lastdeath = gamemillis;
         gs.respawn();
     }
@@ -2519,6 +2522,7 @@ namespace server
                 else c.scheduleexceeded();
             }
         }
+        z_checkexceeded();
 
         if(shouldcheckteamkills) checkteamkills();
 
@@ -2987,7 +2991,6 @@ namespace server
     #include "z_servcmd.h"
     #include "z_maploaded.h"
     #include "z_antiflood.h"
-    #include "z_checkpos.h"
 
     VAR(serverautomaster, 0, 0, 2);
 
