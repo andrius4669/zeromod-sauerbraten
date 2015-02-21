@@ -6,9 +6,17 @@ VAR(servertrackpos, 0, 0, 1);
 void z_processpos(clientinfo *ci, clientinfo *cp)
 {
     if(!servertrackpos || m_edit) return;
-    if(cp->xi.postrack.size < 200) cp->xi.postrack.reset(200);
-    cp->xi.postrack.removeold(totalmillis-5000);
-    cp->xi.postrack.addpos(cp->state.o, totalmillis, gamemillis);
+    z_posqueue &pt = cp->xi.postrack;
+    if(pt.size < 125) pt.reset(125);
+    pt.removeold(totalmillis-4000);
+    // client sends messages in 33ms intervals. 4000/33 = 121.212121212... if we get messages at higher rate, its speedhack
+    bool res = pt.addpos(cp->state.o, totalmillis, gamemillis);
+    if(!res)
+    {
+        if(pt.length()) pt.removeold();
+        pt.addpos(cp->state.o, totalmillis, gamemillis);
+        logoutf("checkpos: possible speedhack: %s (%d) - %d pos messages in %d ms", ci->name, ci->clientnum, pt.size, pt.totaltime);
+    }
 }
 
 void z_test_totalx(int *cn)

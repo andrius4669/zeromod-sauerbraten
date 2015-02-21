@@ -19,26 +19,27 @@ struct z_posqueue: z_queue<z_posrecord>
 
     z_posqueue(): tx(0.0f), ty(0.0f), gametime(0), totaltime(0) {}
 
+    void removefirst()
+    {
+        z_posrecord &v = remove();
+        if(length())
+        {
+            z_posrecord &n = first();
+            tx -= fabs(n.o.x-v.o.x);
+            ty -= fabs(n.o.y-v.o.y);
+            gametime = last().gmillis - n.gmillis;
+            totaltime = last().tmillis - n.tmillis;
+        }
+        else
+        {
+            tx = ty = 0.0f;
+            gametime = totaltime = 0;
+        }
+    }
+
     void removeold(int millis)
     {
-        while(length() && first().tmillis-millis<0)
-        {
-            z_posrecord &v = remove();
-            if(length())
-            {
-                z_posrecord &n = first();
-                tx -= fabs(n.o.x-v.o.x);
-                ty -= fabs(n.o.y-v.o.y);
-                gametime = last().gmillis - n.gmillis;
-                totaltime = last().tmillis - n.tmillis;
-            }
-            else
-            {
-                tx = ty = 0.0f;
-                gametime = 0;
-                totaltime = 0;
-            }
-        }
+        while(length() && first().tmillis-millis<0) removefirst();
     }
 
     bool addpos(const vec &o, int tmillis, int gmillis)
