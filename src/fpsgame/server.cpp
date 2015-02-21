@@ -2987,7 +2987,7 @@ namespace server
     #include "z_servcmd.h"
     #include "z_maploaded.h"
     #include "z_antiflood.h"
-    //#include "z_checkpos.h"
+    #include "z_checkpos.h"
 
     VAR(serverautomaster, 0, 0, 2);
 
@@ -3150,7 +3150,7 @@ namespace server
                     if(smode && cp->state.state==CS_ALIVE) smode->moved(cp, cp->state.o, cp->gameclip, pos, (flags&0x80)!=0);
                     cp->state.o = pos;
                     cp->gameclip = (flags&0x80)!=0;
-                    //z_processpos(ci, cp);
+                    z_processpos(ci, cp);
                 }
                 break;
             }

@@ -17,7 +17,7 @@ struct z_posqueue: z_queue<z_posrecord>
     float tx, ty;
     int gametime, totaltime;
 
-    z_posqueue(): z_queue(200), tx(0.0f), ty(0.0f), gametime(0), totaltime(0) {}
+    z_posqueue(): tx(0.0f), ty(0.0f), gametime(0), totaltime(0) {}
 
     void removeold(int millis)
     {
@@ -56,8 +56,7 @@ struct z_posqueue: z_queue<z_posrecord>
             else
             {
                 tx = ty = 0.0f;
-                gametime = 0;
-                totaltime = 0;
+                gametime = totaltime = 0;
             }
             z_posrecord &n = add();
             n.o = o;
@@ -66,6 +65,13 @@ struct z_posqueue: z_queue<z_posrecord>
             return true;
         }
         return false;
+    }
+
+    void reset(int s = 0)
+    {
+        resize(s);
+        tx = ty = 0.0f;
+        gametime = totaltime = 0;
     }
 };
 
@@ -81,7 +87,7 @@ struct z_extrainfo
     int lastchat, lastedit;
     int maploaded;
     int mapsucks;
-    //z_posqueue postrack;
+    z_posqueue postrack;
 
     z_extrainfo(): disc_reason(NULL), wlauth(NULL) {}
     ~z_extrainfo() { delete[] disc_reason; delete[] wlauth; }
@@ -90,6 +96,7 @@ struct z_extrainfo
     {
         maploaded = 0;
         mapsucks = 0;
+        postrack.reset();
     }
 
     void reset()
