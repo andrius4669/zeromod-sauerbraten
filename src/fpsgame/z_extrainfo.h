@@ -88,7 +88,8 @@ struct z_extrainfo
     int nodamage;
     bool slay, invpriv;
     char *wlauth;
-    bool chatmute, specmute, editmute, namemute;
+    bool specmute, editmute, namemute;
+    int chatmute;
     int lastchat, lastedit;
     int maploaded;
     int mapsucks;
@@ -114,7 +115,8 @@ struct z_extrainfo
         nodamage = 0;
         slay = false;
         invpriv = false;
-        chatmute = specmute = editmute = namemute = false;
+        specmute = editmute = namemute = false;
+        chatmute = 0;
         lastchat = lastedit = 0;
     }
 

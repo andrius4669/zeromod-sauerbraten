@@ -33,15 +33,19 @@ static void z_servcmd_mute(int argc, char **argv, int sender)
     {
         if(ci)
         {
-            ci->xi.chatmute = val!=0;
-            sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("you %s %s", val ? "muted" : "unmuted", colorname(ci)));
-            if(ci->state.aitype == AI_NONE) sendf(ci->clientnum, 1, "ris", N_SERVMSG, tempformatstring("you got %s", val ? "muted" : "unmuted"));
+            if(ci->xi.chatmute != (val ? 1 : 0))
+            {
+                ci->xi.chatmute = val ? 1 : 0;
+                sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("you %s %s", val ? "muted" : "unmuted", colorname(ci)));
+                if(ci->state.aitype == AI_NONE) sendf(ci->clientnum, 1, "ris", N_SERVMSG, tempformatstring("you got %s", val ? "muted" : "unmuted"));
+            }
         }
         else loopv(clients) if(!clients[i]->spy)
         {
             ci = clients[i];
-            ci->xi.chatmute = val!=0;
+            if(ci->xi.chatmute == (val ? 1 : 0)) continue;
             sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("you %s %s", val ? "muted" : "unmuted", colorname(ci)));
+            ci->xi.chatmute = val ? 1 : 0;
             if(ci->state.aitype == AI_NONE) sendf(ci->clientnum, 1, "ris", N_SERVMSG, tempformatstring("you got %s", val ? "muted" : "unmuted"));
         }
     }
@@ -49,19 +53,19 @@ static void z_servcmd_mute(int argc, char **argv, int sender)
     {
         if(ci)
         {
-            if(ci->state.aitype == AI_NONE)
+            if(ci->state.aitype == AI_NONE && ci->xi.editmute != (val!=0))
             {
-                ci->xi.editmute = val!=0;
                 sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("you edit-%s %s", val ? "muted" : "unmuted", colorname(ci)));
+                ci->xi.editmute = val!=0;
                 sendf(ci->clientnum, 1, "ris", N_SERVMSG, tempformatstring("you got edit-%s", val ? "muted" : "unmuted"));
             }
         }
         else loopv(clients)
         {
             ci = clients[i];
-            if(ci->state.aitype != AI_NONE || ci->spy) continue;
-            ci->xi.editmute = val!=0;
+            if(ci->state.aitype != AI_NONE || ci->spy || ci->xi.editmute == (val!=0)) continue;
             sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("you edit-%s %s", val ? "muted" : "unmuted", colorname(ci)));
+            ci->xi.editmute = val!=0;
             sendf(ci->clientnum, 1, "ris", N_SERVMSG, tempformatstring("you got edit-%s", val ? "muted" : "unmuted"));
         }
     }

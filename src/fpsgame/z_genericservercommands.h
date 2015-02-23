@@ -107,7 +107,7 @@ void z_servcmd_pm(int argc, char **argv, int sender)
     ci = getinfo(cn);
     if(ci->state.aitype!=AI_NONE) { sendf(sender, 1, "ris", N_SERVMSG, "you can not send private message to bot"); return; }
     ci = getinfo(sender);
-    if(ci->xi.chatmute) { sendf(sender, 1, "ris", N_SERVMSG, "your pms are muted"); return; }
+    if(z_checkchatmute(ci)) { sendf(sender, 1, "ris", N_SERVMSG, "your pms are muted"); return; }
     sendf(cn, 1, "ris", N_SERVMSG, tempformatstring("\f6pm: \f7%s \f5(%d)\f7: \f0%s", ci->name, ci->clientnum, argv[2]));
     if(servcmd_pm_comfirmation)
     {

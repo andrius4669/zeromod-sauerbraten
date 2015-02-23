@@ -19,7 +19,7 @@ bool allowmsg(clientinfo *ci, clientinfo *cq, int type)
 
         case N_TEXT:
         case N_SAYTEAM:
-            if(cq && cq->xi.chatmute)
+            if(cq && z_checkchatmute(ci, cq))
             {
                 if(!cq->xi.lastchat || totalmillis-cq->xi.lastchat>=1000)
                 {

@@ -17,7 +17,7 @@ static struct z_log_kickerinfostruct
     }
 } z_log_kickerinfo;
 
-static inline void z_log_kick(clientinfo *actor, const char *aname, const char *adesc, int priv, clientinfo *victim, const char *reason)
+void z_log_kick(clientinfo *actor, const char *aname, const char *adesc, int priv, clientinfo *victim, const char *reason)
 {
     const char *kicker;
     if(!aname) kicker = tempformatstring("%s (%d)", actor->name, actor->clientnum);
@@ -31,9 +31,20 @@ static inline void z_log_kick(clientinfo *actor, const char *aname, const char *
     z_log_kickerinfo.set(actor, priv);
 }
 
-static inline void z_log_kickdone()
+void z_log_kickdone()
 {
     z_log_kickerinfo.reset();
+}
+
+static void z_sendmsgpacks(packetbuf &adminpack, packetbuf &normalpack, clientinfo *actor)
+{
+    recordpacket(1, normalpack.packet->data, normalpack.packet->dataLength);
+    loopv(clients) if(clients[i]->state.aitype==AI_NONE)
+    {
+        clientinfo *ci = clients[i];
+        if(ci==actor || ci->local || ci->privilege>=PRIV_ADMIN) sendpacket(ci->clientnum, 1, adminpack.packet);
+        else sendpacket(ci->clientnum, 1, normalpack.packet);
+    }
 }
 
 static inline void z_showkick(const char *kicker, clientinfo *actor, clientinfo *vinfo, const char *reason)
@@ -57,13 +68,38 @@ static inline void z_showkick(const char *kicker, clientinfo *actor, clientinfo 
     sendstring(spykickstr, spykickpack);
     spykickpack.finalize();
     // distribute messages
-    recordpacket(1, spykickpack.packet->data, spykickpack.packet->dataLength);
-    loopv(clients) if(clients[i]->state.aitype==AI_NONE)
+    z_sendmsgpacks(kickpack, spykickpack, actor);
+}
+
+void z_showban(clientinfo *actor, const char *banstr, const char *victim, int bantime, const char *reason)
+{
+    const char *actorname = colorname(actor);
+    vector<char> timebuf;
+    z_formatsecs(timebuf, (uint)(bantime/1000));
+    timebuf.add(0);
+    const char *adminstr = reason && reason[0]
+        ? tempformatstring("%s %sned %s for %s because: %s", actorname, banstr, victim, timebuf.getbuf(), reason)
+        : tempformatstring("%s %sned %s for %s", actorname, banstr, victim, timebuf.getbuf());
+    if(!actor->spy)
     {
-        clientinfo *ci = clients[i];
-        if(ci==actor || ci->local || ci->privilege>=PRIV_ADMIN) sendpacket(ci->clientnum, 1, kickpack.packet);
-        else sendpacket(ci->clientnum, 1, spykickpack.packet);
+        sendservmsg(adminstr);
+        return;
     }
+    const char *normalstr = reason && reason[0]
+        ? tempformatstring("%s was %sned for %s because: %s", victim, banstr, timebuf.getbuf(), reason)
+        : tempformatstring("%s was %sned for %s", victim, banstr, timebuf.getbuf());
+    // allocate packetbufs for messages
+    packetbuf adminpack(MAXTRANS, ENET_PACKET_FLAG_RELIABLE), normalpack(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
+    // fill in packetbuf for admins
+    putint(adminpack, N_SERVMSG);
+    sendstring(adminstr, adminpack);
+    adminpack.finalize();
+    // packetbuf for normal clients (don't show who kicked)
+    putint(normalpack, N_SERVMSG);
+    sendstring(normalstr, normalpack);
+    normalpack.finalize();
+    // distribute messages
+    z_sendmsgpacks(adminpack, normalpack, actor);
 }
 
 static inline void z_log_setmaster(clientinfo *master, bool val, bool pass, const char *aname, const char *adesc, const char *priv, clientinfo *by)
