@@ -299,4 +299,32 @@ SCOMMANDA(ban, PRIV_AUTH, z_servcmd_ban, 3);
 SCOMMANDA(specban, PRIV_AUTH, z_servcmd_ban, 3);
 SCOMMANDA(muteban, PRIV_AUTH, z_servcmd_ban, 3);
 
+void z_servcmd_unban(int argc, char **argv, int sender)
+{
+    if(argc <= 1)
+    {
+        sendf(sender, 1, "ris", N_SERVMSG, "please specify ban id");
+        return;
+    }
+    char *end = NULL;
+    int id = (int)strtol(argv[1], &end, 10);
+    if(end <= argv[1] || *end || (id >= 0 && !bannedips.inrange(id)))
+    {
+        sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("bad ban id: %s", argv[1]));
+        return;
+    }
+    if(id >= 0)
+    {
+        bannedips.remove(id);
+        sendf(sender, 1, "ris", N_SERVMSG, "ban removed");
+    }
+    else
+    {
+        bannedips.shrink(0);
+        sendservmsg("cleared all bans");
+    }
+}
+SCOMMANDA(unban, PRIV_MASTER, z_servcmd_unban, 1);
+SCOMMANDAH(delban, PRIV_MASTER, z_servcmd_unban, 1);
+
 #endif // Z_BANS_H
