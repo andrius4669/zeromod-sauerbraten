@@ -58,8 +58,8 @@ VAR(geoip_show_continent, 0, 0, 2);
 VAR(geoip_skip_duplicates, 0, 1, 2);
 VAR(geoip_country_use_db, 0, 2, 2);
 VAR(geoip_fix_country, 0, 1, 1);
-SVAR(geoip_color_scheme, "777");
 VAR(geoip_ban_anonymous, 0, 0, 1);
+VAR(geoip_country_continent_fallback, 0, 1, 1);
 
 static const struct
 {
@@ -317,6 +317,16 @@ void z_geoip_resolveclient(geoipstate &gs, enet_uint32 ip)
                 }
             }
 
+
+            // anonymous proxy?
+            mmdb_error = MMDB_get_value(&result.entry, &data, "traits", "is_anonymous_proxy", NULL);
+            if(mmdb_error == MMDB_SUCCESS && data.has_data)
+            {
+                // expects true
+                gs.anonymous = 1;
+                gs.network = newstring("Anonymous Proxy");
+            }
+
             return;
         }
     }
@@ -411,7 +421,7 @@ void z_geoip_resolveclient(geoipstate &gs, enet_uint32 ip)
     // process some special country values
     if(country_code)
     {
-        if(country_code[0] == 'A' && country_code[1] >= '0' && country_code[1] <= '9')  // anonymous network
+        if(country_code[0] == 'A' && country_code[1] > '0' && country_code[1] <= '9')   // anonymous network
         {
             gs.anonymous = country_code[1]-'0';
             network_name = country_name;
