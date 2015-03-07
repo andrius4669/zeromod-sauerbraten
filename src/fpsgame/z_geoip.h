@@ -3,42 +3,51 @@
 
 #include "z_geoipstate.h"
 
-#ifdef USE_GEOIP
 
+#ifdef USE_MMDB
+#include "maxminddb.h"
+static MMDB_s *z_mmdb = NULL;
+#endif
+
+
+#ifdef USE_GEOIP
 #include "GeoIP.h"
 #include "GeoIPCity.h"
-
 static GeoIP *z_gi = NULL, *z_gic = NULL;
-
-#endif // USE_GEOIP
-
-VAR(geoip_reload, 0, 1, 1);
-
-static void z_reset_geoip_country()
-{
-#ifdef USE_GEOIP
-    if(z_gi) { GeoIP_delete(z_gi); z_gi = NULL; }
 #endif
-}
 
-static void z_reset_geoip_city()
-{
-#ifdef USE_GEOIP
-    if(z_gic) { GeoIP_delete(z_gic); z_gic = NULL; }
+
+#ifdef USE_MMDB
+static void z_reset_mmdb() { if(z_mmdb) { MMDB_close(z_mmdb); free(z_mmdb); z_mmdb = NULL; } }
+#else
+static inline void z_reset_mmdb() {}
 #endif
-}
+
+#ifdef USE_GEOIP
+static void z_reset_geoip_country() { if(z_gi) { GeoIP_delete(z_gi); z_gi = NULL; } }
+#else
+static inline void z_reset_geoip_country() {}
+#endif
+
+#ifdef USE_GEOIP
+static void z_reset_geoip_city() { if(z_gic) { GeoIP_delete(z_gic); z_gic = NULL; } }
+#else
+static inline void z_reset_geoip_city() {}
+#endif
 
 static void z_reset_geoip()
 {
+    z_reset_mmdb();
     z_reset_geoip_country();
     z_reset_geoip_city();
 }
 
+VAR(geoip_reload, 0, 1, 1);
 VARF(geoip_enable, 0, 0, 1, { if(geoip_reload) z_reset_geoip(); });
-VARF(geoip_country_enable, 0, 1, 1, { if(geoip_reload) z_reset_geoip_country(); });
-SVARF(geoip_country_database, "GeoIP.dat", { if(geoip_reload) z_reset_geoip_country(); });
-VARF(geoip_city_enable, 0, 0, 1, { if(geoip_reload) z_reset_geoip_city(); });
-SVARF(geoip_city_database, "GeoLiteCity.dat", { if(geoip_reload) z_reset_geoip_city(); });
+SVARF(geoip_mmdb,    "", { if(geoip_reload) z_reset_mmdb(); });
+SVAR(geoip_mmdb_lang, "en");
+SVARF(geoip_country, "", { if(geoip_reload) z_reset_geoip_country(); });
+SVARF(geoip_city,    "", { if(geoip_reload) z_reset_geoip_city(); });
 
 VAR(geoip_show_ip, 0, 2, 2);
 VAR(geoip_show_network, 0, 1, 2);
@@ -54,7 +63,7 @@ VAR(geoip_ban_anonymous, 0, 0, 1);
 
 static const struct
 {
-    uint ip, mask;
+    uint ip, mask;      // in host byte order
     const char *name;
 } reservedips[] =
 {
@@ -74,13 +83,54 @@ static const struct
 static void z_init_geoip()
 {
     if(!geoip_enable) return;
-#ifdef USE_GEOIP
+
+#if defined(USE_GEOIP) || defined(USE_MMDB)
     static bool z_geoip_reset_atexit = false;
     if(!z_geoip_reset_atexit)
     {
         z_geoip_reset_atexit = true;
         atexit(z_reset_geoip);
     }
+#endif
+
+#ifdef USE_MMDB
+
+    if(!z_mmdb && *geoip_mmdb)
+    {
+        const char *found = findfile(geoip_mmdb, "rb");
+        if(found)
+        {
+            z_mmdb = (MMDB_s *)calloc(1, sizeof(MMDB_s));
+            if(z_mmdb)
+            {
+                int s = MMDB_open(found, MMDB_MODE_MMAP, z_mmdb);
+                if(s != MMDB_SUCCESS)
+                {
+                    free(z_mmdb);
+                    z_mmdb = NULL;
+                    logoutf("WARNING: could not open mmdb database \"%s\": %s", geoip_mmdb, MMDB_strerror(s));
+                }
+            }
+        }
+        else logoutf("WARNING: could not find mmdb database \"%s\"", geoip_mmdb);
+    }
+
+#else
+
+    if(*geoip_mmdb)
+    {
+        static bool warned = false;
+        if(!warned)
+        {
+            logoutf("WARNING: libmaxminddb support was not compiled in");
+            warned = true;
+        }
+    }
+
+#endif
+
+#ifdef USE_GEOIP
+
     #ifndef GEOIP_OPENMODE
         #ifndef _WIN32
             #define GEOIP_OPENMODE GEOIP_MMAP_CACHE
@@ -88,43 +138,57 @@ static void z_init_geoip()
             #define GEOIP_OPENMODE GEOIP_INDEX_CACHE
         #endif
     #endif
+
     #ifndef GEOIP_COUNTRY_OPENMODE
         #define GEOIP_COUNTRY_OPENMODE GEOIP_OPENMODE
     #endif
+    if(!z_gi && *geoip_country)
+    {
+        const char *found = findfile(geoip_country, "rb");
+        if(found) z_gi = GeoIP_open(found, GEOIP_COUNTRY_OPENMODE);
+        if(z_gi) GeoIP_set_charset(z_gi, GEOIP_CHARSET_UTF8);
+        else logoutf("WARNING: could not open geoip country database \"%s\"", geoip_country);
+    }
+
     #ifndef GEOIP_CITY_OPENMODE
         #define GEOIP_CITY_OPENMODE GEOIP_OPENMODE
     #endif
-    if(geoip_country_enable && geoip_country_database[0] && !z_gi)
+    if(!z_gic && *geoip_city)
     {
-        const char *found = findfile(geoip_country_database, "rb");
-        if(found) z_gi = GeoIP_open(found, GEOIP_COUNTRY_OPENMODE);
-        if(z_gi) GeoIP_set_charset(z_gi, GEOIP_CHARSET_UTF8);
-        else logoutf("WARNING: could not open geoip country database file \"%s\"", geoip_country_database);
-    }
-    if(geoip_city_enable && geoip_city_database[0] && !z_gic)
-    {
-        const char *found = findfile(geoip_city_database, "rb");
+        const char *found = findfile(geoip_city, "rb");
         if(found) z_gic = GeoIP_open(found, GEOIP_CITY_OPENMODE);
         if(z_gic) GeoIP_set_charset(z_gic, GEOIP_CHARSET_UTF8);
-        else logoutf("WARNING: could not open geoip city database file \"%s\"", geoip_city_database);
+        else logoutf("WARNING: could not open geoip city database \"%s\"", geoip_city);
     }
+
     #undef GEOIP_OPENMODE
     #undef GEOIP_COUNTRY_OPENMODE
     #undef GEOIP_CITY_OPENMODE
-#else // USE_GEOIP
-    if(geoip_country_enable || geoip_city_enable) logoutf("WARNING: GeoIP library support was not compiled in");
-#endif // USE_GEOIP
+
+#else
+
+    if(*geoip_country || *geoip_city)
+    {
+        static bool warned = false;
+        if(!warned)
+        {
+            logoutf("WARNING: libGeoIP support was not compiled in");
+            warned = true;
+        }
+    }
+
+#endif
 }
 
-#ifdef USE_GEOIP
-static const char *z_geoip_decode_continent(const char *cont)
+#if defined(USE_GEOIP) || defined(USE_MMDB)
+static const char *z_geoip_decode_continent(const char *code)
 {
-    if(cont[0] == 'A' && cont[1] == 'F') return "Africa";
-    else if(cont[0] == 'A' && cont[1] == 'S') return "Asia";
-    else if(cont[0] == 'E' && cont[1] == 'U') return "Europe";
-    else if(cont[0] == 'N' && cont[1] == 'A') return "North America";
-    else if(cont[0] == 'O' && cont[1] == 'C') return "Oceania";
-    else if(cont[0] == 'S' && cont[1] == 'A') return "South America";
+    /**/ if(code[0] == 'A' && code[1] == 'F') return "Africa";
+    else if(code[0] == 'A' && code[1] == 'S') return "Asia";
+    else if(code[0] == 'E' && code[1] == 'U') return "Europe";
+    else if(code[0] == 'N' && code[1] == 'A') return "North America";
+    else if(code[0] == 'O' && code[1] == 'C') return "Oceania";
+    else if(code[0] == 'S' && code[1] == 'A') return "South America";
     else return NULL;
 }
 #endif
@@ -139,30 +203,140 @@ void z_geoip_resolveclient(geoipstate &gs, enet_uint32 ip)
     gs.cleanup();
     if(!geoip_enable || !ip) return;
     z_init_geoip();
-    ip = ENET_NET_TO_HOST_32(ip);   // geoip uses host byte order
+    enet_uint32 hip = ENET_NET_TO_HOST_32(ip);
     // look in list of reserved ips
-    loopi(sizeof(reservedips)/sizeof(reservedips[0])) if((ip & reservedips[i].mask) == reservedips[i].ip)
+    loopi(sizeof(reservedips)/sizeof(reservedips[0])) if((hip & reservedips[i].mask) == reservedips[i].ip)
     {
         gs.network = newstring(reservedips[i].name);
         // if ip is reserved, geoip won't find it anyway
         return;
     }
 
+#if defined(USE_GEOIP) || defined(USE_MMDB)
+    uchar buf[MAXSTRLEN];
+    size_t len;
+
+    const char *country_code = NULL, *continent_code = NULL;
+#endif
+
+#ifdef USE_MMDB
+    if(z_mmdb)
+    {
+        struct sockaddr_in sin;
+        memset(&sin, 0, sizeof(sin));
+        sin.sin_family = AF_INET;
+        memcpy(&sin.sin_addr, &ip, sizeof(enet_uint32));
+
+        int mmdb_error;
+        MMDB_lookup_result_s result = MMDB_lookup_sockaddr(z_mmdb, (struct sockaddr *)&sin, &mmdb_error);
+        if(mmdb_error == MMDB_SUCCESS && result.found_entry)
+        {
+            MMDB_entry_data_s data;
+
+            // continent code
+            mmdb_error = MMDB_get_value(&result.entry, &data, "continent", "code", NULL);
+            if(mmdb_error == MMDB_SUCCESS && data.has_data && data.type == MMDB_DATA_TYPE_UTF8_STRING && data.data_size >= 2)
+                continent_code = data.utf8_string;
+
+            // country code
+            mmdb_error = MMDB_get_value(&result.entry, &data, "country", "iso_code", NULL);
+            if(mmdb_error == MMDB_SUCCESS && data.has_data && data.type == MMDB_DATA_TYPE_UTF8_STRING && data.data_size >= 2)
+                country_code = data.utf8_string;
+
+            // save em
+            gs.setextinfo(country_code, continent_code);
+
+
+            // continent name
+            mmdb_error = MMDB_get_value(&result.entry, &data, "continent", "names", geoip_mmdb_lang, NULL);
+            if((mmdb_error != MMDB_SUCCESS || !data.has_data) && strcmp(geoip_mmdb_lang, "en"))
+                mmdb_error = MMDB_get_value(&result.entry, &data, "continent", "names", "en", NULL);
+            if(mmdb_error == MMDB_SUCCESS && data.has_data && data.type == MMDB_DATA_TYPE_UTF8_STRING)
+            {
+                len = decodeutf8(buf, sizeof(buf)-1, (const uchar *)data.utf8_string, data.data_size);
+                if(len > 0) { buf[len] = 0; gs.continent = newstring((const char *)buf); }
+            }
+            else if(continent_code)
+            {
+                const char *contname = z_geoip_decode_continent(continent_code);
+                if(contname) gs.continent = newstring(contname);
+            }
+
+
+            // country name
+            mmdb_error = MMDB_get_value(&result.entry, &data, "country", "names", geoip_mmdb_lang, NULL);
+            if((mmdb_error != MMDB_SUCCESS || !data.has_data) && strcmp(geoip_mmdb_lang, "en"))
+                mmdb_error = MMDB_get_value(&result.entry, &data, "country", "names", "en", NULL);
+            if(mmdb_error == MMDB_SUCCESS && data.has_data && data.type == MMDB_DATA_TYPE_UTF8_STRING)
+            {
+                len = decodeutf8(buf, sizeof(buf)-1, (const uchar *)data.utf8_string, data.data_size);
+                if(len > 0)
+                {
+                    buf[len] = 0;
+                    gs.country = newstring((const char *)buf);
+                    const char *comma;
+                    if(geoip_fix_country && (comma = strstr(gs.country, ", ")))
+                    {
+                        vector<char> countrybuf;
+                        const char * const aftercomma = &comma[2];
+                        countrybuf.put(aftercomma, strlen(aftercomma));
+                        if(countrybuf.length()) countrybuf.add(' ');
+                        countrybuf.put(gs.country, comma - gs.country);
+                        countrybuf.add('\0');
+                        delete[] gs.country;
+                        gs.country = newstring(countrybuf.getbuf());
+                    }
+                }
+            }
+
+
+            // region
+            if(geoip_show_region)
+            {
+                mmdb_error = MMDB_get_value(&result.entry, &data, "subdivisions", "0", "names", geoip_mmdb_lang, NULL);
+                if((mmdb_error != MMDB_SUCCESS || !data.has_data) && strcmp(geoip_mmdb_lang, "en"))
+                    mmdb_error = MMDB_get_value(&result.entry, &data, "subdivisions", "0", "names", "en", NULL);
+                if(mmdb_error == MMDB_SUCCESS && data.has_data && data.type == MMDB_DATA_TYPE_UTF8_STRING)
+                {
+                    len = decodeutf8(buf, sizeof(buf)-1, (const uchar *)data.utf8_string, data.data_size);
+                    if(len > 0) { buf[len] = 0; gs.region = newstring((const char *)buf); }
+                }
+            }
+
+
+            // city
+            if(geoip_show_city)
+            {
+                mmdb_error = MMDB_get_value(&result.entry, &data, "city", "names", geoip_mmdb_lang, NULL);
+                if((mmdb_error != MMDB_SUCCESS || !data.has_data) && strcmp(geoip_mmdb_lang, "en"))
+                    mmdb_error = MMDB_get_value(&result.entry, &data, "city", "names", "en", NULL);
+                if(mmdb_error == MMDB_SUCCESS && data.has_data && data.type == MMDB_DATA_TYPE_UTF8_STRING)
+                {
+                    len = decodeutf8(buf, sizeof(buf)-1, (const uchar *)data.utf8_string, data.data_size);
+                    if(len > 0) { buf[len] = 0; gs.city = newstring((const char *)buf); }
+                }
+            }
+
+            return;
+        }
+    }
+#endif // USE_MMDB
+
 #ifdef USE_GEOIP
+    const char *country_name = NULL;
     int country_id = -1;
     GeoIPRecord *gir = NULL;
 
     if(z_gi)
     {
-        int id = GeoIP_id_by_ipnum(z_gi, ip);
+        int id = GeoIP_id_by_ipnum(z_gi, hip);
         if(id >= 0) country_id = id;
     }
     if(z_gic && (geoip_show_city || geoip_show_region || country_id <= 0 || geoip_country_use_db))
     {
-        gir = GeoIP_record_by_ipnum(z_gic, ip);
+        gir = GeoIP_record_by_ipnum(z_gic, hip);
     }
 
-    const char *country_name = NULL, *country_code = NULL, *continent_code = NULL;
     switch(geoip_country_use_db)
     {
         case 0:
@@ -226,9 +400,6 @@ void z_geoip_resolveclient(geoipstate &gs, enet_uint32 ip)
     }
 
     gs.setextinfo(country_code, continent_code);
-
-    uchar buf[MAXSTRLEN];
-    size_t len;
 
     if(geoip_show_continent && continent_code && continent_code[0])
     {

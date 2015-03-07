@@ -49,17 +49,17 @@ struct geoipstate
 
     void setextinfo(const char *countrycode, const char *continent)
     {
-        if(countrycode && countrycode[0] && countrycode[1] && !countrycode[2])
+        if(countrycode && countrycode[0] && countrycode[1])
         {
-            loopi(2) extcountry.b[i] = countrycode[i] < 'a' || countrycode[i] > 'z' ? countrycode[i] : countrycode[i] - 'a'-'A';
+            loopi(2) extcountry.b[i] = countrycode[i] < 'a' || countrycode[i] > 'z' ? countrycode[i] : countrycode[i] - 'a' + 'A';
         }
         else
         {
             extcountry.s = 0;
         }
-        if(continent && continent[0] && continent[1] && !continent[2])
+        if(continent && continent[0] && continent[1])
         {
-            loopi(2) extcontinent.b[i] = continent[i] >= 'A' && continent[i] <= 'Z' ? continent[i] + 'a'-'A' : continent[i];
+            loopi(2) extcontinent.b[i] = continent[i] >= 'A' && continent[i] <= 'Z' ? continent[i] - 'A' + 'a' : continent[i];
         }
         else
         {

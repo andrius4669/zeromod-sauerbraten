@@ -152,11 +152,16 @@ SERVER_LIBS+= -L/usr/local/lib
 CLIENT_LIBS+= -L/usr/local/lib
 endif
 MASTER_LIBS:= $(SERVER_LIBS)
-ifeq ($(shell ./check_geoip.sh $(CXX) $(CXXFLAGS) $(SERVER_INCLUDES)),1)
-SERVER_INCLUDES+= -DUSE_GEOIP
-CLIENT_INCLUDES+= -DUSE_GEOIP
+GEOIP_USES:=$(shell ./check_geoip.sh $(CXX) $(CXXFLAGS) $(SERVER_INCLUDES))
+SERVER_INCLUDES+=$(GEOIP_USES)
+CLIENT_INCLUDES+=$(GEOIP_USES)
+ifneq (,$(findstring USE_GEOIP,$(GEOIP_USES)))
 SERVER_LIBS+= -lGeoIP
 CLIENT_LIBS+= -lGeoIP
+endif
+ifneq (,$(findstring USE_MMDB,$(GEOIP_USES)))
+SERVER_LIBS+= -lmaxminddb
+CLIENT_LIBS+= -lmaxminddb
 endif
 endif
 SERVER_OBJS= \
