@@ -59,7 +59,6 @@ VAR(geoip_skip_duplicates, 0, 1, 2);
 VAR(geoip_country_use_db, 0, 2, 2);
 VAR(geoip_fix_country, 0, 1, 1);
 VAR(geoip_ban_anonymous, 0, 0, 1);
-VAR(geoip_country_continent_fallback, 0, 1, 1);
 
 static const struct
 {
@@ -195,7 +194,7 @@ static const char *z_geoip_decode_continent(const char *code)
 
 short z_geoip_getextinfo(geoipstate &gs)
 {
-    return geoip_show_country == 1 ? gs.extcountry.s : geoip_show_continent == 1 ? gs.extcontinent.s : 0;
+    return geoip_show_country == 1 && gs.extcountry.s ? gs.extcountry.s : (geoip_show_country == 1 ||  geoip_show_continent == 1) ? gs.extcontinent.s : 0;
 }
 
 void z_geoip_resolveclient(geoipstate &gs, enet_uint32 ip)

@@ -17,7 +17,7 @@ static void z_geoip_print(vector<char> &buf, clientinfo *ci, bool admin)
         (admin ? geoip_show_country   : geoip_show_country == 1)   ? ci->xi.geoip.country             : NULL,   // 4
         (admin ? geoip_show_continent : geoip_show_continent == 1) ? ci->xi.geoip.continent           : NULL    // 5
     };
-    if(geoip_country_continent_fallback && !comp[4] && !comp[5] && (admin ? geoip_show_country : geoip_show_country == 1) && ci->xi.geoip.continent)
+    if(!comp[4] && !comp[5] && (admin ? geoip_show_country : geoip_show_country == 1) && ci->xi.geoip.continent)
         comp[5] = ci->xi.geoip.continent;
     int lastc = -1;
     loopi(sizeof(comp)/sizeof(comp[0])) if(comp[i])
