@@ -63,6 +63,7 @@ void z_announcekill(clientinfo *actor, clientinfo *victim, int fragval)
         {
             const char *vname = z_teamcolorname(victim, NULL, ci);
             nname = z_teamcolorname(actor, NULL, ci);
+            /* TODO: use templates */
             if(!announcekills_stopped_num) sendf(ci->clientnum, 1, "ris", N_SERVMSG, tempformatstring("\f2%s was stopped by %s", vname, nname));
             else sendf(ci->clientnum, 1, "ris", N_SERVMSG, tempformatstring("\f2%s was stopped by %s (\f6%d kills\f2)", vname, nname, victim->state.rampage));
         }
@@ -72,6 +73,7 @@ void z_announcekill(clientinfo *actor, clientinfo *victim, int fragval)
         {
             name = z_teamcolorname(actor, "you", ci);
             const char *mkstr = z_multikillstr(actor->state.multikills);
+            /* TODO: use templates */
             if(mkstr) sendf(ci->clientnum, 1, "ris", N_SERVMSG, tempformatstring("\f2%s scored %sKILL!!", name, mkstr));
             else sendf(ci->clientnum, 1, "ris", N_SERVMSG, tempformatstring("\f2%s scored \f3%d MULTIPLE KILLS!!", name, actor->state.multikills));
         }
@@ -85,15 +87,17 @@ void z_announcekill(clientinfo *actor, clientinfo *victim, int fragval)
                 if(actor->state.rampage % announcekills_numeric_num == 0)
                 {
                     if(!name) name = z_teamcolorname(actor, "you", ci);
+                    /* TODO: use templates */
                     sendf(ci->clientnum, 1, "ris", N_SERVMSG, tempformatstring("\f2%s made \f7%d\f2 kills", name, actor->state.rampage));
                 }
             }
             else
             {
                 const char *msg;
+                /* TODO: use admin supplied list */
                 switch(actor->state.rampage)
                 {
-                    case 5:  msg = "on a KILLING SPREE!!"; break;
+                    case 5:  msg = "on a \f6KILLING SPREE!!"; break;
                     case 10: msg = "on a \f6RAMPAGE!!"; break;
                     case 15: msg = "\f6DOMINATING!!"; break;
                     case 20: msg = "\f6UNSTOPPABLE!!"; break;
