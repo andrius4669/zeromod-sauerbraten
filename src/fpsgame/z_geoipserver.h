@@ -75,11 +75,15 @@ void z_geoip_show(clientinfo *ci)
             }
             else
             {
-                ft[3].ptr = NULL;
                 if((isadmin ? geoip_show_ip : geoip_show_ip == 1) || (isadmin ? geoip_show_network : geoip_show_network == 1))
+                {
+                    ft[3].ptr = NULL;
                     z_format(msg, sizeof msg, geoip_style_local, ft);
+                }
                 else
+                {
                     *msg = 0;
+                }
             }
 
             filled_in[idx] = true;
@@ -163,7 +167,6 @@ void z_servcmd_geoip(int argc, char **argv, int sender)
                         { 'C', "%s", (const void *)colorname(ci) },
                         { 'c', "%s", (const void *)ci->name },
                         { 'n', "%d", (const void *)(long)ci->clientnum },
-                        { 'L', "%s", (const void *)NULL },
                         { 0, NULL, NULL }
                     };
                     z_format(msg, sizeof msg, geoip_style_local_query, ft);
@@ -184,7 +187,6 @@ void z_servcmd_geoip(int argc, char **argv, int sender)
                 { 'C', "%s", (const void *)colorname(ci) },
                 { 'c', "%s", (const void *)ci->name },
                 { 'n', "%d", (const void *)(long)ci->clientnum },
-                { 'L', "%s", (const void *)NULL },
                 { 0, NULL, NULL }
             };
             z_format(msg, sizeof msg, geoip_style_failed_query, ft);

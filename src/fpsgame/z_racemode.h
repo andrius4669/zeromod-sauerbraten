@@ -35,6 +35,7 @@ SCOMMANDA(racemode, PRIV_ADMIN, z_servcmd_racemode, 1);
 VAR(racemode_allowcheat, 0, 0, 1);
 VAR(racemode_allowedit, 0, 0, 1);
 VAR(racemode_alloweditmode, 0, 1, 1);
+VAR(racemode_allowmultiplaces, 0, 1, 1);
 
 VAR(racemode_waitmap, 0, 10000, INT_MAX);
 VAR(racemode_sendspectators, 0, 1, 1);
@@ -91,6 +92,11 @@ SVAR(racemode_style_start, "\f6race: \f7START!!");
 SVAR(racemode_style_timeleft, "\f2time left: %T");
 SVAR(racemode_style_ending, "\f6race: \f2ending race in %T...");
 
+SVAR(racemode_message_gotmap, "since you got the map, you may continue racing now");
+SVAR(racemode_message_respawn, "since you respawned, you may continue racing");
+SVAR(racemode_message_editmode, "edit mode is not allowed in racemode. please suicide to continue racing");
+SVAR(racemode_message_editing, "editing map is not allowed in racemode. please getmap or reconnect to continue racing");
+
 struct raceservmode: servmode
 {
     enum { ST_NONE = 0, ST_WAITMAP, ST_READY, ST_STARTED, ST_FINISHED, ST_INT };
@@ -101,7 +107,7 @@ struct raceservmode: servmode
     int minraceend;     // used when only non-first places are specified
     struct winner
     {
-        int cn, racemillis;
+        int cn, racemillis, lifesequence;
         winner(): cn(-1), racemillis(0) {}
     };
     vector<winner> race_winners;
@@ -241,7 +247,7 @@ struct raceservmode: servmode
         loopv(race_winners)
         {
             int cn = race_winners[i].cn;
-            if(cn == ci->clientnum) break;
+            if(cn == ci->clientnum && (!racemode_allowmultiplaces || race_winners[i].lifesequence == ci->state.lifesequence)) break;
             if(cn < 0)
             {
                 avaiable_place = i;
@@ -251,17 +257,20 @@ struct raceservmode: servmode
         if(avaiable_place >= 0) loopv(raceends)
         {
             z_raceendinfo &r = raceends[i];
-            if(r.place > avaiable_place && r.place > minraceend) continue;  /* don't skip is place is already minimal */
+            if(r.place > avaiable_place && r.place > minraceend) continue;  /* don't skip if place is already minimal */
             if(!reached_raceend(r, newpos)) continue;
             int racemillis = 0;
+            // leave lower places to allow others to win
             for(int j = race_winners.length()-1; j > avaiable_place; j--) if(race_winners[j].cn == ci->clientnum)
             {
                 race_winners[j].cn = -1;
+                // don't increase player's racetime
                 racemillis = race_winners[j].racemillis;
             }
-            if(!racemillis) racemillis = gamemillis-ci->state.lastdeath;    /* lastdeath is reused for spawntime */
+            if(!racemillis) racemillis = gamemillis - ci->state.lastdeath;      /* lastdeath is reused for spawntime */
             race_winners[avaiable_place].cn = ci->clientnum;
             race_winners[avaiable_place].racemillis = racemillis;
+            race_winners[avaiable_place].lifesequence = ci->state.lifesequence;
 
             z_formattemplate ft[] =
             {
@@ -285,9 +294,7 @@ struct raceservmode: servmode
     static void warnracecheat(clientinfo *ci)
     {
         if(ci->state.flags != 1 && ci->state.flags != 2) return;
-        sendf(ci->clientnum, 1, "ris", N_SERVMSG, ci->state.flags == 1
-            ? "edit mode is not allowed in racemode. please suicide to continue racing"
-            : "editing map is not allowed in racemode. please getmap or reconnect to continue racing");
+        sendf(ci->clientnum, 1, "ris", N_SERVMSG, ci->state.flags == 1 ? racemode_message_editmode : racemode_message_editing);
     }
 
     void racecheat(clientinfo *ci, int type)
@@ -328,7 +335,7 @@ struct raceservmode: servmode
                     };
                     string buf;
                     z_format(buf, sizeof buf, racemode_style_leaveplace, ft);
-                    if(buf[0]) sendservmsg(buf);
+                    if(*buf) sendservmsg(buf);
                 }
                 race_winners[i].cn = -1;
             }
@@ -341,7 +348,7 @@ struct raceservmode: servmode
         if(ci->state.flags == 1)
         {
             ci->state.flags = 0;
-            if(ci->state.aitype==AI_NONE) sendf(ci->clientnum, 1, "ris", N_SERVMSG, "since you respawned, you may continue racing");
+            if(ci->state.aitype==AI_NONE) sendf(ci->clientnum, 1, "ris", N_SERVMSG, racemode_message_respawn);
         }
         else if(ci->state.flags == 2 && ci->state.aitype==AI_NONE) warnracecheat(ci);
     }
@@ -599,7 +606,7 @@ void race_gotmap(clientinfo *ci)
         if(!racemode_allowcheat) ci->state.flags = ci->state.state!=CS_EDITING ? 0 : racemode_alloweditmode ? 1 : 2;
         else ci->state.flags = 0;
         if(ci->state.flags) raceservmode::warnracecheat(ci);
-        else sendf(ci->clientnum, 1, "ris", N_SERVMSG, "since you got the map, you may continue racing now");
+        else sendf(ci->clientnum, 1, "ris", N_SERVMSG, racemode_message_gotmap);
     }
 }
 
