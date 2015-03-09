@@ -107,7 +107,7 @@ void z_announcekill(clientinfo *actor, clientinfo *victim, int fragval)
             z_formattemplate ft[] =
             {
                 { 'V', "%s", (const void *)vname },
-                { 'A', "%d", (const void *)nname },
+                { 'A', "%s", (const void *)nname },
                 { 'n', "%d", (const void *)(long)victim->state.rampage },
                 { 0, NULL, NULL }
             };
@@ -127,7 +127,7 @@ void z_announcekill(clientinfo *actor, clientinfo *victim, int fragval)
             z_formattemplate ft[] =
             {
                 { 'Y', "%s", (const void *)name },
-                { 'A', "%d", (const void *)nname },
+                { 'A', "%s", (const void *)nname },
                 { 's', "%s", (const void *)mkstr },
                 { 'n', "%d", (const void *)(long)actor->state.multikills },
                 { 0, NULL, NULL }
@@ -152,7 +152,7 @@ void z_announcekill(clientinfo *actor, clientinfo *victim, int fragval)
                     z_formattemplate ft[] =
                     {
                         { 'Y', "%s", (const void *)name },
-                        { 'A', "%d", (const void *)nname },
+                        { 'A', "%s", (const void *)nname },
                         { 'n', "%d", (const void *)(long)actor->state.rampage },
                         { 0, NULL, NULL }
                     };
@@ -190,8 +190,8 @@ void z_announcekill(clientinfo *actor, clientinfo *victim, int fragval)
                     z_formattemplate ft[] =
                     {
                         { 'Y', "%s", (const void *)name },
-                        { 'A', "%d", (const void *)nname },
-                        { 's', "%d", (const void *)msg },
+                        { 'A', "%s", (const void *)nname },
+                        { 's', "%s", (const void *)msg },
                         { 0, NULL, NULL }
                     };
 
