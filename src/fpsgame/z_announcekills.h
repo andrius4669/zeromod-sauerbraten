@@ -35,7 +35,7 @@ SVAR(announcekills_style_stopped, "\f2%V was stopped by %A (\f6%n kills\f2)");
 SVAR(announcekills_style_multikills, "\f2%Y scored %sKILL!!");
 SVAR(announcekills_style_multikills_num, "\f2%Y scored \f3%n MULTIPLE KILLS!!");
 SVAR(announcekills_style_numeric, "\f2%Y made \f7%n\f2 kills");
-SVAR(announcekills_style_rampage, "\f2%s is %s");
+SVAR(announcekills_style_rampage, "\f2%A is %s");
 
 vector<z_multikillstrstruct> z_rampagestrings;
 ICOMMAND(announcekills_rampagestrings, "is2V", (tagval *args, int numargs),
