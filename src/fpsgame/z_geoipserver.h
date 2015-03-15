@@ -129,7 +129,7 @@ void z_servcmd_geoip(int argc, char **argv, int sender)
         if(cis.find(ci)<0) cis.add(ci);
     }
 
-    if(cis.empty()) { sendf(sender, 1, "ris", N_SERVMSG, "please specify client number"); return; }
+    if(cis.empty()) { z_servcmd_pleasespecifyclient(sender); return; }
 
     loopv(cis)
     {
@@ -195,7 +195,7 @@ void z_servcmd_geoip(int argc, char **argv, int sender)
     }
     return;
 fail:
-    sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("unknown client: %s", argv[i]));
+    z_servcmd_unknownclient(argv[i], sender);
 }
 SCOMMAND(geoip, PRIV_NONE, z_servcmd_geoip);
 SCOMMANDH(getip, PRIV_NONE, z_servcmd_geoip);

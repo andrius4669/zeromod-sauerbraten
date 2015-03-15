@@ -11,6 +11,8 @@ VAR(antiflood_rename_time, 0, 4000, 2*60000);
 VAR(antiflood_team, 0, 4, 8192);
 VAR(antiflood_team_time, 1, 4000, 2*60000);
 
+SVAR(antiflood_style, "\f6antiflood: %T was blocked, wait %w ms before resending");
+
 static int z_ratelimit(z_queue<int> &q, int time, int limit, bool overwrite)
 {
     if(!q.capacity()) return 0;
@@ -32,7 +34,15 @@ static int z_warnantiflood(int afwait, int cn, const char *typestr)
         disconnect_client(cn, DISC_OVERFLOW);
         return -1;
     }
-    sendf(cn, 1, "ris", N_SERVMSG, tempformatstring("\f6antiflood: %s was blocked, wait %d ms before resending", typestr, afwait));
+    z_formattemplate ft[] =
+    {
+        { 'T', "%s", typestr },
+        { 'w', "%d", (const void *)(long)afwait },
+        { 0,   NULL, NULL }
+    };
+    string buf;
+    z_format(buf, sizeof buf, antiflood_style, ft);
+    if(*buf) sendf(cn, 1, "ris", N_SERVMSG, buf);
     return 1;
 }
 

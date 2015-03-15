@@ -3830,7 +3830,7 @@ namespace server
 
             case N_SERVCMD:
                 getstring(text, p);
-                if(iscubealnum(text[0])) z_servcmd_parse(sender, text);
+                if(allowservcmd && iscubealnum(text[0])) z_servcmd_parse(sender, text);
                 break;
                      
             #define PARSEMESSAGES 1

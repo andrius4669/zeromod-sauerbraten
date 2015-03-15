@@ -69,7 +69,7 @@ void z_servcmd_stats(int argc, char **argv, int sender)
     {
         if(!z_parseclient_verify(argv[i], &cn, true, true, senderci->local || senderci->privilege>=PRIV_ADMIN))
         {
-            sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("unknown client: %s", argv[i]));
+            z_servcmd_unknownclient(argv[i], sender);
             return;
         }
         if(cn < 0)
@@ -96,16 +96,15 @@ SCOMMAND(stats, PRIV_NONE, z_servcmd_stats);
 VAR(servcmd_pm_comfirmation, 0, 1, 1);
 void z_servcmd_pm(int argc, char **argv, int sender)
 {
-    if(argc <= 2) { sendf(sender, 1, "ris", N_SERVMSG, "please specify client and message"); return; }
+    if(argc <= 1) { z_servcmd_pleasespecifyclient(sender); return; }
+    if(argc <= 2) { z_servcmd_pleasespecifymessage(sender); return; }
     int cn;
     clientinfo *ci;
-    if(!z_parseclient_verify(argv[1], &cn, false, true, true))
+    if(!z_parseclient_verify(argv[1], &cn, false, false, true))
     {
-        sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("unknown client: %s", argv[1]));
+        z_servcmd_unknownclient(argv[1], sender);
         return;
     }
-    ci = getinfo(cn);
-    if(ci->state.aitype!=AI_NONE) { sendf(sender, 1, "ris", N_SERVMSG, "you can not send private message to bot"); return; }
     ci = getinfo(sender);
     if(z_checkchatmute(ci)) { sendf(sender, 1, "ris", N_SERVMSG, "your pms are muted"); return; }
     sendf(cn, 1, "ris", N_SERVMSG, tempformatstring("\f6pm: \f7%s \f5(%d)\f7: \f0%s", ci->name, ci->clientnum, argv[2]));
@@ -126,14 +125,14 @@ SCOMMANDA(intermission, PRIV_MASTER, z_servcmd_interm, 1);
 
 void z_servcmd_wall(int argc, char **argv, int sender)
 {
-    if(argc <= 1) { sendf(sender, 1, "ris", N_SERVMSG, "please specify message"); return; }
+    if(argc <= 1) { z_servcmd_pleasespecifymessage(sender); return; }
     sendservmsg(argv[1]);
 }
 SCOMMANDA(wall, PRIV_ADMIN, z_servcmd_wall, 1);
 
 void z_servcmd_achat(int argc, char **argv, int sender)
 {
-    if(argc <= 1) { sendf(sender, 1, "ris", N_SERVMSG, "please specify message"); return; }
+    if(argc <= 1) { z_servcmd_pleasespecifymessage(sender); return; }
     clientinfo *ci = getinfo(sender);
     loopv(clients) if(clients[i]->state.aitype==AI_NONE && (clients[i]->local || clients[i]->privilege >= PRIV_ADMIN))
     {
@@ -144,18 +143,13 @@ SCOMMANDA(achat, PRIV_ADMIN, z_servcmd_achat, 1);
 
 void z_servcmd_reqauth(int argc, char **argv, int sender)
 {
-    if(argc < 2)
-    {
-        if(!serverauth[0]) sendf(sender, 1, "ris", N_SERVMSG, "please specify client and authdesc");
-        else sendf(sender, 1, "ris", N_SERVMSG, "please specify client");
-        return;
-    }
-    if(argc < 3 && !serverauth[0]) { sendf(sender, 1, "ris", N_SERVMSG, "please specify authdesc"); return; }
+    if(argc <= 1) { z_servcmd_pleasespecifyclient(sender); return; }
+    if(argc <= 2 && !*serverauth) { sendf(sender, 1, "ris", N_SERVMSG, "please specify authdesc"); return; }
 
     int cn;
     if(!z_parseclient_verify(argv[1], &cn, true, false, true))
     {
-        sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("unknown client: %s", argv[1]));
+        z_servcmd_unknownclient(argv[1], sender);
         return;
     }
 
