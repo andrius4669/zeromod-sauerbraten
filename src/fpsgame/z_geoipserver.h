@@ -117,7 +117,7 @@ void z_servcmd_geoip(int argc, char **argv, int sender)
     bool isadmin = senderci->privilege>=PRIV_ADMIN || senderci->local;
     for(i = 1; i < argc; i++)
     {
-        if(!z_parseclient(argv[i], &cn)) goto fail;
+        if(!z_parseclient(argv[i], cn)) goto fail;
         if(cn < 0)
         {
             cis.shrink(0);

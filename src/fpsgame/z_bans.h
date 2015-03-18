@@ -186,7 +186,7 @@ void z_servcmd_ban(int argc, char **argv, int sender)
     extern void z_log_kick(clientinfo *, const char *, const char *, int, clientinfo *, const char *);
     extern void z_log_kickdone();
     extern void z_showban(clientinfo *, const char *, const char *, int, const char *);
-    extern bool z_parseclient_verify(const char *str, int *cn, bool allowall, bool allowbot = false, bool allowspy = false);
+    extern bool z_parseclient_verify(const char *str, int &cn, bool allowall, bool allowbot = false, bool allowspy = false);
     extern clientinfo *getinfo(int n);
     extern const char *colorname(clientinfo *ci, const char *name = NULL);
     extern void forcespectator(clientinfo *ci);
@@ -194,13 +194,13 @@ void z_servcmd_ban(int argc, char **argv, int sender)
     static const char * const banstrings[] = { "ban", "specban", "muteban" };
     clientinfo *target, *ci = (clientinfo *)getclientinfo(sender);
     int bant, cn, time;
-    if(argc <= 1) { sendf(sender, 1, "ris", N_SERVMSG, "please specify client number"); return; }
+    if(argc <= 1) { z_servcmd_pleasespecifyclient(sender); return; }
     if(!strcasecmp(argv[0], banstrings[0]))
     {
         bant = 0;
-        if(!z_parseclient_verify(argv[1], &cn, false))
+        if(!z_parseclient_verify(argv[1], cn, false))
         {
-            sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("unknown client: %s", argv[1]));
+            z_servcmd_unknownclient(argv[1], sender);
             return;
         }
         target = (clientinfo *)getclientinfo(cn);
@@ -213,9 +213,9 @@ void z_servcmd_ban(int argc, char **argv, int sender)
     else if(!strcasecmp(argv[0], banstrings[1]))
     {
         bant = 1;
-        if(!z_parseclient_verify(argv[1], &cn, false))
+        if(!z_parseclient_verify(argv[1], cn, false))
         {
-            sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("unknown client: %s", argv[1]));
+            z_servcmd_unknownclient(argv[1], sender);
             return;
         }
         target = (clientinfo *)getclientinfo(cn);
@@ -228,9 +228,9 @@ void z_servcmd_ban(int argc, char **argv, int sender)
     else if(!strcasecmp(argv[0], banstrings[2]))
     {
         bant = 2;
-        if(!z_parseclient_verify(argv[1], &cn, false, true))
+        if(!z_parseclient_verify(argv[1], cn, false, true))
         {
-            sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("unknown client: %s", argv[1]));
+            z_servcmd_unknownclient(argv[1], sender);
             return;
         }
         target = getinfo(cn);

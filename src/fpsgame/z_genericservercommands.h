@@ -67,7 +67,7 @@ void z_servcmd_stats(int argc, char **argv, int sender)
     vector<clientinfo *> cis;
     for(i = 1; i < argc; i++)
     {
-        if(!z_parseclient_verify(argv[i], &cn, true, true, senderci->local || senderci->privilege>=PRIV_ADMIN))
+        if(!z_parseclient_verify(argv[i], cn, true, true, senderci->local || senderci->privilege>=PRIV_ADMIN))
         {
             z_servcmd_unknownclient(argv[i], sender);
             return;
@@ -100,7 +100,7 @@ void z_servcmd_pm(int argc, char **argv, int sender)
     if(argc <= 2) { z_servcmd_pleasespecifymessage(sender); return; }
     int cn;
     clientinfo *ci;
-    if(!z_parseclient_verify(argv[1], &cn, false, false, true))
+    if(!z_parseclient_verify(argv[1], cn, false, false, true))
     {
         z_servcmd_unknownclient(argv[1], sender);
         return;
@@ -147,7 +147,7 @@ void z_servcmd_reqauth(int argc, char **argv, int sender)
     if(argc <= 2 && !*serverauth) { sendf(sender, 1, "ris", N_SERVMSG, "please specify authdesc"); return; }
 
     int cn;
-    if(!z_parseclient_verify(argv[1], &cn, true, false, true))
+    if(!z_parseclient_verify(argv[1], cn, true, false, true))
     {
         z_servcmd_unknownclient(argv[1], sender);
         return;

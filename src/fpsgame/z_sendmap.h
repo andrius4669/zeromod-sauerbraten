@@ -30,21 +30,16 @@ bool z_sendmap(clientinfo *ci, clientinfo *sender = NULL, stream *map = NULL, bo
 void z_servcmd_sendmap(int argc, char **argv, int sender)
 {
     if(!m_edit) { sendf(sender, 1, "ris", N_SERVMSG, "\"sendmap\" only works in coop edit mode"); return; }
-    if(argc < 2) { sendf(sender, 1, "ris", N_SERVMSG, "please specify client"); return; }
+    if(argc < 2) { z_servcmd_pleasespecifyclient(sender); return; }
     int cn;
-    clientinfo *ci = NULL, *senderci = (clientinfo *)getclientinfo(sender);
-    if(!z_parseclient(argv[1], &cn)) goto failcn;
-    if(cn >= 0)
+    clientinfo *senderci = (clientinfo *)getclientinfo(sender);
+    if(!z_parseclient_verify(argv[1], cn, true))
     {
-        ci = getinfo(cn);
-        if(!ci || !ci->connected) goto failcn;
-        if(ci->state.aitype != AI_NONE) { sendf(sender, 1, "ris", N_SERVMSG, "can not send map to bot"); return; }
+        z_servcmd_unknownclient(argv[1], sender);
+        return;
     }
-    if(ci) z_sendmap(ci, senderci);
+    if(cn >= 0) z_sendmap(getinfo(cn), senderci);
     else loopv(clients) if(clients[i]->state.aitype == AI_NONE && clients[i]->clientnum != sender) z_sendmap(clients[i], senderci);
-    return;
-failcn:
-    sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("unknown client: %s", argv[1]));
 }
 SCOMMANDA(sendmap, PRIV_MASTER, z_servcmd_sendmap, 1);
 SCOMMANDAH(sendto, PRIV_MASTER, z_servcmd_sendmap, 1);

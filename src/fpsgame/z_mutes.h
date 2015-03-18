@@ -12,12 +12,12 @@ static void z_servcmd_mute(int argc, char **argv, int sender)
     int val = -1, cn, mutetype = 0;
     clientinfo *ci = NULL, *actor = getinfo(sender);
     const char *minfo = NULL;
-    if(argc < 2) { sendf(sender, 1, "ris", N_SERVMSG, "please specify client"); return; }
+    if(argc < 2) { z_servcmd_pleasespecifyclient(sender); return; }
     if(argc > 2) val = clamp(atoi(argv[2]), 0, 1);
 
-    if(!z_parseclient_verify(argv[1], &cn, true, true))
+    if(!z_parseclient_verify(argv[1], cn, true, true))
     {
-        sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("unknown client: %s", argv[1]));
+        z_servcmd_unknownclient(argv[1], sender);
         return;
     }
     if(cn >= 0) ci = getinfo(cn);

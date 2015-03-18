@@ -277,12 +277,12 @@ SCOMMANDA(unpban, PRIV_ADMIN, z_servcmd_unpban, 1);
 
 void z_servcmd_pban(int argc, char **argv, int sender)
 {
-    if(argc < 2) { sendf(sender, 1, "ris", N_SERVMSG, "please specify client number"); return; }
+    if(argc < 2) { z_servcmd_pleasespecifyclient(sender); return; }
     char *end = NULL, *range = strchr(argv[1], '/');
     if(range) *range++ = 0;
     int cn = (int)strtol(argv[1], &end, 10);
     clientinfo *ci;
-    if(!end || !(ci = (clientinfo *)getclientinfo(cn))) { sendf(sender, 1, "ris", N_SERVMSG, "incorrect client number"); return; }
+    if(!end || !(ci = (clientinfo *)getclientinfo(cn))) { z_servcmd_unknownclient(argv[1], sender); return; }
     if(ci->local) { sendf(sender, 1, "ris", N_SERVMSG, "you cannot ban local client"); return; }
     int r;
     if(range)

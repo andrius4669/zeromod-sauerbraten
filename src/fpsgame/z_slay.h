@@ -6,12 +6,12 @@
 // note: plz don't troll inoccent players with this
 void z_servcmd_slay(int argc, char **argv, int sender)
 {
-    if(argc < 2) { sendf(sender, 1, "ris", N_SERVMSG, "please specify client number"); return; }
+    if(argc < 2) { z_servcmd_pleasespecifyclient(sender); return; }
     int cn;
     bool val = !strcasecmp(argv[0], "slay");
-    if(!z_parseclient_verify(argv[1], &cn, !val))
+    if(!z_parseclient_verify(argv[1], cn, !val))
     {
-        sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("unknown client: %s", argv[1]));
+        z_servcmd_unknownclient(argv[1], sender);
         return;
     }
     clientinfo *ci = cn >= 0 ? getinfo(cn) : NULL;
@@ -32,11 +32,11 @@ SCOMMANDAH(unslay, PRIV_ADMIN, z_servcmd_slay, 1);
 
 void z_servcmd_kill(int argc, char **argv, int sender)
 {
-    if(argc < 2) { sendf(sender, 1, "ris", N_SERVMSG, "please specify client number"); return; }
+    if(argc < 2) { z_servcmd_pleasespecifyclient(sender); return; }
     int cn;
-    if(!z_parseclient_verify(argv[1], &cn, true))
+    if(!z_parseclient_verify(argv[1], cn, true))
     {
-        sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("unknown client: %s", argv[1]));
+        z_servcmd_unknownclient(argv[1], sender);
         return;
     }
     clientinfo *ci = cn >= 0 ? getinfo(cn) : NULL;

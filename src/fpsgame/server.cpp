@@ -2598,7 +2598,7 @@ namespace server
             formatstring(msg)("%s has modified map \"%s\"", colorname(ci), smapname);
             if(!m_edit || req >= 0) sendf(req, 1, "ris", N_SERVMSG, msg);
             if(req < 0) ci->warned = true;
-            if(req < 0 && m_edit) z_sendmap(ci, NULL);
+            if(req < 0 && m_edit) z_sendmap(ci, NULL, NULL, true);
         }
         if(crcs.length() >= 2) loopv(crcs)
         {
@@ -2610,7 +2610,7 @@ namespace server
                 formatstring(msg)("%s has modified map \"%s\"", colorname(ci), smapname);
                 if(!m_edit || req >= 0) sendf(req, 1, "ris", N_SERVMSG, msg);
                 if(req < 0) ci->warned = true;
-                if(req < 0 && m_edit) z_sendmap(ci, NULL);
+                if(req < 0 && m_edit) z_sendmap(ci, NULL, NULL, true);
             }
         }
         if(m_edit) return;
