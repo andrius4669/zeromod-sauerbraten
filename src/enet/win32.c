@@ -4,9 +4,10 @@
 */
 #ifdef _WIN32
 
-#include <time.h>
 #define ENET_BUILDING_LIB 1
 #include "enet/enet.h"
+#include <windows.h>
+#include <mmsystem.h>
 
 static enet_uint32 timeBase = 0;
 
@@ -349,6 +350,8 @@ enet_socket_receive (ENetSocket socket,
        switch (WSAGetLastError ())
        {
        case WSAEWOULDBLOCK:
+          return -2;
+
        case WSAECONNRESET:
           return 0;
        }
@@ -357,7 +360,7 @@ enet_socket_receive (ENetSocket socket,
     }
 
     if (flags & MSG_PARTIAL)
-      return -1;
+      return -3;
 
     if (address != NULL)
     {

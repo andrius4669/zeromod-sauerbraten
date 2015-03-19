@@ -176,7 +176,7 @@ struct msinfo
             masterin.advance(recv);
             processmasterinput();
         }
-        else disconnectmaster();
+        else if(recv >= -1) disconnectmaster();
     }
 
     void updatemasterserver()

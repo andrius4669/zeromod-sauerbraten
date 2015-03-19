@@ -363,7 +363,8 @@ void checkserverpongs()
         buf.data = pong;
         buf.dataLength = sizeof(pong);
         int len = enet_socket_receive(pingsocket, &addr, &buf, 1);
-        if(len <= 0) break;
+        if(len == -3 || len == 0) continue;
+        if(len < 0) break;
         loopv(gameservers)
         {
             gameserver &s = *gameservers[i];
@@ -674,7 +675,7 @@ void checkclients()
                 c.input[min(c.inputpos, (int)sizeof(c.input)-1)] = '\0';
                 if(!checkclientinput(c)) { purgeclient(i--); continue; }
             }
-            else { purgeclient(i--); continue; }
+            else if(res >= -1) { purgeclient(i--); continue; }
         }
         if(c.output.length() > OUTPUT_LIMIT) { purgeclient(i--); continue; }
         if(ENET_TIME_DIFFERENCE(servtime, c.lastinput) >= (c.registeredserver ? KEEPALIVE_TIME : CLIENT_TIME)) { purgeclient(i--); continue; }
