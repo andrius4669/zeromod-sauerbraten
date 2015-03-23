@@ -56,6 +56,27 @@ static inline void z_checkexceeded()
     }
 }
 
+// unfinished
+#if 0
+// check whether client can reach certain object
+static bool z_is_reachable(clientinfo &ci, const vec &o, float radius)
+{
+    int allowedlag = ci.calcpushrange();        /* TODO: determine this value from ping/round trip time more preciselly */
+    int timepassed, gtimepassed;
+    float distance;
+    z_posqueue &pt = ci.xi.postrack;
+    loopv(pt)
+    {
+        z_posrecord &pr = pt.last(i);
+        timepassed = totalmillis - pr.tmillis;
+        gtimepassed = gamemillis - pr.gmillis;
+        distance = ci.state.o.dist2(o);
+        if(i && timepassed > allowedlag) break;
+        float couldgo = 0;
+    }
+}
+#endif
+
 void z_test_totalx(int *cn)
 {
     clientinfo *ci = getinfo(*cn);

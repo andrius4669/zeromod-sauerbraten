@@ -72,4 +72,13 @@ void z_formatsecs(vector<char> &timebuf, uint secs)
     }
 }
 
+SVAR(date_format, "%Y-%m-%d %H:%M:%S");
+VAR(date_local, 0, 1, 1);
+
+size_t z_formatdate(char *dst, size_t len, const time_t &t)
+{
+    struct tm *tt = date_local ? localtime(&t) : gmtime(&t);
+    return strftime(dst, len, date_format, tt);
+}
+
 #endif // Z_FORMAT_H

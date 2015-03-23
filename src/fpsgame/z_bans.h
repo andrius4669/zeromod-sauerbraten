@@ -126,7 +126,7 @@ static void z_sendbanlist(int cn)
     {
         msgbuf.setsize(0);
         im.ip = bannedips[i].ip;
-        n = sprintf(buf, "\f2id: \f7%d\f2, ip: \f7", i);
+        n = sprintf(buf, "\f2id: \f7%2d\f2, ip: \f7", i);
         msgbuf.put(buf, n);
         n = im.print(buf);
         msgbuf.put(buf, n);
