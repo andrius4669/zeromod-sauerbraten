@@ -340,7 +340,7 @@ void z_servcmd_pbanip(int argc, char **argv, int sender)
 {
     if(argc < 2) { sendf(sender, 1, "ris", N_SERVMSG, "please specify ip address"); return; }
     sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("adding pban for %s", argv[1]));
-    addgban(-1, argv[1], getinfo(sender), argc > 2 ? argv[2] : NULL, true);
+    addgban(-1, argv[1], getinfo(sender), argc > 2 ? argv[2] : NULL, time(NULL), 0);
 }
 SCOMMANDA(pbanip, PRIV_ADMIN, z_servcmd_pbanip, 2);
 

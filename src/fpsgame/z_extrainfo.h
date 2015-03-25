@@ -80,6 +80,29 @@ struct z_posqueue: z_queue<z_posrecord>
     }
 };
 
+struct z_identinfo
+{
+    char *name, *desc;
+
+    z_identinfo(): name(NULL), desc(NULL) {}
+    ~z_identinfo() { clear(); }
+
+    void clear() { DELETEA(name); desc = NULL; }
+
+    void set(const char *n, const char *d)
+    {
+        size_t nl = strlen(n), dl = d ? strlen(d) : 0;
+        clear();
+        name = new char[nl + dl + 2];
+        memcpy(name, n, nl+1);
+        desc = &name[nl+1];
+        if(dl) memcpy(desc, d, dl+1);
+        else *desc = 0;
+    }
+
+    bool isset() const { return name!=NULL; }
+};
+
 struct z_extrainfo
 {
     geoipstate geoip;
@@ -93,6 +116,7 @@ struct z_extrainfo
     int lastchat, lastedit;
     int maploaded;
     int mapsucks;
+    z_identinfo ident;
     z_posqueue postrack;
 
     z_extrainfo(): disc_reason(NULL), wlauth(NULL) {}

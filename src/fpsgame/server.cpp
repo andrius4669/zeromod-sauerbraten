@@ -3703,7 +3703,7 @@ namespace server
                     if(!ci->privilege && !ci->local) break;
                     clientinfo *minfo = (clientinfo *)getclientinfo(mn);
                     if(!minfo || !minfo->connected || (!ci->local && (minfo->privilege > ci->privilege || minfo->privilege >= PRIV_ADMIN))) break;
-                    setmaster(minfo, val!=0, "", NULL, NULL, clamp(val, int(PRIV_MASTER), ci->privilege), true, false, false, ci);
+                    setmaster(minfo, val!=0, "", NULL, NULL, clamp(val, 0, ci->privilege), true, false, false, ci);
                 }
                 else setmaster(ci, val!=0, text);
                 // don't broadcast the master password
