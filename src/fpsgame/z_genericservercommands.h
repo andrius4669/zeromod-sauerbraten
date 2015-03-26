@@ -3,6 +3,7 @@
 
 #include "z_servcmd.h"
 #include "z_format.h"
+#include "z_invpriv.h"
 
 static char z_privcolor(int priv)
 {

@@ -30,6 +30,12 @@ bool setmaster(clientinfo *ci, bool val, const char *pass = "",
     {
         haspass = adminpass[0] && checkpassword(ci, adminpass, pass);
         int wantpriv = ci->local || haspass ? PRIV_ADMIN : authpriv;
+        if(authname && !trial && (wantpriv == PRIV_NONE || ci->xi.authident))
+        {
+            z_log_ident(ci, authname, authdesc);
+            ci->xi.ident.set(authname, authdesc);
+            wantpriv = PRIV_NONE;
+        }
         if(wantpriv <= ci->privilege) return true;
         else if(wantpriv <= PRIV_MASTER && !force)
         {
@@ -60,6 +66,8 @@ bool setmaster(clientinfo *ci, bool val, const char *pass = "",
         name = privname(ci->privilege);
         revokemaster(ci);
     }
+    if(val && authname) ci->xi.claim.set(authname, authdesc);
+    else ci->xi.claim.clear();
     bool hasmaster = false;
     loopv(clients) if(clients[i]->local || clients[i]->privilege >= PRIV_MASTER) hasmaster = true;
     bool mmchange = false;

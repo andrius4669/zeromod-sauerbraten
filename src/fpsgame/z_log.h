@@ -121,6 +121,12 @@ static inline void z_log_setmaster(clientinfo *master, bool val, bool pass, cons
     }
 }
 
+static inline void z_log_ident(clientinfo *ci, const char *name, const char *desc)
+{
+    if(desc && *desc) logoutf("ident: %s (%d) identified as '%s' [%s]", ci->name, ci->clientnum, name, desc);
+    else logoutf("ident: %s (%d) identified as '%s'", ci->name, ci->clientnum, name);
+}
+
 static inline void z_log_say(clientinfo *cq, const char *tp)
 {
     if(!isdedicatedserver()) return;

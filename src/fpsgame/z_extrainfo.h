@@ -117,6 +117,8 @@ struct z_extrainfo
     int maploaded;
     int mapsucks;
     z_identinfo ident;
+    z_identinfo claim;
+    bool authident;
     z_posqueue postrack;
 
     z_extrainfo(): disc_reason(NULL), wlauth(NULL) {}
@@ -142,6 +144,7 @@ struct z_extrainfo
         specmute = editmute = namemute = false;
         chatmute = 0;
         lastchat = lastedit = 0;
+        authident = false;
     }
 
     void setdiscreason(const char *s) { delete[] disc_reason; disc_reason = s && *s ? newstring(s) : NULL; }
