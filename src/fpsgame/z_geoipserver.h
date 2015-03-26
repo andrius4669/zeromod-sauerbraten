@@ -126,7 +126,7 @@ void z_geoip_print_query(char *msg, size_t len, clientinfo *ci, bool isadmin)
                     { 'L', "%s", (const void *)buf.getbuf() },
                     { 0, NULL, NULL }
                 };
-                z_format(msg, sizeof msg, geoip_style_normal_query, ft);
+                z_format(msg, len, geoip_style_normal_query, ft);
             }
             else
             {
@@ -144,7 +144,7 @@ void z_geoip_print_query(char *msg, size_t len, clientinfo *ci, bool isadmin)
                     { 'n', "%d", (const void *)(long)ci->clientnum },
                     { 0, NULL, NULL }
                 };
-                z_format(msg, sizeof msg, geoip_style_local_query, ft);
+                z_format(msg, len, geoip_style_local_query, ft);
             }
             else
             {
@@ -186,7 +186,7 @@ void z_servcmd_geoip(int argc, char **argv, int sender)
         ci = cis[i];
 
         string msg;
-        z_geoip_print_query(msg, sizeof(msg), ci, isadmin);
+        z_geoip_print_query(msg, sizeof msg, ci, isadmin);
 
         if(*msg) sendf(sender, 1, "ris", N_SERVMSG, msg);
         else
@@ -222,7 +222,7 @@ void z_servcmd_whois(int argc, char **argv, int sender)
     }
     clientinfo *ci = getinfo(cn);
 
-    z_geoip_print_query(msg, sizeof(msg), ci, isadmin);
+    z_geoip_print_query(msg, sizeof msg, ci, isadmin);
     if(*msg) sendf(sender, 1, "ris", N_SERVMSG, msg);
 
     if(ci->privilege > PRIV_NONE && z_canseemypriv(ci, sci))
