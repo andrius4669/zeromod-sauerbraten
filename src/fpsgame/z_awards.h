@@ -8,7 +8,7 @@ VAR(awards_splitmessage, 0, 1, 1);
 SVAR(awards_style_clientsseparator, ", ");
 SVAR(awards_style_clientprefix, "\fs\f7");
 SVAR(awards_style_clientsuffix, "\fr");
-SVAR(awards_style_normal, "\f3Awards: \f6Kills: %F \f2(\f6%f\f2) \f6KpD: %P \f2(\f6%p\f2) \f6Acc: %A \f2(\f6%a\f2%%) \f6Damage: %D \f2(\f6%d\f2)");
+SVAR(awards_style_normal, "\f3Awards: \f6Kills: %F \f2(\f6%f\f2) \f6KpD: %P \f2(\f6%p\f2) \f6Acc: %A \f2(\f6%a%%\f2) \f6Damage: %D \f2(\f6%d\f2)");
 
 
 template<typename T> static bool z_awards_best_stat(vector<clientinfo *> &best, T &bests, T (* func)(clientinfo *))

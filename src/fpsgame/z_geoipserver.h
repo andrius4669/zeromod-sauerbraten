@@ -251,8 +251,8 @@ void z_servcmd_whois(int argc, char **argv, int sender)
         sendf(sender, 1, "ris", N_SERVMSG, msg);
     }
 
-    int mspassed = totalmillis-ci->connectmillis;
-    if(mspassed/1000 > 0)
+    uint mspassed = uint(totalmillis-ci->connectmillis);
+    if(mspassed/1000 != 0)
     {
         vector<char> timebuf;
         z_formatsecs(timebuf, mspassed/1000);
