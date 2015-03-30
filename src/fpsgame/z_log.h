@@ -47,72 +47,88 @@ static void z_sendmsgpacks(packetbuf &adminpack, packetbuf &normalpack, clientin
     }
 }
 
+SVAR(kick_style_normal,        "%k kicked %v");
+SVAR(kick_style_normal_reason, "%k kicked %v because: %r");
+SVAR(kick_style_spy,           "%v was kicked");
+SVAR(kick_style_spy_reason,    "%v was kicked because: %r");
+
 static inline void z_showkick(const char *kicker, clientinfo *actor, clientinfo *vinfo, const char *reason)
 {
-    const char *kickstr = reason && reason[0]
-        ? tempformatstring("%s kicked %s because: %s", kicker, colorname(vinfo), reason)
-        : tempformatstring("%s kicked %s", kicker, colorname(vinfo));
-    if(!actor->spy) { sendservmsg(kickstr); return; }
-    // if kicker is spy, don't show his name to normal clients
-    const char *spykickstr = reason && reason[0]
-        ? tempformatstring("%s was kicked because: %s", colorname(vinfo), reason)
-        : tempformatstring("%s was kicked", colorname(vinfo));
-    // allocate packetbufs for messages
-    packetbuf kickpack(MAXTRANS, ENET_PACKET_FLAG_RELIABLE), spykickpack(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
-    // fill in packetbuf for admins
-    putint(kickpack, N_SERVMSG);
-    sendstring(kickstr, kickpack);
-    kickpack.finalize();
-    // packetbuf for normal clients (don't show who kicked)
-    putint(spykickpack, N_SERVMSG);
-    sendstring(spykickstr, spykickpack);
-    spykickpack.finalize();
-    // distribute messages
-    z_sendmsgpacks(kickpack, spykickpack, actor);
+    string kickstr;
+
+    z_formattemplate ft[] =
+    {
+        { 'k', "%s", kicker },
+        { 'v', "%s", colorname(vinfo) },
+        { 'r', "%s", reason },
+        { 0, NULL, NULL }
+    };
+    z_format(kickstr, sizeof kickstr, reason && *reason ? kick_style_normal_reason : kick_style_normal, ft);
+
+    if(!actor->spy)
+    {
+        sendservmsg(kickstr);
+        return;
+    }
+
+    packetbuf normalpack(MAXTRANS, ENET_PACKET_FLAG_RELIABLE), spypack(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
+
+    putint(normalpack, N_SERVMSG);
+    sendstring(kickstr, normalpack);
+    normalpack.finalize();
+
+    z_format(kickstr, sizeof kickstr, reason && *reason ? kick_style_spy_reason : kick_style_spy, ft);
+
+    putint(spypack, N_SERVMSG);
+    sendstring(kickstr, spypack);
+    spypack.finalize();
+
+    z_sendmsgpacks(normalpack, spypack, actor);
 }
 
-SVAR(bans_style_normal, "%C %bned %v for %t");
+SVAR(bans_style_normal,        "%C %bned %v for %t");
 SVAR(bans_style_normal_reason, "%C %bned %v for %t because: %r");
-SVAR(bans_style_admin, "%v was %bned for %t");
-SVAR(bans_style_admin_reason, "%v was %bned for %t because: %r");
+SVAR(bans_style_spy,           "%v was %bned for %t");
+SVAR(bans_style_spy_reason,    "%v was %bned for %t because: %r");
+
 void z_showban(clientinfo *actor, const char *banstr, const char *victim, int bantime, const char *reason)
 {
+    string banmsg;
     vector<char> timebuf;
     z_formatsecs(timebuf, (uint)(bantime/1000));
     timebuf.add(0);
 
     z_formattemplate ft[] =
     {
-        { 'C', "%s", (const void *)colorname(actor) },
-        { 'c', "%s", (const void *)actor->name },
-        { 'n', "%d", (const void *)(long)actor->clientnum },
-        { 'b', "%s", (const void *)banstr },
-        { 'v', "%s", (const void *)victim },
-        { 't', "%s", (const void *)timebuf.getbuf() },
-        { 'r', "%s", (const void *)reason },
+        { 'C', "%s", colorname(actor) },
+        { 'b', "%s", banstr },
+        { 'v', "%s", victim },
+        { 't', "%s", timebuf.getbuf() },
+        { 'r', "%s", reason },
         { 0, NULL, NULL }
     };
-    string adminstr, normalstr;
-    z_format(adminstr, sizeof adminstr, reason && reason[0] ? bans_style_admin_reason : bans_style_admin, ft);
-    z_format(normalstr, sizeof normalstr, reason && reason[0] ? bans_style_normal_reason : bans_style_normal, ft);
+    z_format(banmsg, sizeof banmsg, reason && *reason ? bans_style_normal_reason : bans_style_normal, ft);
+
     if(!actor->spy)
     {
-        sendservmsg(adminstr);
+        sendservmsg(banmsg);
         return;
     }
 
-    // allocate packetbufs for messages
-    packetbuf adminpack(MAXTRANS, ENET_PACKET_FLAG_RELIABLE), normalpack(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
-    // fill in packetbuf for admins
-    putint(adminpack, N_SERVMSG);
-    sendstring(adminstr, adminpack);
-    adminpack.finalize();
-    // packetbuf for normal clients (default = don't show who kicked)
+    packetbuf normalpack(MAXTRANS, ENET_PACKET_FLAG_RELIABLE), spypack(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
+
     putint(normalpack, N_SERVMSG);
-    sendstring(normalstr, normalpack);
+    sendstring(banmsg, normalpack);
     normalpack.finalize();
-    // distribute messages
-    z_sendmsgpacks(adminpack, normalpack, actor);
+
+    z_format(banmsg, sizeof banmsg, reason && *reason ? bans_style_spy_reason : bans_style_spy, ft);
+
+    // packetbuf for normal clients without kicker shown (in case kicker is spy, it'd disclose him/her)
+    putint(spypack, N_SERVMSG);
+    sendstring(banmsg, spypack);
+    spypack.finalize();
+
+    z_sendmsgpacks(normalpack, spypack, actor);
 }
 
 static inline void z_log_setmaster(clientinfo *master, bool val, bool pass, const char *aname, const char *adesc, const char *priv, clientinfo *by)
