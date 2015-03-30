@@ -71,30 +71,43 @@ static inline void z_showkick(const char *kicker, clientinfo *actor, clientinfo 
     z_sendmsgpacks(kickpack, spykickpack, actor);
 }
 
+SVAR(bans_style_normal, "%C %bned %v for %t");
+SVAR(bans_style_normal_reason, "%C %bned %v for %t because: %r");
+SVAR(bans_style_admin, "%v was %bned for %t");
+SVAR(bans_style_admin_reason, "%v was %bned for %t because: %r");
 void z_showban(clientinfo *actor, const char *banstr, const char *victim, int bantime, const char *reason)
 {
-    const char *actorname = colorname(actor);
     vector<char> timebuf;
     z_formatsecs(timebuf, (uint)(bantime/1000));
     timebuf.add(0);
-    const char *adminstr = reason && reason[0]
-        ? tempformatstring("%s %sned %s for %s because: %s", actorname, banstr, victim, timebuf.getbuf(), reason)
-        : tempformatstring("%s %sned %s for %s", actorname, banstr, victim, timebuf.getbuf());
+
+    z_formattemplate ft[] =
+    {
+        { 'C', "%s", (const void *)colorname(actor) },
+        { 'c', "%s", (const void *)actor->name },
+        { 'n', "%d", (const void *)(long)actor->clientnum },
+        { 'b', "%s", (const void *)banstr },
+        { 'v', "%s", (const void *)victim },
+        { 't', "%s", (const void *)timebuf.getbuf() },
+        { 'r', "%s", (const void *)reason },
+        { 0, NULL, NULL }
+    };
+    string adminstr, normalstr;
+    z_format(adminstr, sizeof adminstr, reason && reason[0] ? bans_style_admin_reason : bans_style_admin, ft);
+    z_format(normalstr, sizeof normalstr, reason && reason[0] ? bans_style_normal_reason : bans_style_normal, ft);
     if(!actor->spy)
     {
         sendservmsg(adminstr);
         return;
     }
-    const char *normalstr = reason && reason[0]
-        ? tempformatstring("%s was %sned for %s because: %s", victim, banstr, timebuf.getbuf(), reason)
-        : tempformatstring("%s was %sned for %s", victim, banstr, timebuf.getbuf());
+
     // allocate packetbufs for messages
     packetbuf adminpack(MAXTRANS, ENET_PACKET_FLAG_RELIABLE), normalpack(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
     // fill in packetbuf for admins
     putint(adminpack, N_SERVMSG);
     sendstring(adminstr, adminpack);
     adminpack.finalize();
-    // packetbuf for normal clients (don't show who kicked)
+    // packetbuf for normal clients (default = don't show who kicked)
     putint(normalpack, N_SERVMSG);
     sendstring(normalstr, normalpack);
     normalpack.finalize();
