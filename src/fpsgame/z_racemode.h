@@ -36,6 +36,7 @@ VAR(racemode_allowcheat, 0, 0, 1);
 VAR(racemode_allowedit, 0, 0, 1);
 VAR(racemode_alloweditmode, 0, 1, 1);
 VAR(racemode_allowmultiplaces, 0, 1, 1);
+VAR(racemode_hideeditors, 0, 0, 1);
 
 VAR(racemode_waitmap, 0, 10000, INT_MAX);
 VAR(racemode_sendspectators, 0, 1, 1);
@@ -118,7 +119,7 @@ struct raceservmode: servmode
     void cleanup()
     {
         reset();
-        loopv(clients) clients[i]->state.flags = 0;
+        loopv(clients) clients[i]->state.flags = clients[i]->state.frags = 0;
     }
 
     void initclient(clientinfo *ci, packetbuf &p, bool connecting)
@@ -187,7 +188,7 @@ struct raceservmode: servmode
         return dx*dx + dy*dy <= r.radius*r.radius && fabs(dz) <= r.radius;
     }
 
-    const char *placename(int n)
+    static const char *placename(int n)
     {
         static string buf;
         if(racemode_placestrings.empty())
@@ -206,6 +207,12 @@ struct raceservmode: servmode
         };
         z_format(buf, sizeof(buf), fs, tmp);
         return buf;
+    }
+
+    static void updateclientfragsnum(clientinfo &ci, int val)
+    {
+        ci.state.frags = val;
+        sendresume(&ci);
     }
 
     void checkplaces()
@@ -286,9 +293,25 @@ struct raceservmode: servmode
             z_format(buf, sizeof buf, racemode_style_enterplace, ft);
             if(buf[0]) sendservmsg(buf);
 
+            int plv = race_winners.length()-avaiable_place;
+            if(ci->state.frags < plv) updateclientfragsnum(*ci, plv);
+
             break;
         }
         if(state == ST_STARTED) checkplaces();
+    }
+
+    int hasplace(clientinfo &ci)
+    {
+        loopv(race_winners) if(race_winners[i].cn == ci.clientnum) return race_winners.length()-i;
+        return 0;
+    }
+
+    void setracecheat(clientinfo &ci, int val)
+    {
+        bool changed = val != ci.state.flags;
+        ci.state.flags = val;
+        if(changed && !hasplace(ci)) updateclientfragsnum(ci, -val);
     }
 
     static void warnracecheat(clientinfo *ci)
@@ -299,12 +322,12 @@ struct raceservmode: servmode
 
     void racecheat(clientinfo *ci, int type)
     {
-        if(racemode_allowcheat) { ci->state.flags = 0; return; }
+        if(racemode_allowcheat) { setracecheat(*ci, 0); return; }
         if(!racemode_alloweditmode && type == 1) type = 2;
         if((state < ST_STARTED && type < 2) || state > ST_FINISHED) return;
         if(ci->state.flags < type)
         {
-            ci->state.flags = type;
+            setracecheat(*ci, type);
             warnracecheat(ci);
         }
     }
@@ -319,6 +342,7 @@ struct raceservmode: servmode
         if(disconnecting)
         {
             ci->state.flags = 0;    /* flags field is reused for cheating info */
+            ci->state.frags = 0;
             loopvrev(race_winners) if(race_winners[i].cn == ci->clientnum)
             {
                 if(state < ST_INT)
@@ -347,7 +371,7 @@ struct raceservmode: servmode
     {
         if(ci->state.flags == 1)
         {
-            ci->state.flags = 0;
+            setracecheat(*ci, 0);
             if(ci->state.aitype==AI_NONE) sendf(ci->clientnum, 1, "ris", N_SERVMSG, racemode_message_respawn);
         }
         else if(ci->state.flags == 2 && ci->state.aitype==AI_NONE) warnracecheat(ci);
@@ -603,8 +627,8 @@ void race_gotmap(clientinfo *ci)
     extern raceservmode racemode;
     if(smode==&racemode && ci->state.flags > 0)
     {
-        if(!racemode_allowcheat) ci->state.flags = ci->state.state!=CS_EDITING ? 0 : racemode_alloweditmode ? 1 : 2;
-        else ci->state.flags = 0;
+        if(!racemode_allowcheat) racemode.setracecheat(*ci, ci->state.state!=CS_EDITING ? 0 : racemode_alloweditmode ? 1 : 2);
+        else racemode.setracecheat(*ci, 0);
         if(ci->state.flags) raceservmode::warnracecheat(ci);
         else sendf(ci->clientnum, 1, "ris", N_SERVMSG, racemode_message_gotmap);
     }
@@ -614,6 +638,27 @@ bool holdpausecontrol()
 {
     extern raceservmode racemode;
     return smode==&racemode && (racemode.state==racemode.ST_WAITMAP || racemode.state==racemode.ST_READY);
+}
+
+static inline void nullifyclientpos(clientinfo &ci)
+{
+    vector<uchar> &p = ci.position;
+    p.setsize(0);
+    putint(p, N_POS);
+    putuint(p, ci.clientnum);
+    p.put(PHYS_FLOAT | ((ci.state.lifesequence&1)<<3)); // physstate + lifesequence, no move or strafe
+    putuint(p, 0); // flags
+    loopk(3) { p.put(0); p.put(0); } // pos (x, y, z)
+    p.put(0); p.put(0); // dir
+    p.put(90); // roll
+    p.put(0); // vel
+    p.put(0); p.put(0); // veldir
+}
+
+void z_race_processpos(clientinfo &ci)
+{
+    extern raceservmode racemode;
+    if(racemode_hideeditors && ci.state.flags) nullifyclientpos(ci);
 }
 
 #endif // Z_RACEMODE_H

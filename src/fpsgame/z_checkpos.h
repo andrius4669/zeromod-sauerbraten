@@ -1,10 +1,14 @@
 #ifndef Z_CHECKPOS_H
 #define Z_CHECKPOS_H
 
+#include "z_racemode.h"
+
 static int z_nextexceeded = 0;
 
 VAR(servertrackpos, 0, 0, 1);
-//VAR(servertrackpos_maxlag, 0, 10000, INT_MAX);
+VAR(servertrackpos_autotune, 0, 0, 1);
+FVAR(servertrackpos_maxvel, 0.0, 0.0, 10000.0);
+VAR(servertrackpos_maxlag, 0, 0, INT_MAX);
 
 static void z_clientdied(clientinfo *ci)
 {
@@ -23,15 +27,17 @@ static void z_processpos(clientinfo *ci, clientinfo *cp)
     if(!servertrackpos || m_edit || /*ci->local ||*/ cp->state.state != CS_ALIVE)
     {
         if(pt.size) pt.reset();
+        if(isracemode()) z_race_processpos(*cp);
         return;
     }
     if(pt.size < 125) pt.reset(125);
     pt.removeold(totalmillis-4000);
-    // client sends messages in 33ms intervals. 4000/33 = 121.212121212... if we get messages at higher rate, its speedhack
+    // client sends messages in 33ms intervals. 4000/33 = 121.212121212... if we get messages at higher rate, its lame kind of speedhack
     bool res = pt.addpos(cp->state.o, totalmillis, gamemillis);
-    if(!res)
+    if(!res && pt.length())
     {
-        if(pt.length()) pt.removefirst();
+        pt.exceededrate = true;
+        pt.removefirst();
         pt.addpos(cp->state.o, totalmillis, gamemillis);
         z_calcnextexceeded(cp);
     }
