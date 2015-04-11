@@ -657,7 +657,6 @@ static inline void nullifyclientpos(clientinfo &ci)
 
 void z_race_processpos(clientinfo &ci)
 {
-    extern raceservmode racemode;
     if(racemode_hideeditors && ci.state.flags) nullifyclientpos(ci);
 }
 
