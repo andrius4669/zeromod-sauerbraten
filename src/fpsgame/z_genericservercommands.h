@@ -49,16 +49,34 @@ void z_servcmd_info(int argc, char **argv, int sender)
 SCOMMANDAH(info, PRIV_NONE, z_servcmd_info, 1);
 SCOMMANDA(uptime, PRIV_NONE, z_servcmd_info, 1);
 
-static inline void z_putstats(char (&buf)[MAXSTRLEN], clientinfo *ci)
+SVAR(stats_style_normal, "\f6stats: \f7%C: \f2frags: \f7%f\f2, deaths: \f7%l\f2, suicides: \f7%s\f2, accuracy(%%): \f7%a\f2, kpd: \f7%p");
+SVAR(stats_style_teamplay, "\f6stats: \f7%C: \f2frags: \f7%f\f2, deaths: \f7%l\f2, suicides: \f7%s\f2, teamkills: \f7%t\f2, accuracy(%%): \f7%a\f2, kpd: \f7%p");
+SVAR(stats_style_ctf, "\f6stats: \f7%C: \f2frags: \f7%f\f2, flags: \f7%g\f2, deaths: \f7%l\f2, suicides: \f7%s\f2, teamkills: \f7%t\f2, accuracy(%%): \f7%a\f2, kpd: \f7%p");
+
+static inline void z_putstats(char (&msg)[MAXSTRLEN], clientinfo *ci)
 {
-    if(m_ctf) formatstring(buf)(
-        "\f6stats: \f7%s: \f2frags: \f7%d\f2, flags: \f7%d\f2, deaths: \f7%d\f2, suicides: \f7%d\f2, teamkills: \f7%d\f2, accuracy(%%): \f7%d\f2, kpd: \f7%.2f",
-        colorname(ci), ci->state.frags, ci->state.flags, ci->state.deaths, ci->state.suicides, ci->state.teamkills,
-        ci->state.damage*100/max(ci->state.shotdamage,1), float(ci->state.frags)/max(ci->state.deaths,1));
-    else formatstring(buf)(
-        "\f6stats: \f7%s: \f2frags: \f7%d\f2, deaths: \f7%d\f2, suicides: \f7%d\f2, teamkills: \f7%d\f2, accuracy(%%): \f7%d\f2, kpd: \f7%.2f",
-        colorname(ci), ci->state.frags, ci->state.deaths, ci->state.suicides, ci->state.teamkills,
-        ci->state.damage*100/max(ci->state.shotdamage,1), float(ci->state.frags)/max(ci->state.deaths,1));
+    gamestate &gs = ci->state;
+    int p = gs.frags*1000/max(gs.deaths, 1);
+    string ps;
+    formatstring(ps)("%d.%03d", p/1000, p%1000);
+    z_formattemplate ft[] =
+    {
+        { 'C', "%s", colorname(ci) },
+        { 'f', "%d", (const void *)(long)gs.frags },
+        { 'g', "%d", (const void *)(long)gs.flags },
+        { 'p', "%s", ps },
+        { 'a', "%d", (const void *)(long)(gs.damage*100/max(gs.shotdamage,1)) },
+        { 'd', "%d", (const void *)(long)gs.damage },
+        { 't', "%d", (const void *)(long)gs.teamkills },
+        { 'l', "%d", (const void *)(long)gs.deaths },
+        { 's', "%d", (const void *)(long)gs.suicides },
+        { 'w', "%d", (const void *)(long)(gs.shotdamage-gs.damage) },
+        { 'r', "%d", (const void *)(long)gs.maxsteak },
+        { 0, 0, 0 }
+    };
+    if(m_ctf) z_format(msg, sizeof msg, stats_style_ctf, ft);
+    else if(m_teammode) z_format(msg, sizeof msg, stats_style_teamplay, ft);
+    else z_format(msg, sizeof msg, stats_style_normal, ft);
 }
 
 void z_servcmd_stats(int argc, char **argv, int sender)
@@ -89,7 +107,7 @@ void z_servcmd_stats(int argc, char **argv, int sender)
     for(i = 0; i < cis.length(); i++)
     {
         z_putstats(buf, cis[i]);
-        sendf(sender, 1, "ris", N_SERVMSG, buf);
+        if(*buf) sendf(sender, 1, "ris", N_SERVMSG, buf);
     }
 }
 SCOMMAND(stats, PRIV_NONE, z_servcmd_stats);
