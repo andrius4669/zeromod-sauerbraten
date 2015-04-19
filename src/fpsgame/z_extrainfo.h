@@ -120,6 +120,7 @@ struct z_extrainfo
     z_identinfo claim;
     bool authident;
     z_posqueue postrack;
+    bool ghost;
 
     z_extrainfo(): disc_reason(NULL), wlauth(NULL) {}
     ~z_extrainfo() { delete[] disc_reason; delete[] wlauth; }
@@ -145,6 +146,7 @@ struct z_extrainfo
         chatmute = 0;
         lastchat = lastedit = 0;
         authident = false;
+        ghost = false;
     }
 
     void setdiscreason(const char *s) { delete[] disc_reason; disc_reason = s && *s ? newstring(s) : NULL; }

@@ -640,24 +640,9 @@ bool holdpausecontrol()
     return smode==&racemode && (racemode.state==racemode.ST_WAITMAP || racemode.state==racemode.ST_READY);
 }
 
-static inline void nullifyclientpos(clientinfo &ci)
+bool z_race_shouldhide(clientinfo &ci)
 {
-    vector<uchar> &p = ci.position;
-    p.setsize(0);
-    putint(p, N_POS);
-    putuint(p, ci.clientnum);
-    p.put(PHYS_FLOAT | ((ci.state.lifesequence&1)<<3)); // physstate + lifesequence, no move or strafe
-    putuint(p, 0); // flags
-    loopk(3) { p.put(0); p.put(0); } // pos (x, y, z)
-    p.put(0); p.put(0); // dir
-    p.put(90); // roll
-    p.put(0); // vel
-    p.put(0); p.put(0); // veldir
-}
-
-void z_race_processpos(clientinfo &ci)
-{
-    if(racemode_hideeditors && ci.state.flags) nullifyclientpos(ci);
+    return racemode_hideeditors && ci.state.flags;
 }
 
 #endif // Z_RACEMODE_H

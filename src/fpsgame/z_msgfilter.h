@@ -42,6 +42,11 @@ bool allowmsg(clientinfo *ci, clientinfo *cq, int type)
                 racemode.racecheat(ci, 2);
                 return false;
             }
+            if(z_isghost(*ci))
+            {
+                if(type == N_COPY || type == N_CLIPBOARD) ci->cleanclipboard();
+                return false;   // just drop without warning
+            }
             if(ci->xi.editmute)
             {
                 if(type == N_COPY || type == N_CLIPBOARD) ci->cleanclipboard();

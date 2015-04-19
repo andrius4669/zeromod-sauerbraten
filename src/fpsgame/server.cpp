@@ -2242,6 +2242,7 @@ namespace server
 
     void startintermission() { gamelimit = min(gamelimit, gamemillis); checkintermission(); }
 
+    #include "z_ghost.h"
     #include "z_nodamage.h"
     #include "z_announcekills.h"
     #include "z_protectteamscores.h"
@@ -2335,6 +2336,7 @@ namespace server
             default:
                 return;
         }
+        if(z_isghost(*ci)) return;
         if(ci->xi.slay) { suicide(ci); return; }
         gs.explosivedamage += guns[gun].damage * (gs.quadmillis ? 4 : 1);
         sendf(-1, 1, "ri4x", N_EXPLODEFX, ci->clientnum, gun, id, ci->ownernum);
@@ -2367,10 +2369,11 @@ namespace server
            gun<GUN_FIST || gun>GUN_PISTOL ||
            gs.ammo[gun]<=0 || (guns[gun].range && from.dist(to) > guns[gun].range + 1))
             return;
-        if(ci->xi.slay) { suicide(ci); return; }
         if(gun!=GUN_FIST) gs.ammo[gun]--;
         gs.lastshot = millis;
         gs.gunwait = guns[gun].attackdelay;
+        if(z_isghost(*ci)) return;
+        if(ci->xi.slay) { suicide(ci); return; }
         sendf(-1, 1, "rii9x", N_SHOTFX, ci->clientnum, gun, id,
                 int(from.x*DMF), int(from.y*DMF), int(from.z*DMF),
                 int(to.x*DMF), int(to.y*DMF), int(to.z*DMF),
@@ -2408,6 +2411,7 @@ namespace server
     {
         gamestate &gs = ci->state;
         if(m_mp(gamemode) && !gs.isalive(gamemillis)) return;
+        if(z_isghost(*ci)) return;  // ghosts cannot pickup
         pickup(ent, ci->clientnum);
     }
 
@@ -3165,6 +3169,7 @@ namespace server
                 int pcn = getint(p), teleport = getint(p), teledest = getint(p);
                 clientinfo *cp = getinfo(pcn);
                 if(cp && pcn != sender && cp->ownernum != sender) cp = NULL;
+                if(cp && z_isghost(*cp)) break;
                 if(cp && (!ci->local || demorecord || hasnonlocalclients()) && (cp->state.state==CS_ALIVE || cp->state.state==CS_EDITING))
                 {
                     flushclientposition(*cp);
@@ -3178,6 +3183,7 @@ namespace server
                 int pcn = getint(p), jumppad = getint(p);
                 clientinfo *cp = getinfo(pcn);
                 if(cp && pcn != sender && cp->ownernum != sender) cp = NULL;
+                if(cp && z_isghost(*cp)) break;
                 if(cp && (!ci->local || demorecord || hasnonlocalclients()) && (cp->state.state==CS_ALIVE || cp->state.state==CS_EDITING))
                 {
                     cp->setpushed();
@@ -3278,6 +3284,7 @@ namespace server
                 int gunselect = getint(p);
                 if(!cq || cq->state.state!=CS_ALIVE) break;
                 cq->state.gunselect = gunselect >= GUN_FIST && gunselect <= GUN_PISTOL ? gunselect : GUN_FIST;
+                if(z_isghost(*cq)) break;
                 QUEUE_AI;
                 QUEUE_MSG;
                 break;

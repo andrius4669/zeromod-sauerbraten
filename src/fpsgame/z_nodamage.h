@@ -1,6 +1,8 @@
 #ifndef Z_NODAMAGE_H
 #define Z_NODAMAGE_H
 
+#include "z_ghost.h"
+
 VAR(antispawnkill, 0, 0, 5000); // in milliseconds
 
 extern int servernodamage_global;
@@ -24,9 +26,8 @@ static int z_hasnodamage(clientinfo *target, clientinfo *actor)
 {
     if(!actor) return 0;    // does not apply if suicide
     if(antispawnkill && target->state.lastdeath && gamemillis-target->state.lastdeath < antispawnkill) return 3;    // lastdeath is reused for spawntime
+    if(z_isghost(*actor) || z_isghost(*target)) return 3;   // ghost cannot shot, and cannot get hit
     if(!m_edit) return 0;
-    extern bool isracemode();
-    if(actor->state.flags && isracemode()) return 3;
     return servernodamage_global ? z_nodamage : max(target->xi.nodamage, actor->xi.nodamage);
 }
 

@@ -1,7 +1,7 @@
 #ifndef Z_CHECKPOS_H
 #define Z_CHECKPOS_H
 
-#include "z_racemode.h"
+#include "z_ghost.h"
 
 static int z_nextexceeded = 0;
 
@@ -23,11 +23,11 @@ static void z_calcnextexceeded(clientinfo *ci)
 
 static void z_processpos(clientinfo *ci, clientinfo *cp)
 {
+    if(z_isghost(*cp)) nullifyclientpos(*cp);
     z_posqueue &pt = cp->xi.postrack;
     if(!servertrackpos || m_edit || /*ci->local ||*/ cp->state.state != CS_ALIVE)
     {
         if(pt.size) pt.reset();
-        if(isracemode()) z_race_processpos(*cp);
         return;
     }
     if(pt.size < 125) pt.reset(125);
