@@ -2052,6 +2052,7 @@ namespace server
     }
         
     VARN(gamelimit, servergamelimit, 1, 600, 3600); // in seconds
+    VAR(gamelimit_overtime, 0, 0, 1);   // use m_overtime?
     VAR(persistbots, 0, 0, 1);
     void changemap(const char *s, int mode)
     {
@@ -2063,7 +2064,7 @@ namespace server
 
         gamemode = mode;
         gamemillis = 0;
-        gamelimit = (m_overtime ? 1500 : 1000)*servergamelimit;
+        gamelimit = ((m_overtime && gamelimit_overtime) ? 1500 : 1000)*servergamelimit;
         interm = 0;
         nextexceeded = 0;
         copystring(smapname, s);
