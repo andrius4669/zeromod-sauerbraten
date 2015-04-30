@@ -3764,7 +3764,6 @@ namespace server
                 getstring(text, p);
                 filtertext(text, text);
                 int authpriv = PRIV_AUTH;
-                //if(desc[0])
                 {
                     userinfo *u = users.access(userkey(name, desc));
                     if(u) authpriv = u->privilege;
