@@ -23,4 +23,20 @@ bool z_isghost(clientinfo &ci)
     return ci.xi.ghost || (isracemode() && z_race_shouldhide(ci));
 }
 
+#if 0
+void z_setghost(clientinfo &ci, bool val)
+{
+    if(ci.xi.ghost!=val)
+    {
+        ci.xi.ghost = val;
+        if(ci.state.aitype==AI_NONE) sendf(ci.clientnum, 1, "ris", N_SERVMSG, tempformatstring("you got %s", val ? "ghosted" : "unghosted"));
+    }
+}
+
+void z_servcmd_ghost(int argc, char **argv, int sender)
+{
+    //...
+}
+#endif
+
 #endif

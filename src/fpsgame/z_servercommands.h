@@ -1,6 +1,8 @@
 #ifndef Z_SERVERCOMMANDS_H
 #define Z_SERVERCOMMANDS_H
 
+#include "z_format.h"
+
 typedef void (* z_scmdfun)(int argc, char **argv, int sender);
 
 struct z_servcmdinfo

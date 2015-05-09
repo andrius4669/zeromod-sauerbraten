@@ -1,6 +1,8 @@
 #ifndef Z_MAPROTATION_H
 #define Z_MAPROTATION_H
 
+#include "z_servercommands.h"
+
 enum { MRT_NORMAL = 0, MRT_RANDOM, MRT_STATIC };
 int z_maprotationtype = MRT_NORMAL;
 void z_setmrt(const char *str)
@@ -11,9 +13,16 @@ void z_setmrt(const char *str)
 }
 SVARF(maprotationmode, "", z_setmrt(maprotationmode));
 
-VAR(maprotation_norepeat, 0, 0, 256);
+VAR(maprotation_norepeat, 0, 0, 200);
 
 vector<char *> z_oldmaps;
+
+// add map to maps history, if it matters
+void z_addmaptohist(const char *mname)
+{
+    while(z_oldmaps.length() > max(maprotation_norepeat-1, 0)) delete[] z_oldmaps.remove(0);
+    if(maprotation_norepeat) z_oldmaps.add(newstring(mname));
+}
 
 bool z_nextmaprotation()
 {
@@ -32,10 +41,49 @@ bool z_nextmaprotation()
         curmaprotation = rnd(numrots) + minmaprotation;
         found = false;
         loopv(z_oldmaps) if(!strcmp(maprotations[curmaprotation].map, z_oldmaps[i])) { found = true; break; }
-    } while(found && c++ < 1024);
-    while(z_oldmaps.length() > max(maprotation_norepeat-1, 0)) delete[] z_oldmaps.remove(0);
-    if(maprotation_norepeat) z_oldmaps.add(newstring(maprotations[curmaprotation].map));
+    } while(found && c++ < 256);
     return true;
 }
+
+struct forcenextmapstruct
+{
+    string map;
+    int mode;
+};
+static forcenextmapstruct *z_forcenextmap = NULL;
+
+void z_nextmap(clientinfo &ci, const char *map, int mode)
+{
+    extern const char *colorname(clientinfo *ci, const char *name = NULL);
+    extern void sendservmsgf(const char *fmt, ...);
+    sendservmsgf("%s forced %s on map %s for next match", colorname(&ci), modename(mode), map);
+    if(z_forcenextmap) delete z_forcenextmap;
+    z_forcenextmap = new forcenextmapstruct;
+    copystring(z_forcenextmap->map, map);
+    z_forcenextmap->mode = mode;
+}
+
+void z_servcmd_nextmap(int argc, char **argv, int sender)
+{
+    extern clientinfo *getinfo(int n);
+    extern int findmaprotation(int mode, const char *map);
+
+    clientinfo &ci = *getinfo(sender);
+    if(argc < 2)
+    {
+        if(m_valid(ci.modevote)) z_nextmap(ci, ci.mapvote, ci.modevote);
+        else sendf(sender, 1, "ris", N_SERVMSG, "please specify map");
+        return;
+    }
+
+    if(lockmaprotation && !ci.local && ci.privilege < (lockmaprotation > 1 ? PRIV_ADMIN : PRIV_MASTER) && findmaprotation(gamemode, argv[1]) < 0)
+    {
+        sendf(sender, 1, "ris", N_SERVMSG, "This server has locked the map rotation.");
+        return;
+    }
+
+    z_nextmap(ci, argv[1], gamemode);
+}
+SCOMMANDA(nextmap, PRIV_MASTER, z_servcmd_nextmap, 2);
 
 #endif // Z_MAPROTATION_H
