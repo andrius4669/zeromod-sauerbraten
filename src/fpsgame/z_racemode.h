@@ -37,6 +37,7 @@ VAR(racemode_allowedit, 0, 0, 1);
 VAR(racemode_alloweditmode, 0, 1, 1);
 VAR(racemode_allowmultiplaces, 0, 1, 1);
 VAR(racemode_hideeditors, 0, 0, 1);
+VAR(racemode_strict, 0, 0, 1);              // prefer strict logic to most convenient behavour
 
 VAR(racemode_waitmap, 0, 10000, INT_MAX);
 VAR(racemode_sendspectators, 0, 1, 1);
@@ -268,12 +269,14 @@ struct raceservmode: servmode
             if(!reached_raceend(r, newpos)) continue;
             int racemillis = 0;
             // leave lower places to allow others to win
-            for(int j = race_winners.length()-1; j > avaiable_place; j--) if(race_winners[j].cn == ci->clientnum)
-            {
-                race_winners[j].cn = -1;
-                // don't increase player's racetime
-                racemillis = race_winners[j].racemillis;
-            }
+            // remark: this is still illogical sometimes...
+            for(int j = race_winners.length()-1; j > avaiable_place; j--)
+                if(race_winners[j].cn == ci->clientnum && (!racemode_strict || !racemode_allowmultiplaces || race_winners[j].lifesequence == ci->state.lifesequence))
+                {
+                    race_winners[j].cn = -1;
+                    // don't increase player's racetime
+                    racemillis = race_winners[j].racemillis;
+                }
             if(!racemillis) racemillis = gamemillis - ci->state.lastdeath;      /* lastdeath is reused for spawntime */
             race_winners[avaiable_place].cn = ci->clientnum;
             race_winners[avaiable_place].racemillis = racemillis;
@@ -343,7 +346,9 @@ struct raceservmode: servmode
         {
             ci->state.flags = 0;    /* flags field is reused for cheating info */
             ci->state.frags = 0;
-            loopvrev(race_winners) if(race_winners[i].cn == ci->clientnum)
+            int npl = race_winners.length();
+            int leftplace = -1;
+            for(int i = npl-1; i >= 0; i--) if(race_winners[i].cn == ci->clientnum)
             {
                 if(state < ST_INT)
                 {
@@ -362,6 +367,38 @@ struct raceservmode: servmode
                     if(*buf) sendservmsg(buf);
                 }
                 race_winners[i].cn = -1;
+                leftplace = i;
+            }
+            if(leftplace >= 0)
+            {
+                // silently shift places
+                for(int i = leftplace; i < npl; i++)
+                {
+                    if(racemode_strict && i > minraceend) break;
+                    if(race_winners[i].cn < 0)
+                    {
+                        int rpl = -1;
+                        for(int j = i+1; j < npl; j++)
+                        {
+                            if(racemode_strict && j > minraceend) break;
+                            if(race_winners[j].cn >= 0)
+                            {
+                                rpl = j;
+                                break;
+                            }
+                        }
+                        if(rpl < 0) break;
+                        // cn racemillis lifesequence
+                        race_winners[i] = race_winners[rpl];
+                        race_winners[rpl].cn = -1;
+                        clientinfo *ci = getinfo(race_winners[i].cn);
+                        if(ci)
+                        {
+                            int plv = npl-i;
+                            if(ci->state.frags < plv) updateclientfragsnum(*ci, plv);
+                        }
+                    }
+                }
             }
         }
         if(state == ST_STARTED) checkplaces();
