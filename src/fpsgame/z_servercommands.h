@@ -95,7 +95,6 @@ ICOMMAND(disable_commands, "sV", (tagval *args, int numargs), z_enable_commands(
 #define SCOMMANDAH(_name, _priv, _func, _args) SCOMMANDZ(_name, _priv, _func, _args, true)
 #define SCOMMANDNAH SCOMMANDAH
 
-
 VAR(allowservcmd, 0, 1, 1);
 
 SVAR(servcmd_message_pleasespecifyclient, "please specify client number");
@@ -113,7 +112,7 @@ static void z_servcmd_unknownclient(const char *clientname, int cntosend)
         { 's', "%s", clientname },
         { 0,   NULL, NULL }
     };
-    z_format(buf, sizeof buf, servcmd_message_unknownclient, ft);
+    z_format(buf, sizeof(buf), servcmd_message_unknownclient, ft);
     if(*buf) sendf(cntosend, 1, "ris", N_SERVMSG, buf);
 }
 

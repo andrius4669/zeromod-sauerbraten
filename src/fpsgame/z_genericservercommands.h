@@ -74,9 +74,9 @@ static inline void z_putstats(char (&msg)[MAXSTRLEN], clientinfo *ci)
         { 'r', "%d", (const void *)(long)gs.maxsteak },
         { 0, 0, 0 }
     };
-    if(m_ctf) z_format(msg, sizeof msg, stats_style_ctf, ft);
-    else if(m_teammode) z_format(msg, sizeof msg, stats_style_teamplay, ft);
-    else z_format(msg, sizeof msg, stats_style_normal, ft);
+    if(m_ctf) z_format(msg, sizeof(msg), stats_style_ctf, ft);
+    else if(m_teammode) z_format(msg, sizeof(msg), stats_style_teamplay, ft);
+    else z_format(msg, sizeof(msg), stats_style_normal, ft);
 }
 
 void z_servcmd_stats(int argc, char **argv, int sender)

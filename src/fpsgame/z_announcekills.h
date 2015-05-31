@@ -68,6 +68,7 @@ static const char *z_multikillstr(int i)
         loopv(z_multikillstrings) if(z_multikillstrings[i].val == i) return z_multikillstrings[i].str;
         return NULL;
     }
+    // defaults
     switch(i)
     {
         case 2: return "a \f6DOUBLE ";
@@ -114,7 +115,7 @@ void z_announcekill(clientinfo *actor, clientinfo *victim, int fragval)
             };
 
             string buf;
-            z_format(buf, sizeof buf, announcekills_style_stopped, ft);
+            z_format(buf, sizeof(buf), announcekills_style_stopped, ft);
             if(*buf) sendf(ci->clientnum, 1, "ris", N_SERVMSG, buf);
         }
 
@@ -135,7 +136,7 @@ void z_announcekill(clientinfo *actor, clientinfo *victim, int fragval)
             };
 
             string buf;
-            z_format(buf, sizeof buf, mkstr ? announcekills_style_multikills : announcekills_style_multikills_num, ft);
+            z_format(buf, sizeof(buf), mkstr ? announcekills_style_multikills : announcekills_style_multikills_num, ft);
             if(*buf) sendf(ci->clientnum, 1, "ris", N_SERVMSG, buf);
         }
 
@@ -159,7 +160,7 @@ void z_announcekill(clientinfo *actor, clientinfo *victim, int fragval)
                     };
 
                     string buf;
-                    z_format(buf, sizeof buf, announcekills_style_numeric, ft);
+                    z_format(buf, sizeof(buf), announcekills_style_numeric, ft);
                     if(*buf) sendf(ci->clientnum, 1, "ris", N_SERVMSG, buf);
                 }
             }
@@ -197,7 +198,7 @@ void z_announcekill(clientinfo *actor, clientinfo *victim, int fragval)
                     };
 
                     string buf;
-                    z_format(buf, sizeof buf, announcekills_style_rampage, ft);
+                    z_format(buf, sizeof(buf), announcekills_style_rampage, ft);
                     if(*buf) sendf(ci->clientnum, 1, "ris", N_SERVMSG, buf);
                 }
             }

@@ -45,7 +45,7 @@ void z_mapsucks(clientinfo *ci)
             { 0, NULL, NULL }
         };
         string buf;
-        z_format(buf, sizeof buf, mapsucks_style_vote, ft);
+        z_format(buf, sizeof(buf), mapsucks_style_vote, ft);
         if(buf[0]) sendservmsg(buf);
     }
     if(msips.length() >= needvotes)
@@ -62,7 +62,7 @@ void z_mapsucks(clientinfo *ci)
                     { 0, NULL, NULL }
                 };
                 string buf;
-                z_format(buf, sizeof buf, mapsucks_style_waitsuccess, ft);
+                z_format(buf, sizeof(buf), mapsucks_style_waitsuccess, ft);
                 if(buf[0]) sendservmsg(buf);
 
                 sendf(-1, 1, "ri2", N_TIMEUP, max((gamelimit - gamemillis)/1000, 1));

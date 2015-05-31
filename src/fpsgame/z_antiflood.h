@@ -41,7 +41,7 @@ static int z_warnantiflood(int afwait, int cn, const char *typestr)
         { 0,   NULL, NULL }
     };
     string buf;
-    z_format(buf, sizeof buf, antiflood_style, ft);
+    z_format(buf, sizeof(buf), antiflood_style, ft);
     if(*buf) sendf(cn, 1, "ris", N_SERVMSG, buf);
     return 1;
 }

@@ -293,7 +293,7 @@ struct raceservmode: servmode
                 { 0, NULL, NULL }
             };
             string buf;
-            z_format(buf, sizeof buf, racemode_style_enterplace, ft);
+            z_format(buf, sizeof(buf), racemode_style_enterplace, ft);
             if(buf[0]) sendservmsg(buf);
 
             int plv = race_winners.length()-avaiable_place;
@@ -363,7 +363,7 @@ struct raceservmode: servmode
                         { 0, NULL, NULL }
                     };
                     string buf;
-                    z_format(buf, sizeof buf, racemode_style_leaveplace, ft);
+                    z_format(buf, sizeof(buf), racemode_style_leaveplace, ft);
                     if(*buf) sendservmsg(buf);
                 }
                 race_winners[i].cn = -1;
@@ -521,7 +521,7 @@ struct raceservmode: servmode
                             { 0, NULL, NULL }
                         };
                         string buf;
-                        z_format(buf, sizeof buf, racemode_style_starting, ft);
+                        z_format(buf, sizeof(buf), racemode_style_starting, ft);
                         if(buf[0]) sendservmsg(buf);
                     }
                 }
@@ -563,7 +563,7 @@ struct raceservmode: servmode
                                 { 0, NULL, NULL }
                             };
                             string buf;
-                            z_format(buf, sizeof buf, racemode_style_timeleft, ft);
+                            z_format(buf, sizeof(buf), racemode_style_timeleft, ft);
                             if(buf[0]) sendservmsg(buf);
                         }
                     }
@@ -591,7 +591,7 @@ struct raceservmode: servmode
                             { 0, NULL, NULL }
                         };
                         string buf;
-                        z_format(buf, sizeof buf, racemode_style_ending, ft);
+                        z_format(buf, sizeof(buf), racemode_style_ending, ft);
                         if(buf[0]) sendservmsg(buf);
                     }
                 }
@@ -635,7 +635,7 @@ struct raceservmode: servmode
             };
 
             if(!buf.empty()) buf.add(' ');  // separate win entries by space
-            z_format(tmp, sizeof tmp, racemode_style_winplace, style_tmp);
+            z_format(tmp, sizeof(tmp), racemode_style_winplace, style_tmp);
             buf.put(tmp, strlen(tmp));
         }
 
@@ -647,7 +647,7 @@ struct raceservmode: servmode
             { 'W', "%s", (const void *)buf.getbuf() },
             { 0, NULL, NULL }
         };
-        z_format(tmp, sizeof tmp, racemode_style_winners, style_tmp);
+        z_format(tmp, sizeof(tmp), racemode_style_winners, style_tmp);
 
         if(tmp[0]) sendservmsg(tmp);
     }

@@ -21,12 +21,13 @@ struct msinfo
     char *whitelistauth;
     char *banmessage;
     int maxauthpriv;
+    bool shoulddisconnect;
 
     msinfo(): masterport(server::masterport()), mastersock(ENET_SOCKET_NULL),
         lastupdatemaster(0), lastconnectmaster(0), masterconnecting(0), masterconnected(0),
         masteroutpos(0), masterinpos(0), allowupdatemaster(true), masternum(-1),
         masterauthpriv(NULL), masterauthpriv_allow(false), networkident(NULL),
-        whitelistauth(NULL), banmessage(NULL), maxauthpriv(3)
+        whitelistauth(NULL), banmessage(NULL), maxauthpriv(3), shoulddisconnect(true)
     {
         copystring(mastername, server::defaultmaster());
         masterauth[0] = '\0';
@@ -330,7 +331,18 @@ ICOMMAND(masterbanmessage, "s", (char *s),
     mss[currmss].banmessage = *s ? newstring(s) : NULL;
 });
 
-const char *getmasternetident(int m) { return mss.inrange(m) ? mss[m].networkident : NULL; }
+ICOMMAND(masterbandisconnect, "i", (int *i),
+{
+    if(!mss.inrange(currmss)) addms();
+    mss[currmss].shoulddisconnect = (*i)!=0;
+});
+
+const char *getmasternetident(int m, bool &disc)
+{
+    if(!mss.inrange(m)) return NULL;
+    disc = mss[m].shoulddisconnect;
+    return mss[m].networkident;
+}
 const char *getmasterwlauth(int m) { return mss.inrange(m) ? mss[m].whitelistauth : NULL; }
 const char *getmasterbanmsg(int m) { return mss.inrange(m) ? mss[m].banmessage : NULL; }
 

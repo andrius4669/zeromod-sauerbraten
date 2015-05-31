@@ -102,7 +102,9 @@ static void cleargbans(int m = -1)
 }
 
 VAR(showbanreason, 0, 0, 1);
-VAR(showbanrange, 0, 0, 1);
+
+SVAR(ban_message_banned, "ip/range you are connecting from is banned because: %r");
+// SVAR(ban_message_pbanned, "ip/range you are connecting from (%a) is banned because: %r");
 
 static bool checkgban(uint ip, clientinfo *ci, bool connect = false)
 {
@@ -114,33 +116,37 @@ static bool checkgban(uint ip, clientinfo *ci, bool connect = false)
         time(&sbans[i].lasthit);
         if(connect && showbanreason && sbans[i].comment)
         {
-            if(showbanrange)
+            string banstr, msg;
+            sbans[i].print(banstr);
+            z_formattemplate ft[] =
             {
-                string buf;
-                sbans[i].print(buf);
-                ci->xi.setdiscreason(tempformatstring("ip/range you are connecting from (%s) is banned because: %s", buf, sbans[i].comment));
-            }
-            else ci->xi.setdiscreason(tempformatstring("ip/range you are connecting from is banned because: %s", sbans[i].comment));
+                { 'a', "%s", banstr },
+                { 'r', "%s", sbans[i].comment },
+                { 0, 0, 0 }
+            };
+            z_format(msg, sizeof(msg), ban_message_banned, ft);
+            if(*msg) ci->xi.setdiscreason(msg);
         }
         return true;
     }
     loopv(gbans) if((p = gbans[i].find(hip)) && p->check(hip))
     {
-        const char *s;
-        if((s = getmasternetident(i)))  /* gban used to identify network */
-        {
-            if(!ci->xi.geoip.network) ci->xi.geoip.network = newstring(s);
-            return false;
-        }
+        bool shoulddisconnect = true;
+        const char *s = getmasternetident(i, shoulddisconnect);
+        if(s && *s && !ci->xi.geoip.network) ci->xi.geoip.network = newstring(s); // gban used to identify network
+        if(!shoulddisconnect) return false;
         if(connect && showbanreason && (s = getmasterbanmsg(i)))
         {
-            if(showbanrange)
+            string banstr, msg;
+            p->print(banstr);
+            z_formattemplate ft[] =
             {
-                string buf;
-                p->print(buf);
-                ci->xi.setdiscreason(tempformatstring("ip/range you are connecting from (%s) is banned because: %s", buf, s));
-            }
-            else ci->xi.setdiscreason(tempformatstring("ip/range you are connecting from is banned because: %s", s));
+                { 'a', "%s", banstr },
+                { 'r', "%s", s },
+                { 0, 0, 0 }
+            };
+            z_format(msg, sizeof(msg), ban_message_banned, ft);
+            if(*msg) ci->xi.setdiscreason(msg);
         }
         if((s = getmasterwlauth(i)))
         {

@@ -136,7 +136,7 @@ void z_awards()
     };
 
     char buf[MAXTRANS];
-    z_format(buf, sizeof buf, awards_style_normal, ft);
+    z_format(buf, sizeof(buf), awards_style_normal, ft);
     if(awards_splitmessage)
     {
         char *ptr, *next = buf;

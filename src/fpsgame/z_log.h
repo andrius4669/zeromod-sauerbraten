@@ -63,7 +63,7 @@ static inline void z_showkick(const char *kicker, clientinfo *actor, clientinfo 
         { 'r', "%s", reason },
         { 0, NULL, NULL }
     };
-    z_format(kickstr, sizeof kickstr, reason && *reason ? kick_style_normal_reason : kick_style_normal, ft);
+    z_format(kickstr, sizeof(kickstr), reason && *reason ? kick_style_normal_reason : kick_style_normal, ft);
 
     if(!actor->spy)
     {
@@ -77,7 +77,7 @@ static inline void z_showkick(const char *kicker, clientinfo *actor, clientinfo 
     sendstring(kickstr, normalpack);
     normalpack.finalize();
 
-    z_format(kickstr, sizeof kickstr, reason && *reason ? kick_style_spy_reason : kick_style_spy, ft);
+    z_format(kickstr, sizeof(kickstr), reason && *reason ? kick_style_spy_reason : kick_style_spy, ft);
 
     putint(spypack, N_SERVMSG);
     sendstring(kickstr, spypack);
@@ -107,7 +107,7 @@ void z_showban(clientinfo *actor, const char *banstr, const char *victim, int ba
         { 'r', "%s", reason },
         { 0, NULL, NULL }
     };
-    z_format(banmsg, sizeof banmsg, reason && *reason ? bans_style_normal_reason : bans_style_normal, ft);
+    z_format(banmsg, sizeof(banmsg), reason && *reason ? bans_style_normal_reason : bans_style_normal, ft);
 
     if(!actor->spy)
     {
@@ -121,7 +121,7 @@ void z_showban(clientinfo *actor, const char *banstr, const char *victim, int ba
     sendstring(banmsg, normalpack);
     normalpack.finalize();
 
-    z_format(banmsg, sizeof banmsg, reason && *reason ? bans_style_spy_reason : bans_style_spy, ft);
+    z_format(banmsg, sizeof(banmsg), reason && *reason ? bans_style_spy_reason : bans_style_spy, ft);
 
     // packetbuf for normal clients without kicker shown (in case kicker is spy, it'd disclose him/her)
     putint(spypack, N_SERVMSG);

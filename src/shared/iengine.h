@@ -444,7 +444,7 @@ extern const char *getmasterauth(int m);
 extern void masterauthpriv_set(int m, int priv);
 extern void masterauthpriv_reset(int m);
 extern const int *masterauthpriv_get(int m);
-extern const char *getmasternetident(int m);
+extern const char *getmasternetident(int m, bool &disc);
 extern const char *getmasterwlauth(int m);
 extern const char *getmasterbanmsg(int m);
 extern bool isdedicatedserver();

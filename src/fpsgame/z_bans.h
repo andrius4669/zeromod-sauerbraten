@@ -30,6 +30,8 @@ VARF(teamkillspectate, 0, 0, 1,
     }
 });
 
+SVAR(ban_message_teamkillspectate, "you got spectated because teamkills limit was reached");
+
 void z_kickteamkillers(uint ip)
 {
     if(!teamkillspectate) kickclients(ip);
@@ -40,10 +42,14 @@ void z_kickteamkillers(uint ip)
             if(clients[i]->local || clients[i]->privilege >= PRIV_MASTER) continue;
             extern void forcespectator(clientinfo *);
             forcespectator(clients[i]);
-            sendf(clients[i]->clientnum, 1, "ris", N_SERVMSG, "you got spectated because teamkills limit was reached");
+            sendf(clients[i]->clientnum, 1, "ris", N_SERVMSG, ban_message_teamkillspectate);
         }
     }
 }
+
+SVAR(ban_message_teamkillban, "ip you are connecting from is banned because of teamkills");
+SVAR(ban_message_kickban, "");
+SVAR(ban_message_kickbanreason, "ip you are connecting from is banned because: %r");
 
 bool z_checkban(uint ip, clientinfo *ci)
 {
@@ -56,8 +62,19 @@ bool z_checkban(uint ip, clientinfo *ci)
         case BAN_KICK:
             if(showbanreason)
             {
-                if(bannedips[i].type==BAN_TEAMKILL) ci->xi.setdiscreason("ip you are connecting from is banned because of teamkills");
-                else if(bannedips[i].reason) ci->xi.setdiscreason(tempformatstring("ip you are connecting from is banned because: %s", bannedips[i].reason));
+                if(bannedips[i].type==BAN_TEAMKILL) ci->xi.setdiscreason(ban_message_teamkillban);
+                else if(bannedips[i].reason)
+                {
+                    string buf;
+                    z_formattemplate ft[] =
+                    {
+                        { 'r', "%s", bannedips[i].reason },
+                        { 0, 0, 0 }
+                    };
+                    z_format(buf, sizeof(buf), ban_message_kickbanreason, ft);
+                    if(*buf) ci->xi.setdiscreason(buf);
+                }
+                else if(*ban_message_kickban) ci->xi.setdiscreason(ban_message_kickban);
             }
             return true;
 
@@ -89,6 +106,8 @@ static bool z_checkchatmute(clientinfo *ci, clientinfo *cq = NULL)
     return false;
 }
 
+SVAR(ban_message_specreason, "you are spectated because of %t ban");
+
 bool z_applyspecban(clientinfo *ci)
 {
     if(ci->local) return false;
@@ -96,7 +115,14 @@ bool z_applyspecban(clientinfo *ci)
     loopv(bannedips) if(bannedips[i].ip==ip && (bannedips[i].type==BAN_SPECTATE || (teamkillspectate && bannedips[i].type==BAN_TEAMKILL)))
     {
         ban &b = bannedips[i];
-        sendf(ci->clientnum, 1, "ris", N_SERVMSG, tempformatstring("you are spectated because of %s ban", b.type==BAN_TEAMKILL ? "teamkills" : "spectate"));
+        string tmp;
+        z_formattemplate ft[] =
+        {
+            { 't', "%s", b.type==BAN_TEAMKILL ? "teamkills" : "spectate" },
+            { 0, 0, 0 }
+        };
+        z_format(tmp, sizeof(tmp), ban_message_specreason, ft);
+        if(*tmp) sendf(ci->clientnum, 1, "ris", N_SERVMSG, tmp);
         return true;
     }
     return false;
