@@ -216,24 +216,38 @@ struct raceservmode: servmode
         sendresume(&ci);
     }
 
+    int hasplace(clientinfo &ci)
+    {
+        loopv(race_winners) if(race_winners[i].cn == ci.clientnum) return race_winners.length()-i;
+        return 0;
+    }
+
     void checkplaces()
     {
         // start intermission 5 seconds after last place has been taken (or its too less clients to take any more places)
-        int numfinished = 0, numavaiable = 0;
+        uint cl_finished = 0, cl_unfinished = 0;
+        loopv(clients) if(clients[i]->state.state!=CS_SPECTATOR)
+        {
+            // state.frags is reused for place number
+            if(clients[i]->state.frags > 0) cl_finished++;
+            else cl_unfinished++;
+        }
+        uint pl_finished = 0, pl_avaiable = 0;
         loopv(race_winners)
         {
-            if(race_winners[i].cn >= 0) numfinished++;
-            else numavaiable++;
+            if(race_winners[i].cn >= 0) pl_finished++;
+            else pl_avaiable++;
         }
-        int numplayers = numclients(-1, true, false), unfinished = numplayers-numfinished;
-        if(numplayers <= 0) return;
-        if(numavaiable <= 0 || unfinished <= 0)
+        if((cl_finished + cl_unfinished) <= 0) return;  // don't end race if everyone leaves
+        if(cl_unfinished <= 0 || pl_avaiable <= 0)
         {
+            // enter finished state if there are no places left or everyone already finished race
             state = ST_FINISHED;
             statemillis = countermillis = totalmillis;
         }
-        else if(racemode_winnerwait && numfinished > 0 && (!statemillis || statemillis-totalmillis > racemode_winnerwait))
+        else if(racemode_winnerwait && cl_finished > 0 && (!statemillis || statemillis-totalmillis > racemode_winnerwait))
         {
+            // finish race after racemode_winnerwait
             statemillis = totalmillis + racemode_winnerwait;
             if(!statemillis) statemillis = 1;
             countermillis = totalmillis;
@@ -302,12 +316,6 @@ struct raceservmode: servmode
             break;
         }
         if(state == ST_STARTED) checkplaces();
-    }
-
-    int hasplace(clientinfo &ci)
-    {
-        loopv(race_winners) if(race_winners[i].cn == ci.clientnum) return race_winners.length()-i;
-        return 0;
     }
 
     void setracecheat(clientinfo &ci, int val)
