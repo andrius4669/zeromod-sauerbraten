@@ -145,14 +145,16 @@ ifeq ($(PLATFORM),SUNOS)
 CLIENT_LIBS+= -lsocket -lnsl
 SERVER_LIBS+= -lsocket -lnsl
 endif
+BSDLIBS=
 ifneq (,$(findstring BSD,$(PLATFORM)))
 SERVER_INCLUDES+= -I/usr/local/include
 CLIENT_INCLUDES+= -I/usr/local/include
-SERVER_LIBS+= -L/usr/local/lib
-CLIENT_LIBS+= -L/usr/local/lib
+BSDLIBS= -L/usr/local/lib
 endif
+SERVER_LIBS+= $(BSDLIBS)
+CLIENT_LIBS+= $(BSDLIBS)
 MASTER_LIBS:= $(SERVER_LIBS)
-GEOIP_USES:=$(shell ./check_geoip.sh $(CXX) $(CXXFLAGS) $(SERVER_INCLUDES) $(SERVER_LIBS))
+GEOIP_USES:=$(shell ./check_geoip.sh $(CXX) $(CXXFLAGS) $(SERVER_INCLUDES) $(BSDLIBS))
 SERVER_INCLUDES+=$(GEOIP_USES)
 CLIENT_INCLUDES+=$(GEOIP_USES)
 ifneq (,$(findstring USE_GEOIP,$(GEOIP_USES)))

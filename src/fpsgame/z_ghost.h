@@ -23,7 +23,7 @@ bool z_isghost(clientinfo &ci)
     return ci.xi.ghost || (isracemode() && z_race_shouldhide(ci));
 }
 
-#if 0
+#if 1
 void z_setghost(clientinfo &ci, bool val)
 {
     if(ci.xi.ghost!=val)
@@ -35,8 +35,21 @@ void z_setghost(clientinfo &ci, bool val)
 
 void z_servcmd_ghost(int argc, char **argv, int sender)
 {
-    //...
+    if(argc < 2) { z_servcmd_pleasespecifyclient(sender); return; }
+    int cn;
+    if(!z_parseclient_verify(argv[1], cn, false))
+    {
+        z_servcmd_unknownclient(argv[1], sender);
+        return;
+    }
+    clientinfo *ci = getinfo(cn);
+    if(!ci) return;
+    bool val = !strcasecmp(argv[0], "ghost");
+    sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("%s %s", val ? "ghosting" : "unghosting", colorname(ci)));
+    z_setghost(*ci, val);
 }
+SCOMMANDAH(ghost, PRIV_MASTER, z_servcmd_ghost, 1);
+SCOMMANDAH(unghost, PRIV_MASTER, z_servcmd_ghost, 1);
 #endif
 
 #endif
