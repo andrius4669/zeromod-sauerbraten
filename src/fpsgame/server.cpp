@@ -3845,6 +3845,14 @@ namespace server
                 break;
             } 
 
+            case N_SOUND:
+                if(z_allowsound(ci, cq, getint(p))) { QUEUE_AI; QUEUE_MSG; }
+                break;
+
+            case N_TAUNT:
+                if(allowmsg(ci, cq, N_TAUNT)) { QUEUE_AI; QUEUE_MSG; }
+                break;
+
             case N_SERVCMD:
                 getstring(text, p);
                 if(allowservcmd && iscubealnum(text[0])) z_servcmd_parse(sender, text);

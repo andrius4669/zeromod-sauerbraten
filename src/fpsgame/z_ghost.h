@@ -16,7 +16,7 @@ void nullifyclientpos(clientinfo &ci)
     p.put(0); p.put(0); // veldir
 }
 
-bool z_isghost(clientinfo &ci)
+static inline bool z_isghost(clientinfo &ci)
 {
     extern bool isracemode();
     extern bool z_race_shouldhide(clientinfo &ci);
@@ -30,6 +30,7 @@ void z_setghost(clientinfo &ci, bool val)
     {
         ci.xi.ghost = val;
         if(ci.state.aitype==AI_NONE) sendf(ci.clientnum, 1, "ris", N_SERVMSG, tempformatstring("you got %s", val ? "ghosted" : "unghosted"));
+        if(!val) sendresume(&ci);
     }
 }
 

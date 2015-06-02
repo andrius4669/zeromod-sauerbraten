@@ -77,8 +77,17 @@ bool allowmsg(clientinfo *ci, clientinfo *cq, int type)
             }
             return true;
 
+        case N_TAUNT:
+            return cq && cq->state.state==CS_ALIVE && !z_isghost(*cq);
+
         default: return true;
     }
+}
+
+static inline bool z_allowsound(clientinfo *ci, clientinfo *cq, int sound)
+{
+    // allow some fun
+    return cq && (cq->state.state==CS_ALIVE || cq->state.state==CS_EDITING) && !z_isghost(*cq) && sound >= S_JUMP && sound <= S_FLAGFAIL;
 }
 
 // included here basically because this is included in right place in server.cpp
