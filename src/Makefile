@@ -152,7 +152,7 @@ SERVER_LIBS+= -L/usr/local/lib
 CLIENT_LIBS+= -L/usr/local/lib
 endif
 MASTER_LIBS:= $(SERVER_LIBS)
-GEOIP_USES:=$(shell ./check_geoip.sh $(CXX) $(CXXFLAGS) $(SERVER_INCLUDES))
+GEOIP_USES:=$(shell ./check_geoip.sh $(CXX) $(CXXFLAGS) $(SERVER_INCLUDES) $(SERVER_LIBS))
 SERVER_INCLUDES+=$(GEOIP_USES)
 CLIENT_INCLUDES+=$(GEOIP_USES)
 ifneq (,$(findstring USE_GEOIP,$(GEOIP_USES)))
