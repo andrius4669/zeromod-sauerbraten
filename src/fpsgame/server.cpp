@@ -122,7 +122,7 @@ namespace server
         int frags, flags, deaths, suicides, teamkills, shotdamage, damage, explosivedamage, tokens, hits, misses, shots;
         int lasttimeplayed, timeplayed;
         float effectiveness;
-        int stolen, returned, maxsteak;
+        int stolen, returned, maxstreak;
         int lastkill, multikills, rampage;
         hashset<teaminfo> *teaminfos;
 
@@ -151,7 +151,7 @@ namespace server
             frags = flags = deaths = suicides = teamkills = shotdamage = explosivedamage = damage = hits = misses = shots = tokens = 0;
 
             lastdeath = 0;
-            stolen = returned = maxsteak = 0;
+            stolen = returned = maxstreak = 0;
             DELETEP(teaminfos);
 
             respawn();
@@ -185,7 +185,7 @@ namespace server
         int maxhealth, frags, flags, deaths, suicides, teamkills, shotdamage, explosivedamage, damage, hits, misses, shots;
         int timeplayed;
         float effectiveness;
-        int stolen, returned, maxsteak;
+        int stolen, returned, maxstreak;
         hashset<teaminfo> *teaminfos;
         savedscore(): teaminfos(NULL) {}
         ~savedscore() { if(teaminfos) delete teaminfos; }
@@ -205,7 +205,7 @@ namespace server
             effectiveness = gs.effectiveness;
             stolen = gs.stolen;
             returned = gs.returned;
-            maxsteak = gs.maxsteak;
+            maxstreak = gs.maxstreak;
             z_setteaminfos(teaminfos, gs.teaminfos);
             hits = gs.hits;
             misses = gs.misses;
@@ -228,7 +228,7 @@ namespace server
             gs.effectiveness = effectiveness;
             gs.stolen = stolen;
             gs.returned = returned;
-            gs.maxsteak = maxsteak;
+            gs.maxstreak = maxstreak;
             z_setteaminfos(gs.teaminfos, teaminfos);
             gs.hits = hits;
             gs.misses = misses;

@@ -61,7 +61,7 @@ static int z_client_getteamkills    (clientinfo *ci) { return ci->state.teamkill
 static int z_client_getdeaths       (clientinfo *ci) { return ci->state.deaths; }
 static int z_client_getsuicides     (clientinfo *ci) { return ci->state.suicides; }
 static int z_client_getdamagewasted (clientinfo *ci) { return ci->state.shotdamage - ci->state.damage; }
-static int z_client_getmaxsteak     (clientinfo *ci) { return ci->state.maxsteak; }
+static int z_client_getmaxstreak    (clientinfo *ci) { return ci->state.maxstreak; }
 
 void z_awards()
 {
@@ -109,7 +109,7 @@ void z_awards()
     z_awards_print_best(W, best, maxnum);
 
     vector<char> R; int r = 0;
-    z_awards_best_stat<int>(best, r, z_client_getmaxsteak);
+    z_awards_best_stat<int>(best, r, z_client_getmaxstreak);
     z_awards_print_best(R, best, maxnum);
 
     z_formattemplate ft[] =

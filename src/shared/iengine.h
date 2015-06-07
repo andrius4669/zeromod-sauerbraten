@@ -442,11 +442,8 @@ extern bool requestmasterf(int m, const char *fmt, ...) PRINTFARGS(2, 3);
 extern int findauthmaster(const char *desc, int old = -1);
 extern const char *getmasterauth(int m);
 extern void masterauthpriv_set(int m, int priv);
-extern void masterauthpriv_reset(int m);
-extern const int *masterauthpriv_get(int m);
-extern const char *getmasternetident(int m, bool &disc);
-extern const char *getmasterwlauth(int m);
-extern const char *getmasterbanmsg(int m);
+extern int masterauthpriv_get(int m);
+extern bool getmasterbaninfo(int m, const char *&ident, int &disc, const char *&wlauth, const char *&banmsg);
 extern bool isdedicatedserver();
 
 // client

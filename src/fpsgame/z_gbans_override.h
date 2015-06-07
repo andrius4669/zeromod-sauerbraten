@@ -74,7 +74,7 @@ struct gbaninfo
     inline int compare(uint ip) const
     {
         if(ip < first) return -1;
-        if(ip > last) return +1;
+        if(ip > last)  return +1;
         return 0;
     }
 
@@ -129,34 +129,39 @@ static bool checkgban(uint ip, clientinfo *ci, bool connect = false)
         }
         return true;
     }
-    loopv(gbans) if((p = gbans[i].find(hip)) && p->check(hip))
+    loopv(gbans)
     {
-        bool shoulddisconnect = true;
-        const char *s = getmasternetident(i, shoulddisconnect);
-        if(s && *s && !ci->xi.geoip.network) ci->xi.geoip.network = newstring(s); // gban used to identify network
-        if(!shoulddisconnect) return false;
-        if(connect && showbanreason && (s = getmasterbanmsg(i)))
+        const char *ident, *wlauth, *banmsg;
+        int mode;
+        if(!getmasterbaninfo(i, ident, mode, wlauth, banmsg)) continue;
+        if((p = gbans[i].find(hip)) && p->check(hip))
         {
-            string banstr, msg;
-            p->print(banstr);
-            z_formattemplate ft[] =
+            if(ident && !ci->xi.geoip.network) ci->xi.geoip.network = newstring(ident); // gban used to identify network
+            if(mode == 0) continue;
+            if(mode == 2) return false;
+            if(connect && showbanreason && banmsg)
             {
-                { 'a', "%s", banstr },
-                { 'r', "%s", s },
-                { 0, 0, 0 }
-            };
-            z_format(msg, sizeof(msg), ban_message_banned, ft);
-            if(*msg) ci->xi.setdiscreason(msg);
-        }
-        if((s = getmasterwlauth(i)))
-        {
-            if(!connect)
-            {
-                if(ci->xi.wlauth && !strcmp(ci->xi.wlauth, s)) return false;
+                string banstr, msg;
+                p->print(banstr);
+                z_formattemplate ft[] =
+                {
+                    { 'a', "%s", banstr },
+                    { 'r', "%s", banmsg },
+                    { 0, 0, 0 }
+                };
+                z_format(msg, sizeof(msg), ban_message_banned, ft);
+                if(*msg) ci->xi.setdiscreason(msg);
             }
-            else ci->xi.setwlauth(s);
+            if(wlauth)
+            {
+                if(!connect)
+                {
+                    if(ci->xi.wlauth && !strcmp(ci->xi.wlauth, wlauth)) return false;   // already whitelisted
+                }
+                else ci->xi.setwlauth(wlauth);
+            }
+            return true;
         }
-        return true;
     }
     return false;
 }

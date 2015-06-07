@@ -15,19 +15,19 @@ struct msinfo
     int masteroutpos, masterinpos;
     bool allowupdatemaster;
     int masternum;
-    int *masterauthpriv;
+    int masterauthpriv;
     bool masterauthpriv_allow;
     char *networkident;
     char *whitelistauth;
     char *banmessage;
     int maxauthpriv;
-    bool shoulddisconnect;
+    int banmode;
 
     msinfo(): masterport(server::masterport()), mastersock(ENET_SOCKET_NULL),
         lastupdatemaster(0), lastconnectmaster(0), masterconnecting(0), masterconnected(0),
         masteroutpos(0), masterinpos(0), allowupdatemaster(true), masternum(-1),
-        masterauthpriv(NULL), masterauthpriv_allow(false), networkident(NULL),
-        whitelistauth(NULL), banmessage(NULL), maxauthpriv(3), shoulddisconnect(true)
+        masterauthpriv(-1), masterauthpriv_allow(false), networkident(NULL),
+        whitelistauth(NULL), banmessage(NULL), maxauthpriv(3), banmode(1)
     {
         copystring(mastername, server::defaultmaster());
         masterauth[0] = '\0';
@@ -53,7 +53,7 @@ struct msinfo
         masteraddress.port = ENET_PORT_ANY;
 
         lastupdatemaster = masterconnecting = masterconnected = 0;
-        DELETEP(masterauthpriv);
+        masterauthpriv = -1;
     }
 
     ENetSocket connectmaster(bool wait)
@@ -298,16 +298,16 @@ ICOMMAND(mastermaxauthpriv, "i", (int *i),
 void masterauthpriv_set(int m, int priv)
 {
     if(!mss.inrange(m)) return;
-    delete mss[m].masterauthpriv;
-    mss[m].masterauthpriv = new int(clamp(priv, 0, mss[m].maxauthpriv));
+    if(mss[m].masterauthpriv_allow) mss[m].masterauthpriv = clamp(priv, 0, mss[m].maxauthpriv);
 }
-void masterauthpriv_reset(int m) { if(mss.inrange(m)) DELETEP(mss[m].masterauthpriv); }
-const int *masterauthpriv_get(int m)
+
+int masterauthpriv_get(int m)
 {
-    if(!mss.inrange(m)) return NULL;
-    if(!mss[m].masterauthpriv_allow) DELETEP(mss[m].masterauthpriv);
-    if(!mss[m].masterauthpriv && mss[m].maxauthpriv < 2) mss[m].masterauthpriv = new int(mss[m].maxauthpriv);
-    return mss[m].masterauthpriv;
+    if(!mss.inrange(m)) return 2;
+    int t = mss[m].masterauthpriv;
+    mss[m].masterauthpriv = -1;
+    if(t < 0 && mss[m].maxauthpriv < 2) return mss[m].maxauthpriv;
+    return t < 0 ? 2 : t;
 }
 
 ICOMMAND(masterbanwarn, "s", (char *s),
@@ -331,19 +331,20 @@ ICOMMAND(masterbanmessage, "s", (char *s),
     mss[currmss].banmessage = *s ? newstring(s) : NULL;
 });
 
-ICOMMAND(masterbandisconnect, "i", (int *i),
+ICOMMAND(masterbanmode, "i", (int *i),    // 0 - ignore, 1 (default) - blacklist, 2 - whitelist
 {
     if(!mss.inrange(currmss)) addms();
-    mss[currmss].shoulddisconnect = (*i)!=0;
+    mss[currmss].banmode = clamp(*i, 0, 2);
 });
 
-const char *getmasternetident(int m, bool &disc)
+bool getmasterbaninfo(int m, const char *&ident, int &disc, const char *&wlauth, const char *&banmsg)
 {
-    if(!mss.inrange(m)) return NULL;
-    disc = mss[m].shoulddisconnect;
-    return mss[m].networkident;
+    if(!mss.inrange(m)) return false;
+    ident = mss[m].networkident;
+    disc = mss[m].banmode;
+    wlauth = mss[m].whitelistauth;
+    banmsg = mss[m].banmessage;
+    return true;
 }
-const char *getmasterwlauth(int m) { return mss.inrange(m) ? mss[m].whitelistauth : NULL; }
-const char *getmasterbanmsg(int m) { return mss.inrange(m) ? mss[m].banmessage : NULL; }
 
 #endif // Z_MS_ENGINESERVER_OVERRIDE_H

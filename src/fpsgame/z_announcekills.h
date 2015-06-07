@@ -90,7 +90,7 @@ void z_announcekill(clientinfo *actor, clientinfo *victim, int fragval)
         actor->state.lastkill = gamemillis ? gamemillis : 1;
         actor->state.multikills++;
         actor->state.rampage++;
-        if(actor->state.rampage > actor->state.maxsteak) actor->state.maxsteak = actor->state.rampage;
+        if(actor->state.rampage > actor->state.maxstreak) actor->state.maxstreak = actor->state.rampage;
     }
     if(m_edit || !announcekills || (!announcekills_rampage && !announcekills_multikill)) return;
     bool showactor = fragval > 0 && actor->state.state==CS_ALIVE;

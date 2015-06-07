@@ -71,7 +71,7 @@ static inline void z_putstats(char (&msg)[MAXSTRLEN], clientinfo *ci)
         { 'l', "%d", (const void *)(long)gs.deaths },
         { 's', "%d", (const void *)(long)gs.suicides },
         { 'w', "%d", (const void *)(long)(gs.shotdamage-gs.damage) },
-        { 'r', "%d", (const void *)(long)gs.maxsteak },
+        { 'r', "%d", (const void *)(long)gs.maxstreak },
         { 0, 0, 0 }
     };
     if(m_ctf) z_format(msg, sizeof(msg), stats_style_ctf, ft);

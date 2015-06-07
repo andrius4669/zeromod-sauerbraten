@@ -46,12 +46,8 @@ void authfailed(int m, uint id)
     authfailed(findauth(m, id));
 }
 
-void authsucceeded(int m, uint id, int dpriv = PRIV_AUTH)
+void authsucceeded(int m, uint id, int priv = PRIV_AUTH)
 {
-    const int *privp = masterauthpriv_get(m);
-    int priv = privp ? *privp : dpriv;
-    masterauthpriv_reset(m);
-
     clientinfo *ci = findauth(m, id);
     if(!ci) return;
     ci->cleanauth(ci->connectauth!=0);
@@ -212,7 +208,7 @@ void processmasterinput(int m, const char *cmd, int cmdlen, const char *args)
     if(sscanf(cmd, "failauth %u", &id) == 1)
         authfailed(m, id);
     else if(sscanf(cmd, "succauth %u", &id) == 1)
-        authsucceeded(m, id);
+        authsucceeded(m, id, masterauthpriv_get(m));
     else if(sscanf(cmd, "chalauth %u %255s", &id, val) == 2)
         authchallenged(m, id, val, getmasterauth(m));
     else if(!strncmp(cmd, "cleargbans", cmdlen))
