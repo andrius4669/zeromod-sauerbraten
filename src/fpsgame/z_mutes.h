@@ -111,16 +111,16 @@ static void z_servcmd_mute(int argc, char **argv, int sender)
         }
     }
 }
-SCOMMANDNA(mute, PRIV_AUTH, z_servcmd_mute, 2);
-SCOMMANDNA(unmute, PRIV_AUTH, z_servcmd_mute, 1);
-SCOMMANDNA(editmute, PRIV_MASTER, z_servcmd_mute, 2);
-SCOMMANDNA(editunmute, PRIV_MASTER, z_servcmd_mute, 1);
-SCOMMANDNAH(emute, PRIV_MASTER, z_servcmd_mute, 2);
-SCOMMANDNAH(eunmute, PRIV_MASTER, z_servcmd_mute, 1);
-SCOMMANDNA(namemute, PRIV_AUTH, z_servcmd_mute, 2);
-SCOMMANDNA(nameunmute, PRIV_AUTH, z_servcmd_mute, 1);
-SCOMMANDNAH(nmute, PRIV_AUTH, z_servcmd_mute, 2);
-SCOMMANDNAH(nunmute, PRIV_AUTH, z_servcmd_mute, 1);
+SCOMMANDA(mute, PRIV_AUTH, z_servcmd_mute, 2);
+SCOMMANDA(unmute, PRIV_AUTH, z_servcmd_mute, 1);
+SCOMMANDA(editmute, PRIV_MASTER, z_servcmd_mute, 2);
+SCOMMANDA(editunmute, PRIV_MASTER, z_servcmd_mute, 1);
+SCOMMANDAH(emute, PRIV_MASTER, z_servcmd_mute, 2);
+SCOMMANDAH(eunmute, PRIV_MASTER, z_servcmd_mute, 1);
+SCOMMANDA(namemute, PRIV_AUTH, z_servcmd_mute, 2);
+SCOMMANDA(nameunmute, PRIV_AUTH, z_servcmd_mute, 1);
+SCOMMANDAH(nmute, PRIV_AUTH, z_servcmd_mute, 2);
+SCOMMANDAH(nunmute, PRIV_AUTH, z_servcmd_mute, 1);
 
 bool z_autoeditmute = false;
 VARFN(autoeditmute, z_defaultautoeditmute, 0, 0, 1, { if(clients.empty()) z_autoeditmute = z_defaultautoeditmute!=0; });
@@ -142,6 +142,6 @@ void z_servcmd_autoeditmute(int argc, char **argv, int sender)
     }
     else sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("autosendmute is %s", z_autoeditmute ? "enabled" : "disabled"));
 }
-SCOMMANDNA(autoeditmute, PRIV_MASTER, z_servcmd_autoeditmute, 1);
+SCOMMANDA(autoeditmute, PRIV_MASTER, z_servcmd_autoeditmute, 1);
 
 #endif // Z_MUTES_H

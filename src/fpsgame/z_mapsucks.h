@@ -4,19 +4,13 @@
 #include "z_servercommands.h"
 #include "z_format.h"
 
-extern void z_mapsucks_trigger(int);
-VARF(mapsucks, 0, 0, 1, z_mapsucks_trigger(0));
+VARF(mapsucks, 0, 0, 1, z_enable_command("mapsucks", mapsucks!=0));
 VAR(mapsucks_time, 0, 30, 3600);
 
 SVAR(mapsucks_style_vote, "%C thinks this map sucks. current mapsucks votes: [%z/%l]. you can rate this map with #mapsucks");
 SVAR(mapsucks_style_waitsuccess, "mapsucks voting succeeded, staring intermission in %t seconds");
 SVAR(mapsucks_style_success, "mapsucks voting succeeded, starting intermission");
-
-void z_mapsucks_trigger(int type)
-{
-    z_enable_command("mapsucks", mapsucks!=0);
-}
-Z_TRIGGER(z_mapsucks_trigger, Z_TRIGGER_STARTUP);
+SVAR(mapsucks_style_speccantvote, "Spectators may not rate map");
 
 void z_mapsucks(clientinfo *ci)
 {
@@ -63,7 +57,7 @@ void z_mapsucks(clientinfo *ci)
                 };
                 string buf;
                 z_format(buf, sizeof(buf), mapsucks_style_waitsuccess, ft);
-                if(buf[0]) sendservmsg(buf);
+                if(*buf) sendservmsg(buf);
 
                 sendf(-1, 1, "ri2", N_TIMEUP, max((gamelimit - gamemillis)/1000, 1));
             }
@@ -78,12 +72,11 @@ void z_mapsucks(clientinfo *ci)
 
 void z_servcmd_mapsucks(int argc, char **argv, int sender)
 {
-    if(!mapsucks) { sendf(sender, 1, "ris", N_SERVMSG, "mapsucks command is disabled"); return; }
-    clientinfo *ci = (clientinfo *)getclientinfo(sender);
+    clientinfo *ci = getinfo(sender);
     if(!ci) return;
-    if(ci->state.state==CS_SPECTATOR) { sendf(sender, 1, "ris", N_SERVMSG, "Spectators may not rate map"); return; }
+    if(ci->state.state==CS_SPECTATOR) { sendf(sender, 1, "ris", N_SERVMSG, mapsucks_style_speccantvote); return; }
     z_mapsucks(ci);
 }
-SCOMMANDA(mapsucks, PRIV_NONE, z_servcmd_mapsucks, 1);
+SCOMMANDA(mapsucks, ZC_DISABLED | PRIV_NONE, z_servcmd_mapsucks, 1);
 
 #endif // Z_MAPSUCKS_H

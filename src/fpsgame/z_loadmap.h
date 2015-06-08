@@ -26,6 +26,6 @@ void z_servcmd_loadmap(int argc, char **argv, int sender)
     if(z_loadmap(mname)) sendservmsgf("[map \"%s\" loaded]", mname);
     else sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("failed to load map: %s", mname));
 }
-SCOMMANDNA(loadmap, PRIV_MASTER, z_servcmd_loadmap, 1);
+SCOMMANDA(loadmap, PRIV_MASTER, z_servcmd_loadmap, 1);
 
 #endif // Z_LOADMAP_H

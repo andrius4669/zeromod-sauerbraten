@@ -51,6 +51,6 @@ void z_servcmd_savemap(int argc, char **argv, int sender)
     if(z_savemap(mname)) sendservmsgf("[map \"%s\" saved]", mname);
     else sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("failed to save map: %s", mname));
 }
-SCOMMANDNA(savemap, PRIV_ADMIN, z_servcmd_savemap, 1);
+SCOMMANDA(savemap, PRIV_ADMIN, z_servcmd_savemap, 1);
 
 #endif // Z_SAVEMAP_H

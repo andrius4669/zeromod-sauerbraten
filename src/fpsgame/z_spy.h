@@ -117,7 +117,7 @@ void z_servcmd_spy(int argc, char **argv, int sender)
     if(!ci) return;
     z_setspy(ci, !ci->spy);
 }
-SCOMMANDNA(spy, PRIV_ADMIN, z_servcmd_spy, 1);
+SCOMMANDA(spy, PRIV_ADMIN, z_servcmd_spy, 1);
 
 void z_servcmd_listspy(int argc, char **argv, int sender)
 {
@@ -135,6 +135,6 @@ void z_servcmd_listspy(int argc, char **argv, int sender)
         sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("spies list: %s", spybuf.getbuf()));
     }
 }
-SCOMMANDNA(listspy, PRIV_ADMIN, z_servcmd_listspy, 1);
+SCOMMANDA(listspy, PRIV_ADMIN, z_servcmd_listspy, 1);
 
 #endif // Z_SPY_H

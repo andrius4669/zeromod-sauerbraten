@@ -204,7 +204,7 @@ void z_servcmd_geoip(int argc, char **argv, int sender)
     }
 }
 SCOMMAND(geoip, PRIV_NONE, z_servcmd_geoip);
-SCOMMANDH(getip, PRIV_NONE, z_servcmd_geoip);
+SCOMMAND(getip, ZC_HIDDEN | PRIV_NONE, z_servcmd_geoip);
 
 void z_servcmd_whois(int argc, char **argv, int sender)
 {

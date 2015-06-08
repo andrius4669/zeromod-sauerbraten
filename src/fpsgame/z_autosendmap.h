@@ -25,6 +25,6 @@ static void z_servcmd_autosendmap(int argc, char **argv, int sender)
     }
 }
 SCOMMANDA(autosendmap, PRIV_MASTER, z_servcmd_autosendmap, 1);
-SCOMMANDAH(connectsendmap, PRIV_MASTER, z_servcmd_autosendmap, 1);
+SCOMMANDA(connectsendmap, ZC_HIDDEN | PRIV_MASTER, z_servcmd_autosendmap, 1);
 
 #endif // Z_AUTOSENDMAP_H

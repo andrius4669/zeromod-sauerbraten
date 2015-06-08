@@ -5,6 +5,13 @@
 
 typedef void (* z_scmdfun)(int argc, char **argv, int sender);
 
+enum
+{
+    ZC_PRIV_MASK = 0x0F,
+    ZC_HIDDEN = 1 << 8,
+    ZC_DISABLED = 1 << 9
+};
+
 struct z_servcmdinfo
 {
     string name;
@@ -12,13 +19,26 @@ struct z_servcmdinfo
     int privilege;
     int numargs;
     bool hidden;
-    int vispriv;
     bool enabled;
 
-    z_servcmdinfo(): fun(NULL), privilege(PRIV_NONE), numargs(0), hidden(false), vispriv(PRIV_NONE), enabled(true) { name[0] = '\0'; }
+    void setopts(uint opts)
+    {
+        privilege = opts & ZC_PRIV_MASK;
+        hidden = !!(opts & ZC_HIDDEN);
+        enabled = !(opts & ZC_DISABLED);
+    }
+
+    z_servcmdinfo(): fun(NULL), numargs(0)
+    {
+        name[0] = '\0';
+        setopts(0);
+    }
     z_servcmdinfo(const z_servcmdinfo &n) { *this = n; }
-    z_servcmdinfo(const char *_name, z_scmdfun _fun, int _priv, int _numargs, bool _hidden = false, int _vispriv = PRIV_NONE):
-        fun(_fun), privilege(_priv), numargs(_numargs), hidden(_hidden), vispriv(_vispriv), enabled(true) { copystring(name, _name); }
+    z_servcmdinfo(const char *_name, z_scmdfun _fun, uint opts, int _numargs): fun(_fun), numargs(_numargs)
+    {
+        copystring(name, _name);
+        setopts(opts);
+    }
     z_servcmdinfo &operator =(const z_servcmdinfo &n)
     {
         if(&n != this)
@@ -28,7 +48,6 @@ struct z_servcmdinfo
             privilege = n.privilege;
             numargs = n.numargs;
             hidden = n.hidden;
-            vispriv = n.vispriv;
             enabled = n.enabled;
         }
         return *this;
@@ -36,7 +55,7 @@ struct z_servcmdinfo
     ~z_servcmdinfo() {}
 
     bool valid() const { return name[0] && fun; }
-    bool cansee(int priv, bool local) const { return valid() && enabled && !hidden && ((priv >= privilege && priv >= vispriv) || local); }
+    bool cansee(int priv, bool local) const { return valid() && enabled && !hidden && (priv >= privilege || local); }
     bool canexec(int priv, bool local) const { return valid() && ((enabled && priv >= privilege) || local); }
 };
 
@@ -72,6 +91,18 @@ void z_servcmd_set_privilege(const char *cmd, int privilege)
     loopv(z_servcommands) if(!strcasecmp(z_servcommands[i].name, cmd)) z_servcommands[i].privilege = privilege;
 }
 
+void command_prilege(tagval *args, int numargs)
+{
+    vector<char *> commands;
+    for(int i = 0; i + 1 < numargs; i += 2)
+    {
+        explodelist(args[i].getstr(), commands);
+        loopvj(commands) z_servcmd_set_privilege(commands[j], clamp(args[i + 1].getint(), 0, int(PRIV_ADMIN + 1)));
+        commands.deletearrays();
+    }
+}
+COMMAND(command_prilege, "si2V");
+
 void z_enable_command(const char *cmd, bool val)
 {
     if(!z_initedservcommands) z_initservcommands();
@@ -85,15 +116,10 @@ void z_enable_commands(tagval *args, int numargs, bool val)
 ICOMMAND(enable_commands, "sV", (tagval *args, int numargs), z_enable_commands(args, numargs, true));
 ICOMMAND(disable_commands, "sV", (tagval *args, int numargs), z_enable_commands(args, numargs, false));
 
-#define SCOMMANDZ(_name, _priv, _funcname, _args, _hidden) UNUSED static bool __s_dummy__##_name = addservcmd(z_servcmdinfo(#_name, _funcname, _priv, _args, _hidden))
-#define SCOMMAND(_name, _priv, _func) SCOMMANDZ(_name, _priv, _func, 0, false)
-#define SCOMMANDN SCOMMAND
-#define SCOMMANDH(_name, _priv, _func) SCOMMANDZ(_name, _priv, _func, 0, true)
-#define SCOMMANDNH SCOMMANDH
-#define SCOMMANDA(_name, _priv, _func, _args) SCOMMANDZ(_name, _priv, _func, _args, false)
-#define SCOMMANDNA SCOMMANDA
-#define SCOMMANDAH(_name, _priv, _func, _args) SCOMMANDZ(_name, _priv, _func, _args, true)
-#define SCOMMANDNAH SCOMMANDAH
+#define SCOMMANDZ(name, opts, func, args) UNUSED static bool __s_dummy__##name = addservcmd(z_servcmdinfo(#name, func, opts, args))
+#define SCOMMAND(name, opts, func) SCOMMANDZ(name, opts, func, 0)
+#define SCOMMANDA SCOMMANDZ
+#define SCOMMANDAH(name, opts, func, args) SCOMMANDZ(name, (opts) | ZC_HIDDEN, func, args)
 
 VAR(allowservcmd, 0, 1, 1);
 
