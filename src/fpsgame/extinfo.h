@@ -59,7 +59,7 @@
         q.put((uchar*)&ip, 3);
         if(z_extended)
         {
-            putint(q, -1); //for hopmod compatibility
+            putint(q, -1); // for hopmod compatibility
             putint(q, EXT_SERVERMOD);
             putint(q, ci->state.suicides);
             putint(q, ci->state.shotdamage);
@@ -70,6 +70,7 @@
             putint(q, ci->state.shots);
             short gi = z_geoip_getextinfo(ci->xi.geoip);
             q.put((uchar*)&gi, 2);
+            putint(q, ci->connectmillis); // player session identifier (in combination with cn), sessionid would be too sensitive
         }
         sendserverinforeply(q);
     }
