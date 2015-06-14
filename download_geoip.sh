@@ -1,11 +1,13 @@
 #!/bin/sh
 
-rm -f GeoIP.dat.gz
-curl http://geolite.maxmind.com/download/geoip/database/GeoLiteCountry/GeoIP.dat.gz -o GeoIP.dat.gz
-rm -f GeoIP.dat
-gunzip GeoIP.dat.gz
+getgeoip ()
+{
+	curl "$2"/"$1".gz > "$1".gz.new
+	mv -f "$1".gz.new "$1".gz
+	gunzip -c "$1".gz > "$1".new
+	mv -f "$1".new "$1"
+	rm -f "$1".gz
+}
 
-rm -f GeoLiteCity.dat.gz
-curl http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz -o GeoLiteCity.dat.gz
-rm -f GeoLiteCity.dat
-gunzip GeoLiteCity.dat.gz
+getgeoip 'GeoIP.dat' 'http://geolite.maxmind.com/download/geoip/database/GeoLiteCountry'
+getgeoip 'GeoLiteCity.dat' 'http://geolite.maxmind.com/download/geoip/database'

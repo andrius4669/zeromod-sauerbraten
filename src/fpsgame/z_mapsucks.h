@@ -4,7 +4,7 @@
 #include "z_servercommands.h"
 #include "z_format.h"
 
-VARF(mapsucks, 0, 0, 1, z_enable_command("mapsucks", mapsucks!=0));
+ICOMMAND(mapsucks, "i", (int *i), z_enable_command("mapsucks", *i!=0));
 VAR(mapsucks_time, 0, 30, 3600);
 
 SVAR(mapsucks_style_vote, "%C thinks this map sucks. current mapsucks votes: [%z/%l]. you can rate this map with #mapsucks");
