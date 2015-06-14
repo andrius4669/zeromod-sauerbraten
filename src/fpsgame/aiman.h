@@ -109,6 +109,7 @@ namespace aiman
         if(!bots[cn]) bots[cn] = new clientinfo;
         clientinfo *ci = bots[cn];
 		ci->clientnum = MAXCLIENTS + cn;
+		ci->connectmillis = totalmillis; // zeromod
 		ci->state.aitype = AI_BOT;
         clientinfo *owner = findaiclient();
 		ci->ownernum = owner ? owner->clientnum : -1;
