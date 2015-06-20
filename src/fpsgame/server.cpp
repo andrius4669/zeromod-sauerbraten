@@ -3306,7 +3306,7 @@ namespace server
                 z_maploaded(ci);
                 cq->state.lastspawn = -1;
                 cq->state.state = CS_ALIVE;
-                cq->state.lastdeath = gamemillis; // reuse lastdeath to know spawntime
+                cq->state.lastdeath = totalmillis ? totalmillis : 1; // reuse lastdeath to know spawntime
                 cq->state.gunselect = gunselect >= GUN_FIST && gunselect <= GUN_PISTOL ? gunselect : GUN_FIST;
                 cq->exceeded = 0;
                 if(smode) smode->spawned(cq);
