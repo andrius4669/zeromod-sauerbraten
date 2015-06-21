@@ -121,6 +121,7 @@ struct z_extrainfo
     bool authident;
     z_posqueue postrack;
     bool ghost;
+    uint tele_overflow, jump_overflow;
 
     z_extrainfo(): disc_reason(NULL), wlauth(NULL) {}
     ~z_extrainfo() { delete[] disc_reason; delete[] wlauth; }
@@ -129,6 +130,7 @@ struct z_extrainfo
     {
         maploaded = 0;
         mapsucks = 0;
+        tele_overflow = jump_overflow = 0;
         postrack.reset();
     }
 
@@ -147,6 +149,11 @@ struct z_extrainfo
         lastchat = lastedit = 0;
         authident = false;
         ghost = false;
+    }
+
+    void clearws()
+    {
+        tele_overflow = jump_overflow = 0;
     }
 
     void setdiscreason(const char *s) { delete[] disc_reason; disc_reason = s && *s ? newstring(s) : NULL; }

@@ -1760,6 +1760,7 @@ namespace server
         {
             clientinfo &ci = *clients[i];
             ci.overflow = 0;
+            ci.xi.clearws();
             ci.wsdata = NULL;
             wsmax += ci.position.length();
             if(ci.messages.length()) wsmax += 10 + ci.messages.length();
@@ -3178,6 +3179,7 @@ namespace server
                 int pcn = getint(p), teleport = getint(p), teledest = getint(p);
                 clientinfo *cp = getinfo(pcn);
                 if(cp && pcn != sender && cp->ownernum != sender) cp = NULL;
+                if(ci && ++ci->xi.tele_overflow >= 200) break;
                 if(cp && z_isghost(*cp)) break;
                 if(cp && (!ci->local || demorecord || hasnonlocalclients()) && (cp->state.state==CS_ALIVE || cp->state.state==CS_EDITING))
                 {
@@ -3192,6 +3194,7 @@ namespace server
                 int pcn = getint(p), jumppad = getint(p);
                 clientinfo *cp = getinfo(pcn);
                 if(cp && pcn != sender && cp->ownernum != sender) cp = NULL;
+                if(ci && ++ci->xi.jump_overflow >= 200) break;
                 if(cp && z_isghost(*cp)) break;
                 if(cp && (!ci->local || demorecord || hasnonlocalclients()) && (cp->state.state==CS_ALIVE || cp->state.state==CS_EDITING))
                 {
