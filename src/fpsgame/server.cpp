@@ -3303,13 +3303,13 @@ namespace server
             {
                 int ls = getint(p), gunselect = getint(p);
                 if(!cq || (cq->state.state!=CS_ALIVE && cq->state.state!=CS_DEAD && cq->state.state!=CS_EDITING) || ls!=cq->state.lifesequence || cq->state.lastspawn<0) break;
-                z_maploaded(ci);
                 cq->state.lastspawn = -1;
                 cq->state.state = CS_ALIVE;
                 cq->state.lastdeath = totalmillis ? totalmillis : 1; // reuse lastdeath to know spawntime
                 cq->state.gunselect = gunselect >= GUN_FIST && gunselect <= GUN_PISTOL ? gunselect : GUN_FIST;
                 cq->exceeded = 0;
                 if(smode) smode->spawned(cq);
+                z_maploaded(ci);
                 QUEUE_AI;
                 QUEUE_BUF({
                     putint(cm->messages, N_SPAWN);

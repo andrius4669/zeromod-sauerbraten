@@ -1042,7 +1042,6 @@ void signalhandler(int signum)
             break;
     }
 }
-
 #endif
 
 static bool dedicatedserver = false;
