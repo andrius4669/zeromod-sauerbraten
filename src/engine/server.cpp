@@ -535,6 +535,8 @@ void sendserverinforeply(ucharbuf &p)
 
 #define MAXPINGDATA 32
 
+VAR(serveracceptstdin, 0, 0, 1);
+
 void checkserversockets()        // reply all server info requests
 {
     static ENetSocketSet readset, writeset;
@@ -555,8 +557,18 @@ void checkserversockets()        // reply all server info requests
         maxsock = max(maxsock, lansock);
         ENET_SOCKETSET_ADD(readset, lansock);
     }
+#ifndef WIN32
+    if(serveracceptstdin) ENET_SOCKETSET_ADD(readset, STDIN_FILENO);
+#endif
     if(enet_socketset_select(maxsock, &readset, &writeset, 0) <= 0) return;
 
+#ifndef WIN32
+    if(serveracceptstdin && ENET_SOCKETSET_CHECK(readset, STDIN_FILENO))
+    {
+        char buf[MAXTRANS*2];
+        if(fgets(buf, sizeof(buf), stdin)) execute(buf);
+    }
+#endif
     ENetBuffer buf;
     uchar pong[MAXTRANS];
     loopi(2)
