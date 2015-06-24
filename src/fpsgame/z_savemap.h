@@ -4,15 +4,7 @@
 #include "z_servcmd.h"
 #include "z_loadmap.h"
 
-extern void z_savemap_trigger(int);
-VARF(serversavemap, 0, 0, 1, z_savemap_trigger(0));
-
-void z_savemap_trigger(int type)
-{
-    z_enable_command("savemap", serversavemap!=0);
-}
-Z_TRIGGER(z_savemap_trigger, Z_TRIGGER_STARTUP);
-
+ICOMMAND(serversavemap, "i", (int *i), z_enable_command("savemap", *i!=0));
 
 bool z_savemap(const char *mname, stream *&file = mapdata)
 {
@@ -45,12 +37,11 @@ bool z_savemap(const char *mname, stream *&file = mapdata)
 
 void z_servcmd_savemap(int argc, char **argv, int sender)
 {
-    if(!serversavemap) { sendf(sender, 1, "ris", N_SERVMSG, "this command is disabled"); return; }
     const char *mname = argc >= 2 ? argv[1] : smapname;
     if(!mname || !mname[0]) { sendf(sender, 1, "ris", N_SERVMSG, "please specify map name"); return; }
     if(z_savemap(mname)) sendservmsgf("[map \"%s\" saved]", mname);
     else sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("failed to save map: %s", mname));
 }
-SCOMMANDA(savemap, PRIV_ADMIN, z_servcmd_savemap, 1);
+SCOMMANDA(savemap, ZC_DISABLED | PRIV_ADMIN, z_servcmd_savemap, 1);
 
 #endif // Z_SAVEMAP_H

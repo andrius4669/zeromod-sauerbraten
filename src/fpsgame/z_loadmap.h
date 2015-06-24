@@ -28,4 +28,25 @@ void z_servcmd_loadmap(int argc, char **argv, int sender)
 }
 SCOMMANDA(loadmap, PRIV_MASTER, z_servcmd_loadmap, 1);
 
+void z_servcmd_listmaps(int argc, char **argv, int sender)
+{
+    vector<char *> files;
+    vector<char> line;
+    listfiles(mappath, "ogz", files);
+    sendf(sender, 1, "ris", N_SERVMSG, files.length() ? "server map files:" : "server has no map files");
+    for(int i = 0; i < files.length();)
+    {
+        line.setsize(0);
+        for(int j = 0; i < files.length() && j < 5; i++, j++)
+        {
+            if(j) line.add(' ');
+            line.put(files[i], strlen(files[i]));
+        }
+        line.add(0);
+        sendf(sender, 1, "ris", N_SERVMSG, line.getbuf());
+    }
+    files.deletearrays();
+}
+SCOMMANDA(listmaps, PRIV_MASTER, z_servcmd_listmaps, 1);
+
 #endif // Z_LOADMAP_H
