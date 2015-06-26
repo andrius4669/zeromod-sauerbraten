@@ -2484,6 +2484,7 @@ namespace server
     }
 
     #include "z_scripting.h"
+    #include "z_gbans_override.h"
 
     void serverupdate()
     {
@@ -2518,6 +2519,7 @@ namespace server
             }
         }
         if((gamepaused || !shouldstep) && smode==&racemode) smode->update();
+        if(nextpbanscheck && nextpbanscheck-totalmillis < 0) checkexpiredpbans();
 
         while(bannedips.length() && bannedips[0].expire-totalmillis <= 0) bannedips.remove(0);
         loopv(connects) if(totalmillis-connects[i]->connectmillis>15000) disconnect_client(connects[i]->clientnum, DISC_TIMEOUT);
@@ -2734,7 +2736,6 @@ namespace server
 
     int reserveclients() { return 3; }
 
-    #include "z_gbans_override.h"
 #if 0
     vector<ipmask> gbans;
 

@@ -104,7 +104,38 @@ static void cleargbans(int m = -1)
 VAR(showbanreason, 0, 0, 1);
 
 SVAR(ban_message_banned, "ip/range you are connecting from is banned because: %r");
-// SVAR(ban_message_pbanned, "ip/range you are connecting from (%a) is banned because: %r");
+// SVAR(ban_message_banned, "ip/range you are connecting from (%a) is banned because: %r");
+
+VAR(pbans_autoclean, 0, 0, INT_MAX);    // in seconds
+
+static int nextpbanscheck = 0;
+
+// remove pban from sbans after certain ammount of time
+void checkexpiredpbans()
+{
+    nextpbanscheck = 0;
+    if(!pbans_autoclean) return;
+    time_t currsecs;
+    time(&currsecs);
+    loopvrev(sbans)
+    {
+        time_t timediff = currsecs - sbans[i].dateadded;
+        if(timediff < 0) continue;
+        if(timediff >= pbans_autoclean)
+        {
+            sbans.remove(i);
+            continue;
+        }
+        // if time difference is more than can be expressed in long, clamp
+        if(timediff > LONG_MAX/1000) timediff = LONG_MAX/1000;
+        nextpbanscheck = max(nextpbanscheck, int(min(timediff*1000, time_t(INT_MAX-1))));
+    }
+    if(nextpbanscheck)
+    {
+        nextpbanscheck += totalmillis;
+        if(!nextpbanscheck) nextpbanscheck = 1;
+    }
+}
 
 static bool checkgban(uint ip, clientinfo *ci, bool connect = false)
 {
@@ -199,6 +230,7 @@ static void addgban(int m, const char *name, clientinfo *actor = NULL, const cha
         if(comment && *comment) ban.comment = newstring(comment);
         ban.dateadded = dateadded;
         ban.lasthit = lasthit;
+        checkexpiredpbans();
     }
 
     loopvrev(clients)
@@ -306,6 +338,8 @@ void z_servcmd_unpban(int argc, char **argv, int sender)
     }
 }
 SCOMMANDA(unpban, PRIV_ADMIN, z_servcmd_unpban, 1);
+
+// TODO: limit ban ranges
 
 void z_servcmd_pban(int argc, char **argv, int sender)
 {

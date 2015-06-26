@@ -4,6 +4,13 @@
 typedef void (* z_sleepfunc)(void *);
 typedef void (* z_freevalfunc)(void *);
 
+enum
+{
+    ZS_SLEEPS = 0,
+    ZS_ANNOUNCES,
+    ZS_NUM
+};
+
 struct z_sleepstruct
 {
     int delay, millis;
@@ -15,7 +22,7 @@ struct z_sleepstruct
     z_sleepstruct() {}
     ~z_sleepstruct() { if(freeval) freeval(val); }
 };
-vector<z_sleepstruct> z_sleeps, z_announces;
+vector<z_sleepstruct> z_sleeps[ZS_NUM];
 
 static void z_addsleep(vector<z_sleepstruct> &sleeps, int offset, int delay, bool reload, z_sleepfunc func, void *val, z_freevalfunc freeval)
 {
@@ -71,8 +78,7 @@ static void z_checksleep(vector<z_sleepstruct> &sleeps)
 
 void z_checksleep()
 {
-    z_checksleep(z_sleeps);
-    z_checksleep(z_announces);
+    loopi(sizeof(z_sleeps)/sizeof(z_sleeps[0])) z_checksleep(z_sleeps[i]);
 }
 
 static void z_sleepcmd_announce(void *str)
@@ -84,13 +90,13 @@ static void z_freestring(void *str) { delete[] (char *)str; }
 
 void s_announce(int *offset, int *delay, char *message)
 {
-    z_addsleep(z_announces, *offset, *delay, true, z_sleepcmd_announce, newstring(message), z_freestring);
+    z_addsleep(z_sleeps[ZS_ANNOUNCES], *offset, *delay, true, z_sleepcmd_announce, newstring(message), z_freestring);
 }
 COMMAND(s_announce, "iis");
 
 void s_clearannounces()
 {
-    z_clearsleep(z_announces);
+    z_clearsleep(z_sleeps[ZS_ANNOUNCES]);
 }
 COMMAND(s_clearannounces, "");
 
@@ -101,19 +107,19 @@ static void z_sleepcmd_cubescript(void *cmd)
 
 void s_sleep(int *offset, int *delay, char *script)
 {
-    z_addsleep(z_sleeps, *offset, *delay, false, z_sleepcmd_cubescript, newstring(script), z_freestring);
+    z_addsleep(z_sleeps[ZS_SLEEPS], *offset, *delay, false, z_sleepcmd_cubescript, newstring(script), z_freestring);
 }
 COMMAND(s_sleep, "iis");
 
 void s_sleep_r(int *offset, int *delay, char *script)
 {
-    z_addsleep(z_sleeps, *offset, *delay, true, z_sleepcmd_cubescript, newstring(script), z_freestring);
+    z_addsleep(z_sleeps[ZS_SLEEPS], *offset, *delay, true, z_sleepcmd_cubescript, newstring(script), z_freestring);
 }
 COMMAND(s_sleep_r, "iis");
 
 void s_clearsleep()
 {
-    z_clearsleep(z_sleeps);
+    z_clearsleep(z_sleeps[ZS_SLEEPS]);
 }
 COMMAND(s_clearsleep, "");
 
