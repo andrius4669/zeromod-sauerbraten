@@ -291,7 +291,7 @@ struct raceservmode: servmode
                     // don't increase player's racetime
                     racemillis = race_winners[j].racemillis;
                 }
-            if(!racemillis) racemillis = gamemillis - ci->state.lastdeath;      /* lastdeath is reused for spawntime */
+            if(!racemillis) racemillis = totalmillis - ci->state.lastdeath;      /* lastdeath is reused for spawntime */
             race_winners[avaiable_place].cn = ci->clientnum;
             race_winners[avaiable_place].racemillis = racemillis;
             race_winners[avaiable_place].lifesequence = ci->state.lifesequence;
