@@ -46,7 +46,7 @@ struct gbaninfo
         char *start = buf;
         union { uchar b[sizeof(enet_uint32)]; enet_uint32 i; } ipconv, maskconv;
         ipconv.i = ENET_HOST_TO_NET_32(first);
-        maskconv.i = ~ENET_HOST_TO_NET_32(first ^ last);
+        maskconv.i = ENET_HOST_TO_NET_32(~(first ^ last));
         int lastdigit = -1;
         loopi(4) if(maskconv.b[i])
         {
@@ -142,7 +142,9 @@ static bool checkgban(uint ip, clientinfo *ci, bool connect = false)
 {
     uint hip = ENET_NET_TO_HOST_32(ip);
     gbaninfo *p;
+
     if((p = pbans.find(hip)) && p->check(hip)) return true;
+
     loopv(sbans) if(sbans[i].check(ip))
     {
         time(&sbans[i].lasthit);
@@ -161,11 +163,13 @@ static bool checkgban(uint ip, clientinfo *ci, bool connect = false)
         }
         return true;
     }
+
     loopv(gbans)
     {
         const char *ident, *wlauth, *banmsg;
         int mode;
         if(!getmasterbaninfo(i, ident, mode, wlauth, banmsg)) continue;
+        if(mode == 0 && !ident) continue;   // do not perform lookup at all
         if((p = gbans[i].find(hip)) && p->check(hip))
         {
             if(ident && !ci->xi.geoip.network) ci->xi.geoip.network = newstring(ident); // gban used to identify network
@@ -195,45 +199,12 @@ static bool checkgban(uint ip, clientinfo *ci, bool connect = false)
             return true;
         }
     }
+
     return false;
 }
 
-static void addgban(int m, const char *name, clientinfo *actor = NULL, const char *comment = NULL, time_t dateadded = 0, time_t lasthit = 0)
+static void recheckgbans(clientinfo *actor = NULL)
 {
-    if(!dateadded)
-    {
-        gbaninfo ban, *old;
-        ban.parse(name);
-        if(m >= 0)
-        {
-            while(gbans.length() <= m) gbans.add();
-            if(!gbans[m].add(ban, &old))
-            {
-                string buf;
-                old->print(buf);
-                logoutf("WARNING: addgban[%d]: %s conflicts with existing %s", m, name, buf);
-            }
-        }
-        else
-        {
-            if(!pbans.add(ban, &old))
-            {
-                string buf;
-                old->print(buf);
-                logoutf("WARNING: pban: %s conflicts with existing %s", name, buf);
-            }
-        }
-    }
-    else
-    {
-        pbaninfo &ban = sbans.add();
-        ban.parse(name);
-        if(comment && *comment) ban.comment = newstring(comment);
-        ban.dateadded = dateadded;
-        ban.lasthit = lasthit;
-        checkexpiredpbans();
-    }
-
     loopvrev(clients)
     {
         clientinfo *ci = clients[i];
@@ -243,17 +214,61 @@ static void addgban(int m, const char *name, clientinfo *actor = NULL, const cha
     }
 }
 
+static void addgban(int m, const char *name)
+{
+    gbaninfo ban, *old;
+    ban.parse(name);
+    if(m >= 0)
+    {
+        while(gbans.length() <= m) gbans.add();
+        if(!gbans[m].add(ban, &old))
+        {
+            string buf;
+            old->print(buf);
+            logoutf("WARNING: gban[%d]: %s conflicts with existing %s", m, name, buf);
+        }
+    }
+    else
+    {
+        if(!pbans.add(ban, &old))
+        {
+            string buf;
+            old->print(buf);
+            logoutf("WARNING: pban: %s conflicts with existing %s", name, buf);
+        }
+    }
+
+    recheckgbans();
+}
+
+static void addpban(const char *name, const char *comment, time_t dateadded, time_t lasthit)
+{
+    pbaninfo &ban = sbans.add();
+    ban.parse(name);
+    if(comment && *comment) ban.comment = newstring(comment);
+    ban.dateadded = dateadded;
+    ban.lasthit = lasthit;
+
+    checkexpiredpbans();
+
+    recheckgbans();
+}
+
 void pban(char *name, char *dateadded, char *comment, char *lasthit)
 {
-    unsigned long long ta, lh;
+    time_t ta, lh;
     char *end;
+
     end = NULL;
-    ta = strtoull(dateadded, &end, 10);
+    ta = (time_t)strtoull(dateadded, &end, 10);
     if(!end || *end) ta = 0;
+
     end = NULL;
-    lh = strtoull(lasthit, &end, 10);
+    lh = (time_t)strtoull(lasthit, &end, 10);
     if(!end || *end) lh = 0;
-    addgban(-1, name, NULL, comment, (time_t)ta, (time_t)lh);
+
+    if(!ta) addgban(-1, name);
+    else addpban(name, comment, ta, lh);
 }
 COMMAND(pban, "ssss");
 
@@ -341,7 +356,7 @@ void z_servcmd_unpban(int argc, char **argv, int sender)
 }
 SCOMMANDA(unpban, PRIV_ADMIN, z_servcmd_unpban, 1);
 
-// TODO: limit ban ranges
+VAR(pbans_minrange, 0, 0, 32);
 
 void z_servcmd_pban(int argc, char **argv, int sender)
 {
@@ -356,38 +371,59 @@ void z_servcmd_pban(int argc, char **argv, int sender)
     if(range)
     {
         end = NULL;
-        r = clamp((int)strtol(range, &end, 10), 0, 32);
-        if(!end || *end) r = 32;    /* failed to read int or string doesn't end after integer */
+        r = (int)clamp(strtol(range, &end, 10), 0, 32);
+        if(end <= range || *end) r = 32;    /* failed to read int or string doesn't end after integer */
     }
     else r = 32;
 
-    pbaninfo &b = sbans.add();
-    b.mask = ENET_HOST_TO_NET_32(0xFFffFFff << (32 - r));
-    b.ip = getclientip(cn) & b.mask;
-    if(argc > 2) b.comment = newstring(argv[2]);
-    time(&b.dateadded);
-    b.lasthit = 0;
+    if(r < pbans_minrange)
+    {
+        sendf(sender, 1, "ris", N_SERVMSG, "pban range is too big");
+        return;
+    }
+
+    pbaninfo &ban = sbans.add();
+    ban.mask = ENET_HOST_TO_NET_32(0xFFffFFff << (32 - r));
+    ban.ip = getclientip(cn) & ban.mask;
+    if(argc > 2) ban.comment = newstring(argv[2]);
+    time(&ban.dateadded);
+    ban.lasthit = 0;
 
     string buf;
-    b.print(buf);
-    sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("adding pban for %s", buf));
+    ban.print(buf);
+    sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("added pban for %s", buf));
 
-    clientinfo *actor = getinfo(sender);
-    loopvrev(clients)
-    {
-        ci = clients[i];
-        if(ci->state.aitype != AI_NONE || ci->local || ci->privilege >= PRIV_ADMIN) continue;
-        if((ci->privilege > actor->privilege && !actor->local) || ci->clientnum == actor->clientnum) continue;
-        if(checkgban(getclientip(ci->clientnum), ci)) disconnect_client(ci->clientnum, DISC_IPBAN);
-    }
+    checkexpiredpbans();
+
+    recheckgbans(getinfo(sender));
 }
 SCOMMANDA(pban, PRIV_ADMIN, z_servcmd_pban, 2);
 
 void z_servcmd_pbanip(int argc, char **argv, int sender)
 {
-    if(argc < 2) { sendf(sender, 1, "ris", N_SERVMSG, "please specify ip address"); return; }
-    sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("adding pban for %s", argv[1]));
-    addgban(-1, argv[1], getinfo(sender), argc > 2 ? argv[2] : NULL, time(NULL), 0);
+    if(argc <= 1) { sendf(sender, 1, "ris", N_SERVMSG, "please specify ip address"); return; }
+
+    pbaninfo &ban = sbans.add();
+    ban.parse(argv[1]);
+
+    if(pbans_minrange && ((0xFFffFFff << (32 - pbans_minrange)) & ~ENET_NET_TO_HOST_32(ban.mask)))
+    {
+        sendf(sender, 1, "ris", N_SERVMSG, "pban range is too big");
+        sbans.drop();
+        return;
+    }
+
+    if(argc > 2) ban.comment = newstring(argv[2]);
+    time(&ban.dateadded);
+    ban.lasthit = 0;
+
+    string buf;
+    ban.print(buf);
+    sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("added pban for %s", buf));
+
+    checkexpiredpbans();
+
+    recheckgbans(getinfo(sender));
 }
 SCOMMANDA(pbanip, PRIV_ADMIN, z_servcmd_pbanip, 2);
 
