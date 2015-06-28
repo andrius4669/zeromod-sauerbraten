@@ -6,6 +6,27 @@
 #include "z_geoipstate.h"
 #include "z_geoip.h"
 
+static bool checkgeoipban(clientinfo *ci)
+{
+    geoipstate &gs = ci->xi.geoip;
+    if(geoip_ban_anonymous && gs.anonymous) return !geoip_ban_mode;
+    loopv(z_geoipbans)
+    {
+        const char *str;
+        switch(z_geoipbans[i].type)
+        {
+            case GIB_COUNTRY: default: str = gs.country; break;
+            case GIB_CONTINENT: str = gs.continent; break;
+        }
+        if(!strcasestr(str, z_geoipbans[i].key))
+        {
+            if(z_geoipbans[i].message && !geoip_ban_mode) ci->xi.setdiscreason(z_geoipbans[i].message);
+            return !geoip_ban_mode;
+        }
+    }
+    return !!geoip_ban_mode;
+}
+
 static void z_geoip_print(vector<char> &buf, clientinfo *ci, bool admin)
 {
     const char *comp[] =

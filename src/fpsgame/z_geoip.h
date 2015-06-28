@@ -58,6 +58,7 @@ VAR(geoip_show_continent, 0, 0, 2);
 VAR(geoip_skip_duplicates, 0, 1, 2);
 VAR(geoip_country_use_db, 0, 2, 2);
 VAR(geoip_fix_country, 0, 1, 1);
+VAR(geoip_ban_mode, 0, 0, 1);   // 0 - blacklist, 1 - whitelist
 VAR(geoip_ban_anonymous, 0, 0, 1);
 
 static const struct
@@ -78,6 +79,28 @@ static const struct
     // autoconfigured lan
     { 0xA9FE0000, 0xFFFF0000, "Local Area Network" }    // 169.254.0.0/16
 };
+
+enum { GIB_COUNTRY = 0, GIB_CONTINENT };
+
+struct z_geoipban
+{
+    int type;
+    char *key;
+    char *message;
+    ~z_geoipban() { delete[] key; delete[] message; }
+};
+vector<z_geoipban> z_geoipbans;
+
+void z_geoip_addban(int type, const char *key, const char *message)
+{
+    z_geoipban &ban = z_geoipbans.add();
+    ban.type = type;
+    ban.key = newstring(key);
+    ban.message = message[0] ? newstring(message) : NULL;
+}
+ICOMMAND(geoip_clearbans, "", (), z_geoipbans.shrink(0));
+ICOMMAND(geoip_ban_country, "ss", (char *country, char *message), z_geoip_addban(GIB_COUNTRY, country, message));
+ICOMMAND(geoip_ban_continent, "ss", (char *continent, char *message), z_geoip_addban(GIB_CONTINENT, continent, message));
 
 static void z_init_geoip()
 {

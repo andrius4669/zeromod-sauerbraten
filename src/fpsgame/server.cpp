@@ -2690,6 +2690,7 @@ namespace server
     }
 
     #include "z_geoip.h"
+    #include "z_geoipserver.h"
 
     int clientconnect(int n, uint ip)
     {
@@ -2780,7 +2781,7 @@ namespace server
         if(numclients(-1, false, true)>=maxclients) return DISC_MAXCLIENTS;
         if(z_checkban(ip, ci)) return DISC_IPBAN;
         if(checkgban(ip, ci, true)) return DISC_IPBAN;
-        if(geoip_ban_anonymous && ci->xi.geoip.anonymous) return DISC_IPBAN;
+        if(checkgeoipban(ci)) return DISC_IPBAN;
         if(mastermode>=MM_PRIVATE && allowedips.find(ip)<0) return DISC_PRIVATE;
         return DISC_NONE;
     }
@@ -2963,8 +2964,6 @@ namespace server
             }
         }
     }
-
-    #include "z_geoipserver.h"
 
     void connected(clientinfo *ci)
     {
