@@ -9,7 +9,7 @@
 static bool checkgeoipban(clientinfo *ci)
 {
     geoipstate &gs = ci->xi.geoip;
-    if(geoip_ban_anonymous && gs.anonymous) return !geoip_ban_mode;
+    if(geoip_ban_anonymous && gs.anonymous) return true;
     loopv(z_geoipbans)
     {
         const char *str;
