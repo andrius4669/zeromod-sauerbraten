@@ -175,7 +175,7 @@ void z_servcmd_listbans(int argc, char **argv, int sender)
 }
 SCOMMANDA(listbans, PRIV_MASTER, z_servcmd_listbans, 1);
 
-int z_readbantime(char *str)
+static int z_readbantime(char *str)
 {
     char *end = str;
     int i, s = 0;
@@ -351,6 +351,23 @@ void z_servcmd_unban(int argc, char **argv, int sender)
     }
 }
 SCOMMANDA(unban, PRIV_MASTER, z_servcmd_unban, 1);
-SCOMMANDAH(delban, PRIV_MASTER, z_servcmd_unban, 1);
+
+void z_servcmd_unbanlast(int argc, char **argv, int sender)
+{
+    if(bannedips.empty()) { sendf(sender, 1, "ris", N_SERVMSG, "banlist is empty"); return; }
+    int last = -1, lastelapsed;
+    loopvrev(bannedips)
+    {
+        int elapsed = totalmillis - bannedips[i].time;
+        if(last < 0 || elapsed < lastelapsed)
+        {
+            last = i;
+            lastelapsed = elapsed;
+        }
+    }
+    bannedips.remove(last);
+    sendf(sender, 1, "ris", N_SERVMSG, "last ban removed");
+}
+SCOMMANDA(unbanlast, PRIV_MASTER, z_servcmd_unbanlast, 1);
 
 #endif // Z_BANS_H
