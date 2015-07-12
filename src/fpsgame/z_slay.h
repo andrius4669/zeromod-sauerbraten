@@ -27,8 +27,8 @@ void z_servcmd_slay(int argc, char **argv, int sender)
         sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("\fs\f3%s\fr %s", val ? "slaying" : "unslaying", colorname(clients[i])));
     }
 }
-SCOMMANDAH(slay, PRIV_ADMIN, z_servcmd_slay, 1);
-SCOMMANDAH(unslay, PRIV_ADMIN, z_servcmd_slay, 1);
+SCOMMANDAH(slay, ZC_DISABLED | PRIV_ADMIN, z_servcmd_slay, 1);
+SCOMMANDAH(unslay, ZC_DISABLED | PRIV_ADMIN, z_servcmd_slay, 1);
 
 void z_servcmd_kill(int argc, char **argv, int sender)
 {
@@ -44,6 +44,6 @@ void z_servcmd_kill(int argc, char **argv, int sender)
     if(ci) suicide(ci);
     else loopv(clients) if(clients[i]->state.aitype==AI_NONE && !clients[i]->local && !clients[i]->spy) suicide(clients[i]);
 }
-SCOMMANDAH(kill, PRIV_AUTH, z_servcmd_kill, 1);
+SCOMMANDAH(kill, ZC_DISABLED | PRIV_AUTH, z_servcmd_kill, 1);
 
 #endif // Z_SLAY_H

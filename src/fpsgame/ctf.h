@@ -357,6 +357,7 @@ struct ctfclientmode : clientmode
         if(m_hold || m_protect == (f.team==team))
         {
             loopvj(flags) if(flags[j].owner==ci->clientnum) return;
+            if(!m_protect && (!f.droptime || m_hold)) ci->state.stolen++;
             ownflag(i, ci->clientnum, lastmillis);
             sendf(-1, 1, "ri4", N_TAKEFLAG, ci->clientnum, i, ++f.version);
         }
@@ -366,6 +367,7 @@ struct ctfclientmode : clientmode
         }
         else if(f.droptime)
         {
+            ci->state.returned++;
             returnflag(i);
             sendf(-1, 1, "ri4", N_RETURNFLAG, ci->clientnum, i, ++f.version);
         }
@@ -400,6 +402,15 @@ struct ctfclientmode : clientmode
                 {
                     spawnflag(i);
                     sendf(-1, 1, "ri6", N_RESETFLAG, i, ++f.version, f.spawnindex, 0, 0);
+                }
+            }
+            if(m_protect && f.owner>=0)
+            {
+                int t = gamemillis/1000 - (gamemillis-curtime)/1000;
+                if(t > 0)
+                {
+                    clientinfo *ci = getinfo(f.owner);
+                    if(ci) ci->state.returned += t;
                 }
             }
         }

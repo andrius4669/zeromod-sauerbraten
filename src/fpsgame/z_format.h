@@ -30,8 +30,8 @@ int z_format(char *dest, size_t maxlen, const char *fmt, const z_formattemplate 
                     len = snprintf(dest, mlen+1, ct->type, ct->ptr);
                     if(len > mlen) len = mlen;
                     if(len > 0) dest += len;
-                    continue;
                 }
+                continue;
             }
         }
         *dest++ = c;

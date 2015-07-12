@@ -21,8 +21,7 @@ struct z_multikillstrstruct { int val; char *str; };
 vector<z_multikillstrstruct> z_multikillstrings;
 ICOMMAND(announcekills_multikillstrings, "is2V", (tagval *args, int numargs),
 {
-    loopv(z_multikillstrings) delete[] z_multikillstrings[i].str;
-    z_multikillstrings.setsize(0);
+    while(!z_multikillstrings.empty()) delete[] z_multikillstrings.pop().str;
     for(int i = 0; i + 1 < numargs; i += 2)
     {
         z_multikillstrstruct &v = z_multikillstrings.add();
@@ -40,8 +39,7 @@ SVAR(announcekills_style_rampage, "\f2%A is %s");
 vector<z_multikillstrstruct> z_rampagestrings;
 ICOMMAND(announcekills_rampagestrings, "is2V", (tagval *args, int numargs),
 {
-    loopv(z_rampagestrings) delete[] z_rampagestrings[i].str;
-    z_rampagestrings.setsize(0);
+    while(!z_rampagestrings.empty()) delete[] z_rampagestrings.pop().str;
     for(int i = 0; i + 1 < numargs; i += 2)
     {
         z_multikillstrstruct &v = z_rampagestrings.add();
@@ -92,9 +90,10 @@ void z_announcekill(clientinfo *actor, clientinfo *victim, int fragval)
         actor->state.rampage++;
         if(actor->state.rampage > actor->state.maxstreak) actor->state.maxstreak = actor->state.rampage;
     }
-    if(m_edit || !announcekills || (!announcekills_rampage && !announcekills_multikill)) return;
+    if(!announcekills || (!announcekills_rampage && !announcekills_multikill && !announcekills_stopped) || m_edit) return;
     bool showactor = fragval > 0 && actor->state.state==CS_ALIVE;
-    loopv(clients)
+
+    loopv(clients)  // message may be different for each client
     {
         clientinfo *ci = clients[i];
         const char *name = NULL, *nname = NULL;

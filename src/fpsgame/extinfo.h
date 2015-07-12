@@ -46,7 +46,7 @@
         sendstring(ci->name, q);
         sendstring(ci->team, q);
         putint(q, ci->state.frags);
-        putint(q, ci->state.flags);
+        putint(q, (m_ctf || m_collect) ? ci->state.flags : 0);
         putint(q, ci->state.deaths);
         putint(q, ci->state.teamkills);
         putint(q, ci->state.damage*100/max(ci->state.shotdamage,1));

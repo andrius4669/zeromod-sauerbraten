@@ -912,6 +912,20 @@ ICOMMAND(insidebases, "", (),
         }
     }
 
+    void z_addclientsstats(baseinfo &b, int ticks)
+    {
+        loopv(clients)
+        {
+            clientinfo *ci = clients[i];
+            if(ci->state.state==CS_ALIVE && ci->team[0] && insidebase(b, ci->state.o))
+            {
+                if(!b.owner[0]) ci->state.returned += ticks;  // time inside neutral base
+                else if(strcmp(b.owner, ci->team)) ci->state.stolen += ticks; // time inside enemy base
+                else ci->state.flags += ticks;  // time inside own team base
+            }
+        }
+    }
+
     void update()
     {
         if(gamemillis>=gamelimit) return;
@@ -945,6 +959,7 @@ ICOMMAND(insidebases, "", (),
                     if(ammo && b.addammo(ammo)) sendbaseinfo(i);
                 }
             }
+            z_addclientsstats(b, t);
         }
     }
 

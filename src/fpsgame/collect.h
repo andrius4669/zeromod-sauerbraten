@@ -327,6 +327,7 @@ struct collectclientmode : clientmode
             if(stolen < TOKENLIMIT)
             {
                 b.laststeal = gamemillis;
+                ci->state.stolen++;
                 int score = addscore(b.team, -1);
                 token &t = droptoken(b.o, rnd(360), team, lastmillis, -1 - basenum);
                 sendf(-1, 1, "ri9i3", N_STEALTOKENS, ci->clientnum, team, basenum, b.team, score, int(t.o.x*DMF), int(t.o.y*DMF), int(t.o.z*DMF), t.id, t.yaw, -1);
@@ -341,6 +342,7 @@ struct collectclientmode : clientmode
         if(!t) return;
         int team = collectteambase(ci->team);
         if(t->team != team && (t->team > 0 || -t->team == team) && ci->state.tokens < TOKENLIMIT) ci->state.tokens++;
+        if(t->team == team || (t->team <= 0 && -t->team != team)) ci->state.returned++;
         sendf(-1, 1, "ri4", N_TAKETOKEN, ci->clientnum, id, ci->state.tokens);  
     }
 

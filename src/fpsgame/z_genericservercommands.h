@@ -49,69 +49,6 @@ void z_servcmd_info(int argc, char **argv, int sender)
 SCOMMANDAH(info, PRIV_NONE, z_servcmd_info, 1);
 SCOMMANDA(uptime, PRIV_NONE, z_servcmd_info, 1);
 
-SVAR(stats_style_normal, "\f6stats: \f7%C: \f2frags: \f7%f\f2, deaths: \f7%l\f2, suicides: \f7%s\f2, accuracy(%%): \f7%a\f2, kpd: \f7%p");
-SVAR(stats_style_teamplay, "\f6stats: \f7%C: \f2frags: \f7%f\f2, deaths: \f7%l\f2, suicides: \f7%s\f2, teamkills: \f7%t\f2, accuracy(%%): \f7%a\f2, kpd: \f7%p");
-SVAR(stats_style_ctf, "\f6stats: \f7%C: \f2frags: \f7%f\f2, flags: \f7%g\f2, deaths: \f7%l\f2, suicides: \f7%s\f2, teamkills: \f7%t\f2, accuracy(%%): \f7%a\f2, kpd: \f7%p");
-
-static inline void z_putstats(char (&msg)[MAXSTRLEN], clientinfo *ci)
-{
-    gamestate &gs = ci->state;
-    int p = gs.frags*1000/max(gs.deaths, 1);
-    string ps;
-    formatstring(ps)("%d.%03d", p/1000, p%1000);
-    z_formattemplate ft[] =
-    {
-        { 'C', "%s", colorname(ci) },
-        { 'f', "%d", (const void *)(long)gs.frags },
-        { 'g', "%d", (const void *)(long)gs.flags },
-        { 'p', "%s", ps },
-        { 'a', "%d", (const void *)(long)(gs.damage*100/max(gs.shotdamage,1)) },
-        { 'd', "%d", (const void *)(long)gs.damage },
-        { 't', "%d", (const void *)(long)gs.teamkills },
-        { 'l', "%d", (const void *)(long)gs.deaths },
-        { 's', "%d", (const void *)(long)gs.suicides },
-        { 'w', "%d", (const void *)(long)(gs.shotdamage-gs.damage) },
-        { 'r', "%d", (const void *)(long)gs.maxstreak },
-        { 0, 0, 0 }
-    };
-    if(m_ctf) z_format(msg, sizeof(msg), stats_style_ctf, ft);
-    else if(m_teammode) z_format(msg, sizeof(msg), stats_style_teamplay, ft);
-    else z_format(msg, sizeof(msg), stats_style_normal, ft);
-}
-
-void z_servcmd_stats(int argc, char **argv, int sender)
-{
-    int cn, i;
-    clientinfo *ci = NULL, *senderci = getinfo(sender);
-    vector<clientinfo *> cis;
-    for(i = 1; i < argc; i++)
-    {
-        if(!z_parseclient_verify(argv[i], cn, true, true, senderci->local || senderci->privilege>=PRIV_ADMIN))
-        {
-            z_servcmd_unknownclient(argv[i], sender);
-            return;
-        }
-        if(cn < 0)
-        {
-            cis.shrink(0);
-            loopvj(clients) if(!clients[j]->spy || !senderci || senderci->local || senderci->privilege>=PRIV_ADMIN) cis.add(clients[j]);
-            break;
-        }
-        ci = getinfo(cn);
-        if(cis.find(ci)<0) cis.add(ci);
-    }
-
-    if(cis.empty() && senderci) cis.add(senderci);
-
-    string buf;
-    for(i = 0; i < cis.length(); i++)
-    {
-        z_putstats(buf, cis[i]);
-        if(*buf) sendf(sender, 1, "ris", N_SERVMSG, buf);
-    }
-}
-SCOMMAND(stats, PRIV_NONE, z_servcmd_stats);
-
 VAR(servcmd_pm_comfirmation, 0, 1, 1);
 void z_servcmd_pm(int argc, char **argv, int sender)
 {
