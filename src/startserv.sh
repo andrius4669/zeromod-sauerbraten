@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # server starting and irc bot script
 # currently limitted to one server
 
@@ -10,6 +10,7 @@ server='irc.andrius4669.org'
 srport='6667'
 iinick='zmdbt'
 iiname="zeromod"
+# needs to be lowercase; TODO: make it lowercase ourselves
 chans="#test"
 servfifo="./servfifo"
 servbin="./sauer_server"
