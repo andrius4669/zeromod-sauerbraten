@@ -919,6 +919,8 @@ namespace server
         virtual int getteamscore(const char *team) { return 0; }
         virtual void getteamscores(vector<teamscore> &scores) {}
         virtual bool extinfoteam(const char *team, ucharbuf &p) { return false; }
+
+        virtual bool autoteam() { return false; }
     };
 
     #define SERVMODE 1
@@ -1029,9 +1031,9 @@ namespace server
     }
 
     #include "z_persistteams.h"
+
     void autoteam()
     {
-        if(z_autoteam()) return;
         static const char * const teamnames[2] = {"good", "evil"};
         vector<clientinfo *> team[2];
         float teamrank[2] = {0, 0};
@@ -2087,13 +2089,14 @@ namespace server
         sendf(-1, 1, "risii", N_MAPCHANGE, smapname, gamemode, 1);
 
         clearteaminfo();
-        if(m_teammode) autoteam();
 
         if(m_capture) smode = &capturemode;
         else if(m_ctf) smode = &ctfmode;
         else if(m_collect) smode = &collectmode;
         else if(m_edit && z_racemode && smapname[0]) smode = &racemode;
         else smode = NULL;
+
+        if(m_teammode && !(smode && smode->autoteam()) && !z_autoteam()) autoteam();
 
         if(m_timed && smapname[0]) sendf(-1, 1, "ri2", N_TIMEUP, gamemillis < gamelimit && !interm ? max((gamelimit - gamemillis)/1000, 1) : 0);
         loopv(clients)
@@ -3933,5 +3936,6 @@ namespace server
     #include "aiman.h"
 
     #include "z_genericservercommands.h"
+    #include "z_talkbot.h"
 }
 

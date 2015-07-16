@@ -1,6 +1,8 @@
 #ifndef Z_SCRIPTING_H
 #define Z_SCRIPTING_H
 
+#include "z_servcmd.h"
+
 typedef void (* z_sleepfunc)(void *);
 typedef void (* z_freevalfunc)(void *);
 
@@ -122,5 +124,38 @@ void s_clearsleep()
     z_clearsleep(z_sleeps[ZS_SLEEPS]);
 }
 COMMAND(s_clearsleep, "");
+
+void s_write(char *c, char *msg)
+{
+    int cn;
+    if(!z_parseclient_verify(c, cn, true, false, true)) return;
+    sendf(cn, 1, "ris", N_SERVMSG, msg);
+}
+COMMAND(s_write, "ss");
+
+ICOMMAND(s_wall, "C", (char *s), sendservmsg(s));
+
+void s_kick(char *c, char *reason)
+{
+    int cn;
+    if(!z_parseclient_verify(c, cn, true, false, true) || getinfo(cn)->local) return;
+    /* todo: print msg with reason */
+    disconnect_client(cn, DISC_KICK);
+}
+COMMAND(s_kick, "ss");
+
+void s_kickban(char *c, char *t, char *reason)
+{
+    int cn;
+    if(!z_parseclient_verify(c, cn, true, false, true) || getinfo(cn)->local) return;
+    uint ip = getclientip(cn);
+    if(!ip) return;
+
+    int time = t[0] ? z_readbantime(t) : 4*60*60000;
+    if(time <= 0) return;
+
+    addban(ip, time, BAN_KICK, reason);
+    kickclients(ip);
+}
 
 #endif // Z_SCRIPTING_H

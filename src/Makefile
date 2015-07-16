@@ -535,6 +535,7 @@ fpsgame/server.o: fpsgame/z_maploaded.h fpsgame/z_patchmap.h
 fpsgame/server.o: fpsgame/z_antiflood.h fpsgame/extinfo.h fpsgame/aiman.h
 fpsgame/server.o: fpsgame/z_genericservercommands.h fpsgame/z_savemap.h
 fpsgame/server.o: fpsgame/z_spy.h fpsgame/z_mapsucks.h fpsgame/z_slay.h
+fpsgame/server.o: fpsgame/z_talkbot.h
 fpsgame/waypoint.o: fpsgame/game.h shared/cube.h shared/tools.h shared/geom.h
 fpsgame/waypoint.o: shared/ents.h shared/command.h shared/iengine.h
 fpsgame/waypoint.o: shared/igame.h fpsgame/ai.h
@@ -602,6 +603,7 @@ fpsgame/server-standalone.o: fpsgame/extinfo.h fpsgame/aiman.h
 fpsgame/server-standalone.o: fpsgame/z_genericservercommands.h
 fpsgame/server-standalone.o: fpsgame/z_savemap.h fpsgame/z_spy.h
 fpsgame/server-standalone.o: fpsgame/z_mapsucks.h fpsgame/z_slay.h
+fpsgame/server-standalone.o: fpsgame/z_talkbot.h
 engine/master-standalone.o: shared/cube.h shared/tools.h shared/geom.h
 engine/master-standalone.o: shared/ents.h shared/command.h shared/iengine.h
 engine/master-standalone.o: shared/igame.h

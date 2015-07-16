@@ -566,7 +566,17 @@ void checkserversockets()        // reply all server info requests
     if(serveracceptstdin && ENET_SOCKETSET_CHECK(readset, STDIN_FILENO))
     {
         char buf[MAXTRANS*2];
-        if(fgets(buf, sizeof(buf), stdin)) execute(buf);
+        if(fgets(buf, sizeof(buf), stdin))
+        {
+            size_t len = decodeutf8((uchar *)buf, sizeof(buf)-1, (uchar *)buf, strlen(buf));
+            buf[len] = '\0';
+            const char *ret = executestr(buf);
+            if(ret)
+            {
+                logoutf("result: %s", ret);
+                delete[] ret;
+            }
+        }
     }
 #endif
     ENetBuffer buf;
