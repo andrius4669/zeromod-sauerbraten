@@ -1163,6 +1163,7 @@ void initserver(bool listen, bool dedicated)
     }
     
     if(mss.empty()) addms();
+    setvbuf(stdin, NULL, _IONBF, 0);
 
     execfile("server-init.cfg", false);
 

@@ -157,5 +157,21 @@ void s_kickban(char *c, char *t, char *reason)
     addban(ip, time, BAN_KICK, reason);
     kickclients(ip);
 }
+COMMAND(s_kickban, "sss");
+
+void s_listclients(int *bots)
+{
+    string cn;
+    vector<char> buf;
+    loopv(clients) if(clients[i]->state.aitype==AI_NONE || (*bots > 0 && clients[i]->state.state!=CS_SPECTATOR))
+    {
+        if(buf.length()) buf.add(' ');
+        formatstring(cn)("%d", clients[i]->clientnum);
+        buf.put(cn, strlen(cn));
+    }
+    buf.add('\0');
+    result(buf.getbuf());
+}
+COMMAND(s_listclients, "i");
 
 #endif // Z_SCRIPTING_H
