@@ -50,6 +50,20 @@ static void z_geoip_print(vector<char> &buf, clientinfo *ci, bool admin)
     }
 }
 
+VAR(geoip_log, 0, 0, 2);
+
+void z_geoip_log(clientinfo *ci)
+{
+    if(!geoip_log) return;
+    vector<char> buf;
+    z_geoip_print(buf, ci, geoip_log > 1);
+    if(buf.length())
+    {
+        buf.add('\0');
+        logoutf("geoip: client %d connected from %s", ci->clientnum, buf.getbuf());
+    }
+}
+
 SVAR(geoip_style_normal, "%C connected from %L");
 SVAR(geoip_style_normal_query, "%C is connected from %L");
 SVAR(geoip_style_local, "%C connected as local client");

@@ -28,7 +28,7 @@ my $irc_quit_message = '';
 # irc command characters
 my @irccmdchars = ();
 # talkbot number. -1 = don't use talkbot
-my $usetalkbot = 9000 + 1;
+my $usetalkbot = -1;
 # talkbot per-channel overrides. channel names must be lowerchar
 my %talkbotchans = ();
 # whether to show join/part/quit/kick/nick (irc channel consistency) messages
@@ -668,6 +668,12 @@ sub process_stdin {
 				irc_bcast_msg($m);
 			}
 		}
+		elsif($type eq 'geoip') {
+			if($msg =~ /^client ([0-9]+) connected from (.+)$/) {
+				my ($cn, $location) = ($1, $2);
+				$sauer_ips[$cn] = $location;
+			}
+		}
 		elsif($type eq 'disconnect') {
 			if($msg =~ /^([^ ]+) \(([0-9]+)\) left$/) {
 				# re-record name
@@ -716,7 +722,27 @@ sub process_stdin {
 				}
 			}
 		}
-#		elsif($type eq 'master') {
+		elsif($type eq 'master') {
+			if($msg =~ /^([^ ]+) \(([0-9]+)\) ([^ ]+) ([^ ]+)/) {
+				my ($name, $cn, $action, $priv) = ($1, $2, $3, $4);
+				if($msg =~ /^[^ ]+ \([0-9]+\) claimed [^ ]+ as '([^ ]*)' \[([^\]]+)\] \((.+)\)$/) {
+					my ($aname, $adesc, $method) = ($1, $2, $3);
+					irc_bcast_msg("\cC02master:\cO \cB$name\cO \cC06($cn)\cO claimed \cC03$priv\cO as '\cC06$aname\cO' [\cC03$adesc\cO]");
+				}
+				elsif($msg =~ /^[^ ]+ \([0-9]+\) claimed [^ ]+ as '([^ ]*)' \((.+)\)$/) {
+					my ($aname, $method) = ($1, $2);
+					irc_bcast_msg("\cC02master:\cO \cB$name\cO \cC06($cn)\cO claimed \cC03$priv\cO as '\cC06$aname\cO'");
+				}
+				elsif($msg =~ /^[^ ]+ \([0-9]+\) [^ ]+ [^ ]+ \((.+)\)$/) {
+					my $method = $1;
+					irc_bcast_msg("\cC02master:\cO \cB$name\cO \cC06($cn)\cO claimed \cC03$priv\cO ($method)");
+				}
+				else {
+					irc_bcast_msg("\cC02master:\cO \cB$name\cO \cC06($cn)\cO claimed \cC03$priv\cO");
+				}
+			}
+		}
+#		elsif($type eq 'kick') {
 #			
 #		}
 		#else { print ">>>not processing dis message, nigger\n"; }

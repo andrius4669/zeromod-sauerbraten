@@ -3038,6 +3038,7 @@ namespace server
                     getstring(authdesc, p, sizeof(authdesc));
                     getstring(authname, p, sizeof(authname));
                     int disc = allowconnect(ci, password);
+                    z_geoip_log(ci);
                     if(disc)
                     {
                         if(ci->xi.disc_reason) sendf(ci->clientnum, 1, "ris", N_SERVMSG, ci->xi.disc_reason);
