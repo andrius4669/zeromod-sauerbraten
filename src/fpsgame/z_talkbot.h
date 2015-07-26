@@ -201,7 +201,7 @@ ICOMMAND(s_talkbot_say, "is", (int *bn, char *msg),
 ICOMMAND(s_talkbot_fakesay, "iss", (int *bn, char *fakename, char *msg),
 {
     filtertext(msg, msg, true, true, strlen(msg));
-    filtertext(fakename, fakename, false, false, strlen(msg));
+    filtertext(fakename, fakename, false, false, strlen(fakename));
     talkbot_fakesay(*bn, fakename, msg);
 });
 
@@ -214,7 +214,7 @@ ICOMMAND(s_talkbot_sayteam, "iis", (int *bn, int *tn, char *msg),
 ICOMMAND(s_talkbot_fakesayteam, "isis", (int *bn, char *fakename, int *tn, char *msg),
 {
     filtertext(msg, msg, true, true, strlen(msg));
-    filtertext(fakename, fakename, false, false, strlen(msg));
+    filtertext(fakename, fakename, false, false, strlen(fakename));
     talkbot_fakesayteam(*bn, fakename, *tn, msg);
 });
 

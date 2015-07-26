@@ -93,7 +93,7 @@ sub irc_send {
 	my ($len, $sent) = (length($_[0]), 0);
 	while($sent < $len) {
 		my $slen = send($s, substr($_[0], $sent, $len-$sent), 0);
-		return undef if $slen < 0;
+		return undef if !defined($slen) or ($slen < 0);
 		$sent += $slen;
 	}
 	return $len;
@@ -664,7 +664,7 @@ sub process_stdin {
 				$sauer_names[$cn] = $name;
 				# print message about join
 				my $m = "\cC03join:\cO \cB$name\cO \cC06($cn)\cO";
-				$m .= " [$sauer_ips[$cn]]" if defined($sauer_ips[$cn]) and (length($sauer_ips[$cn]) > 0);
+				$m .= " [\cC02,99$sauer_ips[$cn]\cO]" if defined($sauer_ips[$cn]) and (length($sauer_ips[$cn]) > 0);
 				irc_bcast_msg($m);
 			}
 		}
@@ -679,31 +679,22 @@ sub process_stdin {
 				# re-record name
 				$sauer_names[$2] = $1;
 			}
-			elsif($msg =~ /^client ([0-9]+) \(([0-9A-Za-z.:-]+)\) disconnected/) {
-				my ($cn, $ip) = ($1, $2);
+			elsif($msg =~ /^client ([0-9]+) \(([0-9A-Za-z.:-]+)\) disconnected(.*)$/) {
+				my ($cn, $ip, $rest) = ($1, $2, $3);
 				my $name = $sauer_names[$cn];
-				$sauer_ips[$cn] = $ip unless defined($sauer_ips[$cn]);
+				$ip = $sauer_ips[$cn] if defined($sauer_ips[$cn]);
 				if(defined($name)) {
-					if($msg =~ /^client [0-9]+ \([0-9A-Za-z.:-]+\) disconnected$/) {
-						# disconnected on own will, or due to enet error
-						my $m = "\cC14leave:\cO \cB$name\cO \cC06($cn)\cO";
-						$m .= " [$sauer_ips[$cn]]";
-						irc_bcast_msg($m);
+					my ($action, $reason);
+					if($rest =~ /^ by server(.*)$/) {
+						$action = "disconnect";
+						$rest = $1;
+						if($rest =~ /^ because: (.*)$/) { $reason = $1; }
 					}
-					elsif($msg =~ /^client [0-9]+ \([0-9A-Za-z.:-]+\) disconnected by server$/) {
-						# by server, reason unspecified
-						my $m = "\cC14disconnect:\cO \cB$name\cO \cC06($cn)\cO";
-						$m .= " [$sauer_ips[$cn]]" if defined $sauer_ips[$cn] and length($sauer_ips[$cn]) > 0;
-						irc_bcast_msg($m);
-					}
-					elsif($msg =~ /^client [0-9]+ \([0-9A-Za-z.:-]+\) disconnected by server because: (.*)$/) {
-						my $reason = $1;
-						# by server, with reason
-						my $m = "\cC14disconnect:\cO \cB$name\cO \cC06($cn)\cO";
-						$m .= " [$sauer_ips[$cn]]" if defined $sauer_ips[$cn] and length($sauer_ips[$cn]) > 0;
-						$m .= " because: $reason";
-						irc_bcast_msg($m);
-					}
+					else { $action = "leave"; }
+					my $m = "\cC14$action:\cO \cB$name\cO \cC06($cn)\cO";
+					$m .= " [\cC02,99$ip\cO]" if defined($ip) and length($ip) > 0;
+					$m .= " because: $reason" if defined($reason);
+					irc_bcast_msg($m);
 				}
 				undef $sauer_ips[$cn];
 				undef $sauer_names[$cn];
@@ -723,28 +714,60 @@ sub process_stdin {
 			}
 		}
 		elsif($type eq 'master') {
-			if($msg =~ /^([^ ]+) \(([0-9]+)\) ([^ ]+) ([^ ]+)/) {
-				my ($name, $cn, $action, $priv) = ($1, $2, $3, $4);
-				if($msg =~ /^[^ ]+ \([0-9]+\) claimed [^ ]+ as '([^ ]*)' \[([^\]]+)\] \((.+)\)$/) {
-					my ($aname, $adesc, $method) = ($1, $2, $3);
-					irc_bcast_msg("\cC02master:\cO \cB$name\cO \cC06($cn)\cO claimed \cC03$priv\cO as '\cC06$aname\cO' [\cC03$adesc\cO]");
+			if($msg =~ /^([^ ]+) \(([0-9]+)\) ([^ ]+) ([^ ]+)(.*)$/) {
+				my ($name, $cn, $action, $priv, $rest) = ($1, $2, $3, $4, $5);
+				my ($aname, $adesc, $method);
+				if($rest =~ /^ as '([^ ]*)' (.*)$/) {
+					$aname = $1;
+					$rest = $2;
+					if($rest =~ /^\[([^\]]+)\] (.*)$/) {
+						$adesc = $1;
+						$rest = $2;
+					}
+					if($rest =~ /^\((.+)\)$/) { $method = $1; }
 				}
-				elsif($msg =~ /^[^ ]+ \([0-9]+\) claimed [^ ]+ as '([^ ]*)' \((.+)\)$/) {
-					my ($aname, $method) = ($1, $2);
-					irc_bcast_msg("\cC02master:\cO \cB$name\cO \cC06($cn)\cO claimed \cC03$priv\cO as '\cC06$aname\cO'");
+				elsif($rest =~ /^ \((.+)\)$/) { $method = $1; }
+				my $m = "\cC02master:\cO \cB$name\cO \cC06($cn)\cO $action \cC03$priv\cO";
+				$m .= " as '\cC06,99$aname\cO'" if defined($aname);
+				$m .= " [\cC03,99$adesc\cO]" if defined($adesc);
+				$m .= " (\cC02,99$method\cO)" if defined($method) and !defined($aname); # when on auth method is obvious
+				irc_bcast_msg($m);
+			}
+		}
+		elsif($type eq 'kick') {
+			if($msg =~ /^([^ ]+) \(([0-9]+)\) (.*)$/) {
+				my ($name, $cn, $rest) = ($1, $2, $3);
+				my ($aname, $adesc, $apriv);
+				if($rest =~ /^as '([^ ]*)' (.*)$/) {
+					$aname = $1;
+					$rest = $2;
+					if($rest =~ /^\[([^\]]*)\] (.*)$/) {
+						$adesc = $1;
+						$rest = $2;
+					}
+					if($rest =~ /^\(([^\)]*)\) (.*)$/) {
+						$apriv = $1;
+						$rest = $2;
+					}
 				}
-				elsif($msg =~ /^[^ ]+ \([0-9]+\) [^ ]+ [^ ]+ \((.+)\)$/) {
-					my $method = $1;
-					irc_bcast_msg("\cC02master:\cO \cB$name\cO \cC06($cn)\cO claimed \cC03$priv\cO ($method)");
-				}
-				else {
-					irc_bcast_msg("\cC02master:\cO \cB$name\cO \cC06($cn)\cO claimed \cC03$priv\cO");
+				if($rest =~ /^kicked ([^ ]+) \(([0-9]+)\)(.*)$/) {
+					my ($vname, $vcn) = ($1, $2);
+					$rest = $3;
+					my $reason;
+					if($rest =~ /^ because: (.*)$/) {
+						$reason = $1;
+					}
+					# send all info to irc
+					my $m = "\cC04kick:\cO \cB$name\cO \cC06($cn)\cO ";
+					$m .= "as '\cC06,99$aname\cO' " if defined($aname);
+					$m .= "[\cC06,99$adesc\cO] " if defined($adesc);
+					$m .= "(\cC03$apriv\cO) " if defined($apriv);
+					$m .= "kicked \cB$vname\cO \cC06($vcn)\cO";
+					$m .= " because: $reason" if defined($reason);
+					irc_bcast_msg($m);
 				}
 			}
 		}
-#		elsif($type eq 'kick') {
-#			
-#		}
 		#else { print ">>>not processing dis message, nigger\n"; }
 	}
 }
