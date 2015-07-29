@@ -12,7 +12,7 @@ my $server = 'irc.andrius4669.org';
 # irc server port
 my $serverport = 6667;
 # autojoin channels
-my @channels = ('#test654');
+my @channels = ('#test');
 # nicks which shall be ignored
 my %ignored_nicks = ();
 # nick for our bot
@@ -37,6 +37,8 @@ my $showjoinpart = 1;
 my %joinpartchans = ();
 # show sauer ips? this is overriden by geoip message by server anyway. only relevant if server don't give geoip info to bot
 my $showsauerips = 1;
+# irc channel privileges treated as op
+my @ircopprivs = ('@', '%', '&');
 
 warn "ohayo!\n";
 
@@ -99,6 +101,36 @@ sub irc_send {
 	return $len;
 }
 
+# filters out color and control characters from irc messages
+sub filter_irc_text {
+	my $s = '';
+	my $c;
+	my $i = 0;
+	my $l = length($_[0]);
+	while($i < $l) {
+		$c = substr($_[0], $i++, 1);
+		# printable ascii characters
+		if(($c ge chr(32)) and ($c lt chr(127))) { $s .= $c; }
+		# utf-8 characters
+		elsif($c ge chr(128)) { $s .= $c; }
+		# irc color message with params
+		elsif($c eq "\cC") {
+			# this if chain is silly, but it works and is obvious, so whatever
+			if(($i < $l) and (($c = substr($_[0], $i, 1)) ge '0') and ($c le '9')) {
+				$i++;
+				if(($i < $l) and (($c = substr($_[0], $i, 1)) ge '0') and ($c le '9')) {
+					$i++;
+					if((($i + 1) < $l) and (substr($_[0], $i, 1) eq ',') and (($c = substr($_[0], $i + 1, 1)) ge '0') and ($c le '9')) {
+						$i += 2;
+						if(($i < $l) and (($c = substr($_[0], $i, 1)) ge '0') and ($c le '9')) { $i++; }
+					}
+				}
+			}
+		}
+	}
+	return $s;
+}
+
 sub is_irc_command {
 	my $chr = $_[0];
 	for (@irccmdchars) {
@@ -107,31 +139,40 @@ sub is_irc_command {
 	return undef;
 }
 
-sub irc_unrecognised_command {
-	my ($nick, $msg) = @_;
-	irc_send("NOTICE $nick :unrecognised command: $msg\r\n");
+sub ircuser_has_op {
+	my ($chan, $nick) = @_;
+	my $priv;
+	if(defined($chan) and defined($joinedchans{$chan}) and defined($joinedchans{$chan}->{$nick})) {
+		$priv = $joinedchans{$chan}->{$nick};
+	}
+	if(defined($priv)) {
+		for (@ircopprivs) {
+			return 1 if $priv eq $_;
+		}
+	}
+	return 0;
 }
 
-sub do_ircuser_command {
+sub do_ircuser_command;
+
+sub process_ircuser_command {
 	my ($chan, $nick, $msg) = @_;
-	my $unknowncmd;
-	# command without args
-	if($msg =~ /^([A-Za-z][A-Za-z0-9]+)$/) {
-		my $cmd = lc $1;
-		# todo: parse
-		$unknowncmd = 1;
+	my ($cmd, $args);
+	my $idx;
+	if(($idx = index($msg, ' ')) >= 0) {
+		$cmd = lc substr($msg, 0, $idx);
+		$args = substr($msg, $idx+1);
 	}
-	# with args
-	elsif($msg =~ /^([A-Za-z][A-Za-z0-9]+) (.+)$/) {
-		my ($cmd, $args) = (lc($1), $2);
-		# todo: parse
-		$unknowncmd = 1;
-	}
-	else {
-		$unknowncmd = 1;
-	}
-	if($unknowncmd && !defined($chan)) {
-		irc_unrecognised_command($nick, $msg);
+	else { $cmd = lc $msg; }
+
+	my $res = do_ircuser_command($chan, $nick, $cmd, $args);
+	if(defined($res)) {
+		if(!defined($chan)) {
+			irc_send("NOTICE $nick :$res\r\n");
+		}
+		else {
+			irc_send("NOTICE $chan :$nick: $res\r\n");
+		}
 	}
 }
 
@@ -147,11 +188,13 @@ sub trigger_irc_kick;      # we got kicked off from channel
 sub trigger_irc_quit;      # we got disconnected from irc network
 
 sub handle_term {
-	if(defined($s)) {
-		irc_send("QUIT :$irc_quit_message\r\n") if $registered;
-		shutdown $s, 1;
+	if(!$quitting) {
+		if(defined($s)) {
+			irc_send("QUIT :$irc_quit_message\r\n") if $registered;
+			shutdown $s, 1;
+		}
+		$quitting = 1;
 	}
-	$quitting = 1;
 }
 $SIG{HUP} = "IGNORE";
 $SIG{TERM} = \&handle_term;
@@ -323,8 +366,8 @@ sub do_irc_command {
 				my $chan = lc $cmd_args[0];
 				if(defined($joinedchans{$chan}) and ($cmd_nick ne $myircnick)) {
 					my $ch = substr($cmd_args[1], 0, 1);
-					if(is_irc_command $ch) {
-						do_ircuser_command $cmd_args[0], $cmd_nick, substr($cmd_args[1], 1);
+					if(defined(is_irc_command($ch))) {
+						process_ircuser_command $cmd_args[0], $cmd_nick, substr($cmd_args[1], 1);
 					}
 					else {
 						notify_irc_chat $cmd_args[0], $cmd_nick, $cmd_args[1];
@@ -334,12 +377,12 @@ sub do_irc_command {
 			# it's private message for me
 			elsif(($cmd_nick ne $myircnick) and ($cmd_args[0] eq $myircnick)) {
 				my $ch = substr($cmd_args[1], 0, 1);
-				if(is_irc_command $ch) {
+				if(defined(is_irc_command($ch))) {
 					# channel, nick, command
-					do_ircuser_command undef, $cmd_nick, substr($cmd_args[1], 1);
+					process_ircuser_command undef, $cmd_nick, substr($cmd_args[1], 1);
 				}
 				else {
-					do_ircuser_command undef, $cmd_nick, $cmd_args[1];
+					process_ircuser_command undef, $cmd_nick, $cmd_args[1];
 				}
 			}
 		}
@@ -546,7 +589,7 @@ sub notify_irc_nick {
 
 sub notify_irc_chat {
 	my ($chan, $nick, $msg) = @_;
-	# big TODO: filter out color codes
+	$msg = filter_irc_text($msg);
 	my $tb = sauer_use_talkbot $chan;
 	if($tb < 0) {
 		my $m = "\f5[irc] ";
@@ -604,6 +647,7 @@ sub trigger_irc_quit {
 	}
 }
 
+my $sauer_numclients;
 my @sauer_ips = ();
 my @sauer_names = ();
 
@@ -621,6 +665,35 @@ sub irc_bcast_msg {
 
 sub irc_bcast_notice {
 	irc_notice join(',', keys %joinedchans), $_[0];
+}
+
+my $ircuser_msg_privfail = 'you are not privileged enough for this command';
+
+sub do_ircuser_command {
+	my ($chan, $nick, $cmd, $args) = @_;
+	if($cmd eq 'wall' or $cmd eq 'announce') {
+		if(ircuser_has_op($chan, $nick)) {
+			sauer_wall(filter_irc_text($args));
+		}
+		else { return($ircuser_msg_privfail); }
+	}
+	elsif($cmd eq 'kick' or $cmd eq 'k') {
+		if(ircuser_has_op($chan, $nick)) {
+			if(($args =~ /^([0-9]+)(.*)$/) and $1 >= 0 and $1 < 256) {
+				my ($cn, $rest) = ($1, filter_irc_text($2));
+				if($rest =~ /^ +([^ ].*)$/) {
+					print "s_kick $cn " . sauer_esc_str($1) . ";\n";
+				}
+				else {
+					print "s_kick $cn;\n";
+				}
+			}
+			else { return "usage: kick cn"; }
+		}
+		else { return($ircuser_msg_privfail); }
+	}
+	else { return("unknown command: $cmd"); }
+	return undef;
 }
 
 sub process_stdin {
@@ -682,6 +755,7 @@ sub process_stdin {
 			elsif($msg =~ /^client ([0-9]+) \(([0-9A-Za-z.:-]+)\) disconnected(.*)$/) {
 				my ($cn, $ip, $rest) = ($1, $2, $3);
 				my $name = $sauer_names[$cn];
+				undef $ip if !$showsauerips;
 				$ip = $sauer_ips[$cn] if defined($sauer_ips[$cn]);
 				if(defined($name)) {
 					my ($action, $reason);

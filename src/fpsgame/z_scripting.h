@@ -125,39 +125,38 @@ void s_clearsleep()
 }
 COMMAND(s_clearsleep, "");
 
-void s_write(char *c, char *msg)
+void s_write(int *cn, char *msg)
 {
-    int cn;
-    if(!z_parseclient_verify(c, cn, true, false, true)) return;
-    sendf(cn, 1, "ris", N_SERVMSG, msg);
+    if(!getclientinfo(*cn)) return;
+    sendf(*cn, 1, "ris", N_SERVMSG, msg);
 }
-COMMAND(s_write, "ss");
+COMMAND(s_write, "is");
 
 ICOMMAND(s_wall, "C", (char *s), sendservmsg(s));
 
-void s_kick(char *c, char *reason)
+void s_kick(int *cn, char *reason)
 {
-    int cn;
-    if(!z_parseclient_verify(c, cn, true, false, true) || getinfo(cn)->local) return;
-    /* todo: print msg with reason */
-    disconnect_client(cn, DISC_KICK);
+    clientinfo *ci = getinfo(*cn);
+    if(!ci || !ci->connected || ci->local || ci->privilege >= PRIV_ADMIN) return;
+    z_showkick("", NULL, ci, reason);
+    disconnect_client(*cn, DISC_KICK);
 }
-COMMAND(s_kick, "ss");
+COMMAND(s_kick, "is");
 
-void s_kickban(char *c, char *t, char *reason)
+void s_kickban(int *cn, char *t, char *reason)
 {
-    int cn;
-    if(!z_parseclient_verify(c, cn, true, false, true) || getinfo(cn)->local) return;
-    uint ip = getclientip(cn);
+    clientinfo *ci = getinfo(*cn);
+    if(!ci || !ci->connected || ci->local || ci->privilege >= PRIV_ADMIN) return;
+    uint ip = getclientip(*cn);
     if(!ip) return;
 
     int time = t[0] ? z_readbantime(t) : 4*60*60000;
-    if(time <= 0) return;
 
-    addban(ip, time, BAN_KICK, reason);
+    z_showkick("", NULL, ci, reason);
+    if(time > 0) addban(ip, time, BAN_KICK, reason);
     kickclients(ip);
 }
-COMMAND(s_kickban, "sss");
+COMMAND(s_kickban, "iss");
 
 void s_listclients(int *bots)
 {
@@ -172,6 +171,8 @@ void s_listclients(int *bots)
     buf.add('\0');
     result(buf.getbuf());
 }
-COMMAND(s_listclients, "i");
+COMMAND(s_listclients, "b");
+
+ICOMMAND(s_getclientname, "i", (int *cn), { clientinfo *ci = getinfo(*cn); result(ci && ci->connected ? ci->name : ""); });
 
 #endif // Z_SCRIPTING_H

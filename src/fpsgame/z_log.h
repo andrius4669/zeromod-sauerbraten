@@ -42,7 +42,7 @@ static void z_sendmsgpacks(packetbuf &adminpack, packetbuf &normalpack, clientin
     loopv(clients) if(clients[i]->state.aitype==AI_NONE)
     {
         clientinfo *ci = clients[i];
-        if(ci==actor || ci->local || ci->privilege>=PRIV_ADMIN) sendpacket(ci->clientnum, 1, adminpack.packet);
+        if(actor && (ci==actor || ci->local || ci->privilege>=PRIV_ADMIN)) sendpacket(ci->clientnum, 1, adminpack.packet);
         else sendpacket(ci->clientnum, 1, normalpack.packet);
     }
 }
@@ -63,22 +63,27 @@ static inline void z_showkick(const char *kicker, clientinfo *actor, clientinfo 
         { 'r', "%s", reason },
         { 0, NULL, NULL }
     };
-    z_format(kickstr, sizeof(kickstr), reason && *reason ? kick_style_normal_reason : kick_style_normal, ft);
 
-    if(!actor->spy)
+    if(actor)
     {
-        sendservmsg(kickstr);
-        return;
+        z_format(kickstr, sizeof(kickstr), reason && *reason ? kick_style_normal_reason : kick_style_normal, ft);
+        if(!actor->spy)
+        {
+            sendservmsg(kickstr);
+            return;
+        }
     }
 
     packetbuf normalpack(MAXTRANS, ENET_PACKET_FLAG_RELIABLE), spypack(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
 
-    putint(normalpack, N_SERVMSG);
-    sendstring(kickstr, normalpack);
-    normalpack.finalize();
+    if(actor)
+    {
+        putint(normalpack, N_SERVMSG);
+        sendstring(kickstr, normalpack);
+        normalpack.finalize();
+    }
 
     z_format(kickstr, sizeof(kickstr), reason && *reason ? kick_style_spy_reason : kick_style_spy, ft);
-
     putint(spypack, N_SERVMSG);
     sendstring(kickstr, spypack);
     spypack.finalize();
@@ -100,29 +105,34 @@ void z_showban(clientinfo *actor, const char *banstr, const char *victim, int ba
 
     z_formattemplate ft[] =
     {
-        { 'C', "%s", colorname(actor) },
+        { 'C', "%s", actor ? colorname(actor) : "" },
         { 'b', "%s", banstr },
         { 'v', "%s", victim },
         { 't', "%s", timebuf.getbuf() },
         { 'r', "%s", reason },
         { 0, NULL, NULL }
     };
-    z_format(banmsg, sizeof(banmsg), reason && *reason ? bans_style_normal_reason : bans_style_normal, ft);
 
-    if(!actor->spy)
+    if(actor)
     {
-        sendservmsg(banmsg);
-        return;
+        z_format(banmsg, sizeof(banmsg), reason && *reason ? bans_style_normal_reason : bans_style_normal, ft);
+        if(!actor->spy)
+        {
+            sendservmsg(banmsg);
+            return;
+        }
     }
 
     packetbuf normalpack(MAXTRANS, ENET_PACKET_FLAG_RELIABLE), spypack(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
 
-    putint(normalpack, N_SERVMSG);
-    sendstring(banmsg, normalpack);
-    normalpack.finalize();
+    if(actor)
+    {
+        putint(normalpack, N_SERVMSG);
+        sendstring(banmsg, normalpack);
+        normalpack.finalize();
+    }
 
     z_format(banmsg, sizeof(banmsg), reason && *reason ? bans_style_spy_reason : bans_style_spy, ft);
-
     // packetbuf for normal clients without kicker shown (in case kicker is spy, it'd disclose him/her)
     putint(spypack, N_SERVMSG);
     sendstring(banmsg, spypack);
