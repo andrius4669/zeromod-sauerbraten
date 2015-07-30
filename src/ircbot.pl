@@ -39,6 +39,8 @@ my %joinpartchans = ();
 my $showsauerips = 1;
 # irc channel privileges treated as op
 my @ircopprivs = ('@', '%', '&');
+# CTCP VERSION reply
+my $ctcp_version;
 
 warn "ohayo!\n";
 
@@ -176,12 +178,13 @@ sub process_ircuser_command {
 	}
 }
 
-sub notify_irc_join; # someome joined
-sub notify_irc_part; # someone parted
-sub notify_irc_quit; # someone quit
-sub notify_irc_kick; # someone got kicked
-sub notify_irc_nick; # someone changed nick
-sub notify_irc_chat; # someone said something
+sub notify_irc_join;   # someome joined
+sub notify_irc_part;   # someone parted
+sub notify_irc_quit;   # someone quit
+sub notify_irc_kick;   # someone got kicked
+sub notify_irc_nick;   # someone changed nick
+sub notify_irc_chat;   # someone said something
+sub notify_irc_action; # someone said something using CTCP ACTION
 sub trigger_irc_namereply; # we got list of nicks in channel
 sub trigger_irc_part;      # we got parted off from channel
 sub trigger_irc_kick;      # we got kicked off from channel
@@ -203,6 +206,46 @@ $SIG{INT} = \&handle_term;
 sub irc_joinchan {
 	return unless @_ > 0;
 	irc_send "JOIN " . join(',', @_) . "\r\n";
+}
+
+sub process_ctcp {
+	my ($chan, $nick, $ctcp) = @_;
+	my $cmd;
+	my $args;
+	my $idx = index($ctcp, ' ');
+	if($idx >= 0) {
+		$cmd = substr($ctcp, 0, $idx);
+		$args = substr($ctcp, $idx+1);
+	}
+	else { $cmd = $ctcp; }
+
+	if($cmd eq 'CLIENTINFO') {
+		if(!defined($chan)) {
+			my $m = "NOTICE $nick :\cACLIENTINFO";
+			$m .= " CLIENTINFO";
+			$m .= " ACTION";
+			$m .= " PING";
+			$m .= " VERSION" if defined($ctcp_version) and (length($ctcp_version) > 0);
+			$m .= "\cA\r\n";
+			irc_send($m);
+		}
+	}
+	elsif($cmd eq 'ACTION') {
+		if(defined($chan) and !exists($ignored_nicks{$nick})) {
+			notify_irc_action($chan, $nick, $args);
+		}
+	}
+	elsif($cmd eq 'PING') {
+		my $m = "NOTICE $nick :\cAPING";
+		$m .= " $args" if defined($args);
+		$m .= "\cA\r\n";
+		irc_send($m);
+	}
+	elsif($cmd eq 'VERSION') {
+		if(!defined($chan) and defined($ctcp_version) and (length($ctcp_version) > 0)) {
+			irc_send("NOTICE $nick :\cAVERSION $ctcp_version\cA\r\n");
+		}
+	}
 }
 
 sub do_irc_command {
@@ -360,29 +403,40 @@ sub do_irc_command {
 	}
 	elsif($cmd eq 'PRIVMSG') {
 		if(defined($cmd_nick) and !exists($ignored_nicks{$cmd_nick})) {
-			my $chr = substr($cmd_args[0], 0, 1);
+			my ($target, $msg) = @cmd_args;
+			my $ctcp;
+			my $msglen = length($msg);
+			if($msglen > 0 and substr($msg, 0, 1) eq "\cA") {
+				if($msglen > 1 and substr($msg, -1, 1) eq "\cA") { $ctcp = substr($msg, 1, -1); }
+				else { $ctcp = substr($msg, 1); }
+			}
+			my $chr = substr($target, 0, 1);
 			# it's channel message
 			if($chr eq '#' or $chr eq '!' or $chr eq '+' or $chr eq '&') {
-				my $chan = lc $cmd_args[0];
-				if(defined($joinedchans{$chan}) and ($cmd_nick ne $myircnick)) {
-					my $ch = substr($cmd_args[1], 0, 1);
-					if(defined(is_irc_command($ch))) {
-						process_ircuser_command $cmd_args[0], $cmd_nick, substr($cmd_args[1], 1);
-					}
+				my $chan = lc $target;
+				if(($cmd_nick ne $myircnick) and defined($joinedchans{$chan})) {
+					if(defined($ctcp)) { process_ctcp($target, $cmd_nick, $ctcp); }
 					else {
-						notify_irc_chat $cmd_args[0], $cmd_nick, $cmd_args[1];
+						if($msglen > 0 and defined(is_irc_command(substr($msg, 0, 1)))) {
+							process_ircuser_command $target, $cmd_nick, substr($msg, 1);
+						}
+						else {
+							notify_irc_chat $target, $cmd_nick, $msg;
+						}
 					}
 				}
 			}
 			# it's private message for me
-			elsif(($cmd_nick ne $myircnick) and ($cmd_args[0] eq $myircnick)) {
-				my $ch = substr($cmd_args[1], 0, 1);
-				if(defined(is_irc_command($ch))) {
-					# channel, nick, command
-					process_ircuser_command undef, $cmd_nick, substr($cmd_args[1], 1);
-				}
+			elsif(($cmd_nick ne $myircnick) and ($target eq $myircnick)) {
+				if(defined($ctcp)) { process_ctcp(undef, $cmd_nick, $ctcp); }
 				else {
-					process_ircuser_command undef, $cmd_nick, $cmd_args[1];
+					if($msglen > 0 and defined(is_irc_command(substr($msg, 0, 1)))) {
+						# channel, nick, command
+						process_ircuser_command(undef, $cmd_nick, substr($msg, 1));
+					}
+					else {
+						process_ircuser_command(undef, $cmd_nick, $msg);
+					}
 				}
 			}
 		}
@@ -606,6 +660,25 @@ sub notify_irc_chat {
 	}
 }
 
+sub notify_irc_action {
+	my ($chan, $nick, $msg) = @_;
+	$msg = filter_irc_text($msg);
+	my $tb = sauer_use_talkbot $chan;
+	if($tb < 0) {
+		my $m = "\f5[irc] ";
+		$m .= "\f4$chan " if (keys %joinedchans) > 1;
+		$m .= "\f7* $nick \f0$msg";
+		sauer_wall $m;
+	}
+	elsif($tb > 9000) {
+		say_sauer_talkbot($nick, "$nick $msg");
+	}
+	else {
+		my ($enick, $emsg) = (sauer_esc_str($nick), sauer_esc_str($msg));
+		# no better way
+		print "s_talkbot_fakesay \"*\" (concat $enick $emsg);\n";
+	}
+}
 
 sub trigger_irc_namereply {
 	my $chan = $_[0];
