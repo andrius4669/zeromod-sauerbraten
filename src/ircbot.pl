@@ -752,16 +752,40 @@ sub do_ircuser_command {
 	}
 	elsif($cmd eq 'kick' or $cmd eq 'k') {
 		if(ircuser_has_op($chan, $nick)) {
-			if(($args =~ /^([0-9]+)(.*)$/) and $1 >= 0 and $1 < 256) {
+			if($args =~ /^([0-9]+)(.*)$/) {
 				my ($cn, $rest) = ($1, filter_irc_text($2));
-				if($rest =~ /^ +([^ ].*)$/) {
+				if($rest =~ /^ (.+)$/) {
 					print "s_kick $cn " . sauer_esc_str($1) . ";\n";
 				}
 				else {
 					print "s_kick $cn;\n";
 				}
 			}
-			else { return "usage: kick cn"; }
+			else { return "usage: kick cn [reason]"; }
+		}
+		else { return($ircuser_msg_privfail); }
+	}
+	elsif($cmd eq 'kickban' or $cmd eq 'kb') {
+		if(ircuser_has_op($chan, $nick)) {
+			my $usage = 'usage: kickban cn [time [reason]]';
+			if($args =~ /^([0-9]+)(.*)$/) {
+				my ($cn, $rest) = ($1, $2);
+				my ($bantime, $reason);
+				if($rest =~ /^ +([0-9a-z]+)(.*)$/) {
+					($bantime, $rest) = ($1, $2);
+					if($rest =~ /^ (.+)$/) {
+						$reason = sauer_esc_str($1);
+					}
+					elsif(length($rest) > 0) { return $usage; }
+				}
+				elsif(length($rest) > 0) { return $usage; }
+				my $m = "s_kickban $cn";
+				$m .= " $bantime" if defined($bantime);
+				$m .= " $reason" if defined($reason);
+				$m .= ";\n";
+				print $m;
+			}
+			else { return $usage; }
 		}
 		else { return($ircuser_msg_privfail); }
 	}
@@ -770,21 +794,6 @@ sub do_ircuser_command {
 }
 
 sub process_stdin {
-#	if(substr($_[0], 0, 1) eq '/') {
-#		my $cmd = substr($_[0], 1);
-#		if($cmd eq 'list') {
-#			print " * chans and users list:\n";
-#			foreach my $chan (keys %joinedchans) {
-#				print " * $chan";
-#				foreach my $nick (keys %{$joinedchans{$chan}}) {
-#					my $privchr = $joinedchans{$chan}->{$nick};
-#					print " $privchr$nick";
-#				}
-#				print "\n";
-#			}
-#			print " * end of list\n";
-#		}
-#	}
 	if($_[0] =~ /^([a-zA-Z0-9]+): (.+)$/) {
 		my ($type, $msg) = ($1, $2);
 		if($type eq 'chat') {
