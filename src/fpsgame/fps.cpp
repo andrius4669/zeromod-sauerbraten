@@ -578,7 +578,7 @@ namespace game
 
         if(m_sp)
         {
-            defformatstring(scorename)("bestscore_%s", getclientmap());
+            defformatstring(scorename, "bestscore_%s", getclientmap());
             const char *best = getalias(scorename);
             if(*best) conoutf(CON_GAMEINFO, "\f2try to beat your best score so far: %s", best);
         }
@@ -679,8 +679,8 @@ namespace game
         if(dup || prefix[0] || suffix[0])
         {
             cidx = (cidx+1)%3;
-            if(dup) formatstring(cname[cidx])(d->aitype == AI_NONE ? "%s%s \fs\f5(%d)\fr%s" : "%s%s \fs\f5[%d]\fr%s", prefix, name, d->clientnum, suffix);
-            else formatstring(cname[cidx])("%s%s%s", prefix, name, suffix);
+            if(dup) formatstring(cname[cidx], d->aitype == AI_NONE ? "%s%s \fs\f5(%d)\fr%s" : "%s%s \fs\f5[%d]\fr%s", prefix, name, d->clientnum, suffix);
+            else formatstring(cname[cidx], "%s%s%s", prefix, name, suffix);
             return cname[cidx];
         }
         return name;
@@ -698,7 +698,7 @@ namespace game
     {
         if(!teamcolortext || !m_teammode) return sameteam || !alt ? name : alt;
         cidx = (cidx+1)%3;
-        formatstring(cname[cidx])(sameteam ? "\fs\f1%s\fr" : "\fs\f3%s\fr", sameteam || !alt ? name : alt);
+        formatstring(cname[cidx], sameteam ? "\fs\f1%s\fr" : "\fs\f3%s\fr", sameteam || !alt ? name : alt);
         return cname[cidx];
     }    
     
@@ -730,13 +730,15 @@ namespace game
     void drawicon(int icon, float x, float y, float sz)
     {
         settexture("packages/hud/items.png");
-        glBegin(GL_TRIANGLE_STRIP);
         float tsz = 0.25f, tx = tsz*(icon%4), ty = tsz*(icon/4);
-        glTexCoord2f(tx,     ty);     glVertex2f(x,    y);
-        glTexCoord2f(tx+tsz, ty);     glVertex2f(x+sz, y);
-        glTexCoord2f(tx,     ty+tsz); glVertex2f(x,    y+sz);
-        glTexCoord2f(tx+tsz, ty+tsz); glVertex2f(x+sz, y+sz);
-        glEnd();
+        gle::defvertex(2);
+        gle::deftexcoord0();
+        gle::begin(GL_TRIANGLE_STRIP);
+        gle::attribf(x,    y);    gle::attribf(tx,     ty);
+        gle::attribf(x+sz, y);    gle::attribf(tx+tsz, ty);
+        gle::attribf(x,    y+sz); gle::attribf(tx,     ty+tsz);
+        gle::attribf(x+sz, y+sz); gle::attribf(tx+tsz, ty+tsz);
+        gle::end();
     }
 
     float abovegameplayhud(int w, int h)
@@ -775,8 +777,9 @@ namespace game
     void drawammohud(fpsent *d)
     {
         float x = HICON_X + 2*HICON_STEP, y = HICON_Y, sz = HICON_SIZE;
-        glPushMatrix();
-        glScalef(1/3.2f, 1/3.2f, 1);
+        pushhudmatrix();
+        hudmatrix.scale(1/3.2f, 1/3.2f, 1);
+        flushhudmatrix();
         float xup = (x+sz)*3.2f, yup = y*3.2f + 0.1f*sz;
         loopi(3)
         {
@@ -809,13 +812,14 @@ namespace game
             xcycle -= sz;
             drawicon(HICON_FIST+gun, xcycle, ycycle, sz);
         }
-        glPopMatrix();
+        pophudmatrix();
     }
 
     void drawhudicons(fpsent *d)
     {
-        glPushMatrix();
-        glScalef(2, 2, 1);
+        pushhudmatrix();
+        hudmatrix.scale(2, 2, 1);
+        flushhudmatrix();
 
         draw_textf("%d", (HICON_X + HICON_SIZE + HICON_SPACE)/2, HICON_TEXTY/2, d->state==CS_DEAD ? 0 : d->health);
         if(d->state!=CS_DEAD)
@@ -824,7 +828,7 @@ namespace game
             draw_textf("%d", (HICON_X + 2*HICON_STEP + HICON_SIZE + HICON_SPACE)/2, HICON_TEXTY/2, d->ammo[d->gunselect]);
         }
 
-        glPopMatrix();
+        pophudmatrix();
 
         drawicon(HICON_HEALTH, HICON_X, HICON_Y);
         if(d->state!=CS_DEAD)
@@ -838,8 +842,9 @@ namespace game
 
     void gameplayhud(int w, int h)
     {
-        glPushMatrix();
-        glScalef(h/1800.0f, h/1800.0f, 1);
+        pushhudmatrix();
+        hudmatrix.scale(h/1800.0f, h/1800.0f, 1);
+        flushhudmatrix();
 
         if(player1->state==CS_SPECTATOR)
         {
@@ -870,7 +875,7 @@ namespace game
             if(cmode) cmode->drawhud(d, w, h);
         }
 
-        glPopMatrix();
+        pophudmatrix();
     }
 
     int clipconsole(int w, int h)
@@ -892,7 +897,7 @@ namespace game
         }
     }
 
-    int selectcrosshair(float &r, float &g, float &b)
+    int selectcrosshair(vec &color)
     {
         fpsent *d = hudplayer();
         if(d->state==CS_SPECTATOR || d->state==CS_DEAD) return -1;
@@ -907,16 +912,16 @@ namespace game
             if(o && o->type==ENT_PLAYER && isteam(((fpsent *)o)->team, d->team))
             {
                 crosshair = 1;
-                r = g = 0;
+                color = vec(0, 0, 1);
             }
         }
 
         if(crosshair!=1 && !editmode && !m_insta)
         {
-            if(d->health<=25) { r = 1.0f; g = b = 0; }
-            else if(d->health<=50) { r = 1.0f; g = 0.5f; b = 0; }
+            if(d->health<=25) color = vec(1, 0, 0);
+            else if(d->health<=50) color = vec(1, 0.5f, 0);
         }
-        if(d->gunwait) { r *= 0.5f; g *= 0.5f; b *= 0.5f; }
+        if(d->gunwait) color.mul(0.5f);
         return crosshair;
     }
 

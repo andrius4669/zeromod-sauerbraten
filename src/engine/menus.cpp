@@ -105,7 +105,7 @@ struct delayedupdate
     }
 };
      
-static hashtable<const char *, menu> guis;
+static hashnameset<menu> guis;
 static vector<menu *> guistack;
 static vector<delayedupdate> updatelater;
 static bool shouldclearmenu = true, clearlater = false;
@@ -288,7 +288,7 @@ void guicolor(int *color)
 {
     if(cgui) 
     {   
-        defformatstring(desc)("0x%06X", *color);
+        defformatstring(desc, "0x%06X", *color);
         cgui->text(desc, *color, NULL);
     }
 }

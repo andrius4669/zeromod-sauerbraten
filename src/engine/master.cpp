@@ -24,7 +24,7 @@ struct userinfo
     void *pubkey;
     char *priv;
 };
-hashtable<char *, userinfo> users;
+hashnameset<userinfo> users;
 
 void adduser(char *name, char *pubkey, char *priv)
 {

@@ -10,11 +10,11 @@ SVAR(awards_style_clientprefix, "\fs\f7");
 SVAR(awards_style_clientsuffix, "\fr");
 
 /* some hardcoded defaults. it would be lot easier to put these in server-init.cfg, with concatword */
-// for backwards compatibility
-SVARF(awards_style_normal, "\f3Awards: \f6Kills: %F \f2(\f6%f\f2) \f6KpD: %P \f2(\f6%p\f2) \f6Acc: %A \f2(\f6%a%%\f2) \f6Damage: %D \f2(\f6%d\f2)",
-{
-    logoutf("WARNING: awards_style_normal is deprecated, please use stats_style");
-});
+static const char awards_style_normal[] = "\f3Awards: "
+                                          "\f6Kills: %F \f2(\f6%f\f2) "
+                                          "\f6KpD: %P \f2(\f6%p\f2) "
+                                          "\f6Acc: %A \f2(\f6%a%%\f2) "
+                                          "\f6Damage: %D \f2(\f6%d\f2)";
 
 static const char awards_style_protect[] =  "\f3Awards: "
                                             "\f6Kills: %F \f2(\f6%f\f2) "
@@ -363,7 +363,7 @@ static inline void z_putstats(char (&msg)[MAXSTRLEN], clientinfo *ci)
 
     int p = gs.frags*1000/max(gs.deaths, 1);
     string ps;
-    formatstring(ps)("%d.%03d", p/1000, p%1000);
+    formatstring(ps, "%d.%03d", p/1000, p%1000);
 
     z_formattemplate ft[] =
     {

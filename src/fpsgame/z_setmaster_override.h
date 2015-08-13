@@ -81,10 +81,10 @@ bool setmaster(clientinfo *ci, bool val, const char *pass = "",
     const bool inv_ = val ? z_isinvpriv(ci, ci->privilege) : z_isinvpriv(ci, opriv);
     if(val && authname)
     {
-        if(authdesc && authdesc[0]) formatstring(msg)("%s claimed %s%s as '\fs\f5%s\fr' [\fs\f0%s\fr]", colorname(ci), inv_ ? "invisible " : "", name, authname, authdesc);
-        else formatstring(msg)("%s claimed %s%s as '\fs\f5%s\fr'", colorname(ci), inv_ ? "invisible " : "", name, authname);
+        if(authdesc && authdesc[0]) formatstring(msg, "%s claimed %s%s as '\fs\f5%s\fr' [\fs\f0%s\fr]", colorname(ci), inv_ ? "invisible " : "", name, authname, authdesc);
+        else formatstring(msg, "%s claimed %s%s as '\fs\f5%s\fr'", colorname(ci), inv_ ? "invisible " : "", name, authname);
     }
-    else formatstring(msg)("%s %s %s%s", colorname(ci), val ? "claimed" : "relinquished", inv_ ? "invisible " : "", name);
+    else formatstring(msg, "%s %s %s%s", colorname(ci), val ? "claimed" : "relinquished", inv_ ? "invisible " : "", name);
 
     z_log_setmaster(ci, val, haspass, authname, authdesc, name, by);
 

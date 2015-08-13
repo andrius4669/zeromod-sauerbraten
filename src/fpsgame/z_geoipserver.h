@@ -264,25 +264,25 @@ void z_servcmd_whois(int argc, char **argv, int sender)
     {
         if(ci->xi.claim.isset())
         {
-            if(*ci->xi.claim.desc) formatstring(msg)("%s is claimed %s%s as '\fs\f5%s\fr' [\fs\f0%s\fr]",
+            if(*ci->xi.claim.desc) formatstring(msg, "%s is claimed %s%s as '\fs\f5%s\fr' [\fs\f0%s\fr]",
                                                      colorname(ci), z_isinvpriv(ci, ci->privilege) ? "invisible " : "",
                                                      privname(ci->privilege), ci->xi.claim.name, ci->xi.claim.desc);
-            else formatstring(msg)("%s is claimed %s%s as '\fs\f5%s\fr'",
+            else formatstring(msg, "%s is claimed %s%s as '\fs\f5%s\fr'",
                                    colorname(ci), z_isinvpriv(ci, ci->privilege) ? "invisible " : "",
                                    privname(ci->privilege), ci->xi.claim.name);
         }
         else
         {
-            formatstring(msg)("%s is claimed %s%s", colorname(ci), z_isinvpriv(ci, ci->privilege) ? "invisible " : "", privname(ci->privilege));
+            formatstring(msg, "%s is claimed %s%s", colorname(ci), z_isinvpriv(ci, ci->privilege) ? "invisible " : "", privname(ci->privilege));
         }
         sendf(sender, 1, "ris", N_SERVMSG, msg);
     }
 
     if(isadmin && ci->xi.ident.isset())
     {
-        if(*ci->xi.ident.desc) formatstring(msg)("%s is identified as '\fs\f5%s\fr' [\fs\f0%s\fr]", colorname(ci),
+        if(*ci->xi.ident.desc) formatstring(msg, "%s is identified as '\fs\f5%s\fr' [\fs\f0%s\fr]", colorname(ci),
                                                  ci->xi.ident.name, ci->xi.ident.desc);
-        else formatstring(msg)("%s is identified as '\fs\f5%s\fr'", colorname(ci), ci->xi.ident.name);
+        else formatstring(msg, "%s is identified as '\fs\f5%s\fr'", colorname(ci), ci->xi.ident.name);
         sendf(sender, 1, "ris", N_SERVMSG, msg);
     }
 

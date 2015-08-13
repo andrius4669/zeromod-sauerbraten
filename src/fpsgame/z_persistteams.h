@@ -44,9 +44,9 @@ bool z_autoteam()
         loopv(clients) if(clients[i]->team[0])
         {
             clientinfo *ci = clients[i];
-            if(m_ctf && !sttnames[0]) copystring(sttnames[0], ci->team);
+            if(m_ctf && !sttnames[0]) copystring(sttnames[0], ci->team, MAXTEAMLEN+1);
             int standard = z_checkstandardteam(ci->team, m_ctf ? sttnames : teamnames);
-            if(m_ctf && !standard && !sttnames[1]) { copystring(sttnames[1], ci->team); standard = 2; }
+            if(m_ctf && !standard && !sttnames[1]) { copystring(sttnames[1], ci->team, MAXTEAMLEN+1); standard = 2; }
             if(m_ctf && !standard) continue;
             float rank = ci->state.state!=CS_SPECTATOR ? ci->state.effectiveness/max(ci->state.timeplayed, 1) : -1;
             if(smode && smode->hidefrags()) rank = 1;

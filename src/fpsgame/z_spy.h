@@ -20,7 +20,7 @@ void z_setspy(clientinfo *ci, bool val)
         // send out fake relinquish messages (for other clients only)
         if(ci->privilege >= PRIV_MASTER)
         {
-            defformatstring(msg)("%s %s %s", colorname(ci), "relinquished", privname(ci->privilege));
+            defformatstring(msg, "%s %s %s", colorname(ci), "relinquished", privname(ci->privilege));
             for(int i = demorecord ? -1 : 0; i < clients.length(); i++)
             {
                 clientinfo *cx = i >= 0 ? clients[i] : NULL;
@@ -85,7 +85,7 @@ void z_setspy(clientinfo *ci, bool val)
         // privilege evaluation message
         if(ci->privilege >= PRIV_MASTER)
         {
-            defformatstring(msg)("%s %s %s", colorname(ci), "claimed", privname(ci->privilege));
+            defformatstring(msg, "%s %s %s", colorname(ci), "claimed", privname(ci->privilege));
             for(int i = demorecord ? -1 : 0; i < clients.length(); i++)
             {
                 clientinfo *cx = i >= 0 ? clients[i] : NULL;

@@ -201,19 +201,19 @@ static void z_discmsg_print(char (&s)[MAXSTRLEN], clientinfo *ci, int n, const c
 {
     if(ci) {
         if(hideip) {
-            if(msg) formatstring(s)("client %s disconnected because: %s", colorname(ci), msg);
-            else formatstring(s)("client %s disconnected", colorname(ci));
+            if(msg) formatstring(s, "client %s disconnected because: %s", colorname(ci), msg);
+            else formatstring(s, "client %s disconnected", colorname(ci));
         } else {
-            if(msg) formatstring(s)("client %s (%s) disconnected because: %s", colorname(ci), getclienthostname(n), msg);
-            else formatstring(s)("client %s (%s) disconnected", colorname(ci), getclienthostname(n));
+            if(msg) formatstring(s, "client %s (%s) disconnected because: %s", colorname(ci), getclienthostname(n), msg);
+            else formatstring(s, "client %s (%s) disconnected", colorname(ci), getclienthostname(n));
         }
     } else {
         if(hideip) {
-            if(msg) formatstring(s)("client disconnected because: %s", msg);
+            if(msg) formatstring(s, "client disconnected because: %s", msg);
             else copystring(s, "client disconnected");
         } else {
-            if(msg) formatstring(s)("client (%s) disconnected because: %s", getclienthostname(n), msg);
-            else formatstring(s)("client (%s) disconnected", getclienthostname(n));
+            if(msg) formatstring(s, "client (%s) disconnected because: %s", getclienthostname(n), msg);
+            else formatstring(s, "client (%s) disconnected", getclienthostname(n));
         }
     }
 }

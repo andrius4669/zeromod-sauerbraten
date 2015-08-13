@@ -1094,7 +1094,6 @@ void rundedicatedserver()
     signal(SIGINT,  signalhandler);
     signal(SIGHUP,  signalhandler);
     signal(SIGUSR1, signalhandler);
-    signal(SIGUSR2, signalhandler);
     for(;;)
     {
         if(quitserver) { stopdedicatedserver(); exit(EXIT_SUCCESS); }

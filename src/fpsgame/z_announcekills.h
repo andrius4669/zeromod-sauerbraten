@@ -55,7 +55,7 @@ static const char *z_teamcolorname(clientinfo *ci, const char *alt, clientinfo *
     const char *name = alt && ci==as ? colorname(ci, alt) : colorname(ci);
     if(!m_teammode || !announcekills_teamnames) return name;
     bufpos = (bufpos+1)%3;
-    formatstring(buf[bufpos])("\fs\f%c%s\fr", !strcmp(ci->team, as->team) ? '1' : '3', name);
+    formatstring(buf[bufpos], "\fs\f%c%s\fr", !strcmp(ci->team, as->team) ? '1' : '3', name);
     return buf[bufpos];
 }
 

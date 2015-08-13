@@ -30,8 +30,10 @@
     B:C:default: 0 command EXT_ACK EXT_VERSION EXT_ERROR
 */
 
+    VAR(extinfoip, 0, 0, 1);
+
     VAR(extinfo_enable, 0, 1, 1);           // enable extinfo functionality
-    VAR(extinfo_showip, 0, 1, 1);           // show ips of clients
+    ICOMMAND(extinfo_showip, "i", (int *i), { extinfoip = *i; logoutf("WARNING: extinfo_showip variable is deprecated, please use extinfoip"); });
     VAR(extinfo_showpriv, 0, 1, 2);         // show privileges of clients
     VAR(extinfo_showspy, 0, 0, 1);          // show spy clients
     VAR(extinfo_noident, 0, 0, 1);          // disable mod identification
@@ -55,7 +57,7 @@
         putint(q, ci->state.gunselect);
         putint(q, (extinfo_showpriv && (extinfo_showpriv > 1 || z_canseemypriv(ci, NULL))) ? ci->privilege : PRIV_NONE);
         putint(q, ci->state.state);
-        uint ip = extinfo_showip ? getclientip(ci->clientnum) : 0;
+        uint ip = extinfoip ? getclientip(ci->clientnum) : 0;
         q.put((uchar*)&ip, 3);
         if(z_extended)
         {

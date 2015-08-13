@@ -449,31 +449,33 @@ struct collectclientmode : clientmode
         if(d->state == CS_ALIVE && d->tokens > 0)
         {
             int x = HICON_X + 3*HICON_STEP + (d->quadmillis ? HICON_SIZE + HICON_SPACE : 0);
-            glPushMatrix();
-            glScalef(2, 2, 1);
+            pushhudmatrix();
+            hudmatrix.scale(2, 2, 1);
+            flushhudmatrix();
             draw_textf("%d", (x + HICON_SIZE + HICON_SPACE)/2, HICON_TEXTY/2, d->tokens);
-            glPopMatrix();
+            pophudmatrix();
             drawicon(HICON_TOKEN, x, HICON_Y);
         }
 
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         int s = 1800/4, x = 1800*w/h - s - s/10, y = s/10;
-        glColor4f(1, 1, 1, minimapalpha);
+        gle::colorf(1, 1, 1, minimapalpha);
         if(minimapalpha >= 1) glDisable(GL_BLEND);
         bindminimap();
         drawminimap(d, x, y, s);
         if(minimapalpha >= 1) glEnable(GL_BLEND);
-        glColor3f(1, 1, 1);
+        gle::colorf(1, 1, 1);
         float margin = 0.04f, roffset = s*margin, rsize = s + 2*roffset;
         settexture("packages/hud/radar.png", 3);
         drawradar(x - roffset, y - roffset, rsize);
         #if 0
         settexture("packages/hud/compass.png", 3);
-        glPushMatrix();
-        glTranslatef(x - roffset + 0.5f*rsize, y - roffset + 0.5f*rsize, 0);
-        glRotatef(camera1->yaw + 180, 0, 0, -1);
+        pushhudmatrix();
+        hudmatrix.translate(x - roffset + 0.5f*rsize, y - roffset + 0.5f*rsize, 0);
+        hudmatrix.rotate_around_z((camera1->yaw + 180)*-RAD);
+        flushhudmatrix();
         drawradar(-0.5f*rsize, -0.5f*rsize, rsize);
-        glPopMatrix();
+        pophudmatrix();
         #endif
         loopv(bases)
         {
@@ -495,11 +497,12 @@ struct collectclientmode : clientmode
             int wait = respawnwait(d);
             if(wait>=0)
             {
-                glPushMatrix();
-                glScalef(2, 2, 1);
+                pushhudmatrix();
+                hudmatrix.scale(2, 2, 1);
+                flushhudmatrix();
                 bool flash = wait>0 && d==player1 && lastspawnattempt>=d->lastpain && lastmillis < lastspawnattempt+100;
                 draw_textf("%s%d", (x+s/2)/2-(wait>=10 ? 28 : 16), (y+s/2)/2-32, flash ? "\f3" : "", wait);
-                glPopMatrix();
+                pophudmatrix();
             }
         }
     }
@@ -520,7 +523,7 @@ struct collectclientmode : clientmode
             tokenpos.z -= theight.z/2 + sinf(lastmillis/100.0f)/20;
             float alpha = player1->state == CS_ALIVE && player1->tokens <= 0 && lastmillis < b.laststeal + STEALTOKENTIME ? 0.5f : 1.0f; 
             rendermodel(&b.light, b.team==team ? "skull/blue" : "skull/red", ANIM_MAPMODEL|ANIM_LOOP, tokenpos, lastmillis/10.0f, 0, MDL_SHADOW | MDL_CULL_VFC | MDL_CULL_OCCLUDED, NULL, NULL, 0, 0, alpha);
-            formatstring(b.info)("%d", totalscore(b.team));
+            formatstring(b.info, "%d", totalscore(b.team));
             vec above(b.tokenpos);
             above.z += TOKENHEIGHT;
             if(b.info[0]) particle_text(above, b.info, PART_TEXT, 1, b.team==team ? 0x6496FF : 0xFF4B19, 2.0f);

@@ -224,7 +224,7 @@ ICOMMAND(listtalkbots, "s", (char *name), {
     loopv(talkbots) if(talkbots[i] && (!name[0] || !strcmp(talkbots[i]->name, name)))
     {
         if(buf.length()) buf.add(' ');
-        formatstring(n)("%d", i);
+        formatstring(n, "%d", i);
         buf.put(n, strlen(n));
     }
     buf.add('\0');

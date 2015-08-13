@@ -275,7 +275,7 @@ const char *getmastername(int m)
     if(!mss.inrange(m)) return "";
     if(mss[m].masterport == server::masterport()) return mss[m].mastername;
     if(!mn) mn = new char[MAXSTRLEN];
-    formatstring(mn)("%s:%d", mss[m].mastername, mss[m].masterport);
+    nformatstring(mn, MAXSTRLEN, "%s:%d", mss[m].mastername, mss[m].masterport);
     return mn;
 }
 

@@ -887,7 +887,7 @@ namespace server
         static string cname[3];
         static int cidx = 0;
         cidx = (cidx+1)%3;
-        formatstring(cname[cidx])(ci->state.aitype == AI_NONE ? "%s \fs\f5(%d)\fr" : "%s \fs\f5[%d]\fr", name, ci->clientnum);
+        formatstring(cname[cidx], ci->state.aitype == AI_NONE ? "%s \fs\f5(%d)\fr" : "%s \fs\f5[%d]\fr", name, ci->clientnum);
         return cname[cidx];
     }
 
@@ -997,7 +997,7 @@ namespace server
     bool pruneteaminfo()
     {
         int oldteams = teaminfos.numelems;
-        enumerates(teaminfos, teaminfo, old,
+        enumerate(teaminfos, teaminfo, old,
             if(!old.frags && !teamhasplayers(old.team)) teaminfos.remove(old.team);
         );
         return teaminfos.numelems < oldteams;
@@ -1126,7 +1126,7 @@ namespace server
         time_t t = time(NULL);
         string timestr;
         z_formatdate(timestr, sizeof(timestr), t);
-        formatstring(d.info)("%s: %s, %s, %.2f%s", timestr, modename(gamemode), smapname, len > 1024*1024 ? len/(1024*1024.f) : len/1024.0f, len > 1024*1024 ? "MB" : "kB");
+        formatstring(d.info, "%s: %s, %s, %.2f%s", timestr, modename(gamemode), smapname, len > 1024*1024 ? len/(1024*1024.f) : len/1024.0f, len > 1024*1024 ? "MB" : "kB");
         sendservmsgf("demo \"%s\" recorded", d.info);
         d.data = new uchar[len];
         d.len = len;
@@ -1267,16 +1267,16 @@ namespace server
         demoheader hdr;
         string msg;
         msg[0] = '\0';
-        defformatstring(file)("%s.dmo", smapname);
+        defformatstring(file, "%s.dmo", smapname);
         demoplayback = opengzfile(file, "rb");
-        if(!demoplayback) formatstring(msg)("could not read demo \"%s\"", file);
+        if(!demoplayback) formatstring(msg, "could not read demo \"%s\"", file);
         else if(demoplayback->read(&hdr, sizeof(demoheader))!=sizeof(demoheader) || memcmp(hdr.magic, DEMO_MAGIC, sizeof(hdr.magic)))
-            formatstring(msg)("\"%s\" is not a demo file", file);
+            formatstring(msg, "\"%s\" is not a demo file", file);
         else
         {
             lilswap(&hdr.version, 2);
-            if(hdr.version!=DEMO_VERSION) formatstring(msg)("demo \"%s\" requires an %s version of Cube 2: Sauerbraten", file, hdr.version<DEMO_VERSION ? "older" : "newer");
-            else if(hdr.protocol!=PROTOCOL_VERSION) formatstring(msg)("demo \"%s\" requires an %s version of Cube 2: Sauerbraten", file, hdr.protocol<PROTOCOL_VERSION ? "older" : "newer");
+            if(hdr.version!=DEMO_VERSION) formatstring(msg, "demo \"%s\" requires an %s version of Cube 2: Sauerbraten", file, hdr.version<DEMO_VERSION ? "older" : "newer");
+            else if(hdr.protocol!=PROTOCOL_VERSION) formatstring(msg, "demo \"%s\" requires an %s version of Cube 2: Sauerbraten", file, hdr.protocol<PROTOCOL_VERSION ? "older" : "newer");
         }
         if(msg[0])
         {
@@ -1427,7 +1427,7 @@ namespace server
     void hashpassword(int cn, int sessionid, const char *pwd, char *result, int maxlen)
     {
         char buf[2*sizeof(string)];
-        formatstring(buf)("%d %d ", cn, sessionid);
+        formatstring(buf, "%d %d ", cn, sessionid);
         concatstring(buf, pwd, sizeof(buf));
         if(!hashstring(buf, result, maxlen)) *result = '\0';
     }
@@ -1497,10 +1497,10 @@ namespace server
         string msg;
         if(val && authname) 
         {
-            if(authdesc && authdesc[0]) formatstring(msg)("%s claimed %s as '\fs\f5%s\fr' [\fs\f0%s\fr]", colorname(ci), name, authname, authdesc);
-            else formatstring(msg)("%s claimed %s as '\fs\f5%s\fr'", colorname(ci), name, authname);
+            if(authdesc && authdesc[0]) formatstring(msg, "%s claimed %s as '\fs\f5%s\fr' [\fs\f0%s\fr]", colorname(ci), name, authname, authdesc);
+            else formatstring(msg, "%s claimed %s as '\fs\f5%s\fr'", colorname(ci), name, authname);
         } 
-        else formatstring(msg)("%s %s %s", colorname(ci), val ? "claimed" : "relinquished", name);
+        else formatstring(msg, "%s %s %s", colorname(ci), val ? "claimed" : "relinquished", name);
         packetbuf p(MAXTRANS, ENET_PACKET_FLAG_RELIABLE);
         putint(p, N_SERVMSG);
         sendstring(msg, p);
@@ -1536,8 +1536,8 @@ namespace server
                 string kicker;
                 if(authname)
                 {
-                    if(authdesc && authdesc[0]) formatstring(kicker)("%s as '\fs\f5%s\fr' [\fs\f0%s\fr]", colorname(ci), authname, authdesc);
-                    else formatstring(kicker)("%s as '\fs\f5%s\fr'", colorname(ci), authname);
+                    if(authdesc && authdesc[0]) formatstring(kicker, "%s as '\fs\f5%s\fr' [\fs\f0%s\fr]", colorname(ci), authname, authdesc);
+                    else formatstring(kicker, "%s as '\fs\f5%s\fr'", colorname(ci), authname);
                 }
                 else copystring(kicker, colorname(ci));
                 z_showkick(kicker, ci, vinfo, reason);
@@ -1606,7 +1606,7 @@ namespace server
         }
 
         uchar operator[](int msg) const { return msg >= 0 && msg < NUMMSG ? msgmask[msg] : 0; }
-    } msgfilter(-1, N_CONNECT, N_SERVINFO, N_INITCLIENT, N_WELCOME, N_MAPCHANGE, N_SERVMSG, N_DAMAGE, N_HITPUSH, N_SHOTFX, N_EXPLODEFX, N_DIED, N_SPAWNSTATE, N_FORCEDEATH, N_TEAMINFO, N_ITEMACC, N_ITEMSPAWN, N_TIMEUP, N_CDIS, N_CURRENTMASTER, N_PONG, N_RESUME, N_BASESCORE, N_BASEINFO, N_BASEREGEN, N_ANNOUNCE, N_SENDDEMOLIST, N_SENDDEMO, N_DEMOPLAYBACK, N_SENDMAP, N_DROPFLAG, N_SCOREFLAG, N_RETURNFLAG, N_RESETFLAG, N_INVISFLAG, N_CLIENT, N_AUTHCHAL, N_INITAI, N_EXPIRETOKENS, N_DROPTOKENS, N_STEALTOKENS, N_DEMOPACKET, -2, N_REMIP, N_NEWMAP, N_GETMAP, N_SENDMAP, N_CLIPBOARD, -3, N_EDITENT, N_EDITF, N_EDITT, N_EDITM, N_FLIP, N_COPY, N_PASTE, N_ROTATE, N_REPLACE, N_DELCUBE, N_EDITVAR, -4, N_POS, -5, N_TELEPORT, N_JUMPPAD, N_ITEMPICKUP, NUMMSG),
+    } msgfilter(-1, N_CONNECT, N_SERVINFO, N_INITCLIENT, N_WELCOME, N_MAPCHANGE, N_SERVMSG, N_DAMAGE, N_HITPUSH, N_SHOTFX, N_EXPLODEFX, N_DIED, N_SPAWNSTATE, N_FORCEDEATH, N_TEAMINFO, N_ITEMACC, N_ITEMSPAWN, N_TIMEUP, N_CDIS, N_CURRENTMASTER, N_PONG, N_RESUME, N_BASESCORE, N_BASEINFO, N_BASEREGEN, N_ANNOUNCE, N_SENDDEMOLIST, N_SENDDEMO, N_DEMOPLAYBACK, N_SENDMAP, N_DROPFLAG, N_SCOREFLAG, N_RETURNFLAG, N_RESETFLAG, N_INVISFLAG, N_CLIENT, N_AUTHCHAL, N_INITAI, N_EXPIRETOKENS, N_DROPTOKENS, N_STEALTOKENS, N_DEMOPACKET, -2, N_REMIP, N_NEWMAP, N_GETMAP, N_SENDMAP, N_CLIPBOARD, -3, N_EDITENT, N_EDITF, N_EDITT, N_EDITM, N_FLIP, N_COPY, N_PASTE, N_ROTATE, N_REPLACE, N_DELCUBE, N_EDITVAR, N_EDITVSLOT, N_UNDO, N_REDO, -4, N_POS, -5, N_TELEPORT, N_JUMPPAD, N_ITEMPICKUP, NUMMSG),
       connectfilter(-1, N_CONNECT, -2, N_AUTHANS, -3, N_PING, -4, N_AUTHTRY, NUMMSG);
 
     int checktype(int type, clientinfo *ci)
@@ -1944,7 +1944,7 @@ namespace server
         if(m_teammode)
         {
             putint(p, N_TEAMINFO);
-            enumerates(teaminfos, teaminfo, t,
+            enumerate(teaminfos, teaminfo, t,
                 if(t.frags) { sendstring(t.team, p); putint(p, t.frags); }
             );
             sendstring("", p);
@@ -2267,7 +2267,7 @@ namespace server
         if(target==actor) target->setpushed();
         else if(!hitpush.iszero() && hnd < 2)
         {
-            ivec v = vec(hitpush).rescale(DNF);
+            ivec v(vec(hitpush).rescale(DNF));
             sendf(ts.health<=0 ? -1 : target->ownernum, 1, "ri7", N_HITPUSH, target->clientnum, gun, damage, v.x, v.y, v.z);
             target->setpushed();
         }
@@ -2616,7 +2616,7 @@ namespace server
         {
             clientinfo *ci = clients[i];
             if(ci->state.state==CS_SPECTATOR || ci->state.aitype != AI_NONE || ci->clientmap[0] || ci->mapcrc >= 0 || (req < 0 && ci->warned)) continue;
-            formatstring(msg)("%s has modified map \"%s\"", colorname(ci), smapname);
+            formatstring(msg, "%s has modified map \"%s\"", colorname(ci), smapname);
             if(!m_edit || req >= 0) sendf(req, 1, "ris", N_SERVMSG, msg);
             if(req < 0) ci->warned = true;
             if(req < 0 && m_edit) z_sendmap(ci, NULL, NULL, true);
@@ -2628,7 +2628,7 @@ namespace server
             {
                 clientinfo *ci = clients[j];
                 if(ci->state.state==CS_SPECTATOR || ci->state.aitype != AI_NONE || !ci->clientmap[0] || ci->mapcrc != info.crc || (req < 0 && ci->warned)) continue;
-                formatstring(msg)("%s has modified map \"%s\"", colorname(ci), smapname);
+                formatstring(msg, "%s has modified map \"%s\"", colorname(ci), smapname);
                 if(!m_edit || req >= 0) sendf(req, 1, "ris", N_SERVMSG, msg);
                 if(req < 0) ci->warned = true;
                 if(req < 0 && m_edit) z_sendmap(ci, NULL, NULL, true);
@@ -3583,7 +3583,7 @@ namespace server
                     }
                     else
                     {
-                        defformatstring(s)("mastermode %d is disabled on this server", mm);
+                        defformatstring(s, "mastermode %d is disabled on this server", mm);
                         sendf(sender, 1, "ris", N_SERVMSG, s);
                     }
                 }
@@ -3851,6 +3851,41 @@ namespace server
                 ci->clipboard->referenceCount++;
                 break;
             } 
+
+            case N_EDITT:
+            case N_REPLACE:
+            case N_EDITVSLOT:
+            {
+                int size = server::msgsizelookup(type);
+                if(size<=0) { disconnect_client(sender, DISC_MSGERR); return; }
+                loopi(size-1) getint(p);
+                if(p.remaining() < 2) { disconnect_client(sender, DISC_MSGERR); return; }
+                int extra = lilswap(*(const ushort *)p.pad(2));
+                if(p.remaining() < extra) { disconnect_client(sender, DISC_MSGERR); return; }
+                p.pad(extra);
+                if(ci && ci->state.state!=CS_SPECTATOR && allowmsg(ci, ci, type)) QUEUE_MSG;
+                break;
+            }
+
+            case N_UNDO:
+            case N_REDO:
+            {
+                int unpacklen = getint(p), packlen = getint(p);
+                if(!ci || ci->state.state==CS_SPECTATOR || !allowmsg(ci, ci, type) || packlen <= 0 || packlen > (1<<16) || unpacklen <= 0)
+                {
+                    if(packlen > 0) p.subbuf(packlen);
+                    break;
+                }
+                if(p.remaining() < packlen) { disconnect_client(sender, DISC_MSGERR); return; }
+                packetbuf q(32 + packlen, ENET_PACKET_FLAG_RELIABLE);
+                putint(q, type);
+                putint(q, ci->clientnum);
+                putint(q, unpacklen);
+                putint(q, packlen);
+                if(packlen > 0) p.get(q.subbuf(packlen).buf, packlen);
+                sendpacket(-1, 1, q.finalize(), ci->clientnum);
+                break;
+            }
 
             case N_SOUND:
                 if(z_allowsound(ci, cq, getint(p))) { QUEUE_AI; QUEUE_MSG; }

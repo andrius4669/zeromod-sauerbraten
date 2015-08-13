@@ -3,8 +3,8 @@
 struct decalvert
 {
     vec pos;
-    float u, v;
     bvec4 color;
+    vec2 tc;
 };
 
 struct decalinfo
@@ -37,6 +37,8 @@ struct decalrenderer
     int maxdecals, startdecal, enddecal;
     decalvert *verts;
     int maxverts, startvert, endvert, lastvert, availverts;
+    GLuint vbo;
+    bool dirty;
 
     decalrenderer(const char *texname, int flags = 0, int fadeintime = 0, int fadeouttime = 1000, int timetolive = -1)
         : texname(texname), flags(flags),
@@ -44,8 +46,15 @@ struct decalrenderer
           tex(NULL),
           decals(NULL), maxdecals(0), startdecal(0), enddecal(0),
           verts(NULL), maxverts(0), startvert(0), endvert(0), lastvert(0), availverts(0),
+          vbo(0), dirty(false),
           decalu(0), decalv(0)
     {
+    }
+
+    ~decalrenderer()
+    {
+        DELETEA(decals);
+        DELETEA(verts);
     }
 
     void init(int tris)
@@ -73,11 +82,17 @@ struct decalrenderer
         return enddecal < startdecal ? maxdecals - (startdecal - enddecal) : enddecal - startdecal;
     }
 
+    void cleanup()
+    {
+        if(vbo) { glDeleteBuffers_(1, &vbo); vbo = 0; }
+    }
+
     void cleardecals()
     {
         startdecal = enddecal = 0;
         startvert = endvert = lastvert = 0;
         availverts = maxverts - 3;
+        dirty = true;
     }
 
     int freedecal()
@@ -99,11 +114,7 @@ struct decalrenderer
     void fadedecal(decalinfo &d, uchar alpha)
     {
         bvec rgb;
-        if(flags&DF_OVERBRIGHT)
-        {
-            if(renderpath!=R_FIXEDFUNCTION || hasTE) rgb = bvec(128, 128, 128);
-            else rgb = bvec(alpha, alpha, alpha);
-        }
+        if(flags&DF_OVERBRIGHT) rgb = bvec(128, 128, 128);
         else
         {
             rgb = d.color;
@@ -128,6 +139,7 @@ struct decalrenderer
                 vert++;
             }
         }
+        dirty = true;
     }
 
     void clearfadeddecals()
@@ -142,10 +154,13 @@ struct decalrenderer
             end = &decals[enddecal];
             while(d < end && d->millis <= threshold) d++;
         }
+        int prevstart = startdecal;
         startdecal = d - decals;
+        if(prevstart == startdecal) return;
         if(startdecal!=enddecal) startvert = decals[startdecal].startvert;
         else startvert = endvert = lastvert = 0;
         availverts = endvert < startvert ? startvert - endvert - 3 : maxverts - 3 - (endvert - startvert);
+        dirty = true;
     }
  
     void fadeindecals()
@@ -207,16 +222,18 @@ struct decalrenderer
         glDepthMask(GL_FALSE);
         glEnable(GL_BLEND);
 
-        glEnableClientState(GL_VERTEX_ARRAY);
-        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-        glEnableClientState(GL_COLOR_ARRAY);
+        gle::enablevertex();
+        gle::enabletexcoord0();
+        gle::enablecolor();
     }
 
     static void cleanuprenderstate()
     {
-        glDisableClientState(GL_VERTEX_ARRAY);
-        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-        glDisableClientState(GL_COLOR_ARRAY);
+        gle::clearvbo();
+
+        gle::disablevertex();
+        gle::disabletexcoord0();
+        gle::disablecolor();
 
         glDepthMask(GL_TRUE);
         glDisable(GL_BLEND);
@@ -228,59 +245,49 @@ struct decalrenderer
     {
         if(startvert==endvert) return;
 
-        float oldfogc[4];
-        if(flags&(DF_ADD|DF_INVMOD|DF_OVERBRIGHT))
-        {
-            glGetFloatv(GL_FOG_COLOR, oldfogc);
-            static float zerofog[4] = { 0, 0, 0, 1 }, grayfog[4] = { 0.5f, 0.5f, 0.5f, 1 };
-            glFogfv(GL_FOG_COLOR, flags&DF_OVERBRIGHT && (renderpath!=R_FIXEDFUNCTION || hasTE) ? grayfog : zerofog);
-        }
-        
         if(flags&DF_OVERBRIGHT) 
         {
-            if(renderpath!=R_FIXEDFUNCTION)
-            {
-                glBlendFunc(GL_DST_COLOR, GL_SRC_COLOR); 
-                SETSHADER(overbrightdecal);
-            }
-            else if(hasTE)
-            {
-                glBlendFunc(GL_DST_COLOR, GL_SRC_COLOR);
-                setuptmu(0, "T , C @ Ca");
-            }
-            else glBlendFunc(GL_DST_COLOR, GL_ONE_MINUS_SRC_ALPHA);
+            glBlendFunc(GL_DST_COLOR, GL_SRC_COLOR); 
+            SETSHADER(overbrightdecal);
         }
         else 
         {
-            if(flags&DF_INVMOD) glBlendFunc(GL_ZERO, GL_ONE_MINUS_SRC_COLOR);
-            else if(flags&DF_ADD) glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_COLOR);
+            if(flags&DF_INVMOD) { glBlendFunc(GL_ZERO, GL_ONE_MINUS_SRC_COLOR); zerofogcolor(); }
+            else if(flags&DF_ADD) { glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_COLOR); zerofogcolor(); }
             else glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-            if(flags&DF_SATURATE)
-            {
-                if(renderpath!=R_FIXEDFUNCTION) SETSHADER(saturatedecal);
-                else if(hasTE) setuptmu(0, "C * T x 2");
-            }
+            if(flags&DF_SATURATE) SETSHADER(saturatedecal);
             else foggedshader->set();
         }
 
         glBindTexture(GL_TEXTURE_2D, tex->id);
 
-        glVertexPointer(3, GL_FLOAT, sizeof(decalvert), &verts->pos);
-        glTexCoordPointer(2, GL_FLOAT, sizeof(decalvert), &verts->u);
-        glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(decalvert), &verts->color);
-
+        if(!vbo) { glGenBuffers_(1, &vbo); dirty = true; }
+        gle::bindvbo(vbo);
+    
         int count = endvert < startvert ? maxverts - startvert : endvert - startvert;
-        glDrawArrays(GL_TRIANGLES, startvert, count);
-        if(endvert < startvert) 
+        if(dirty)
         {
-            count += endvert;
-            glDrawArrays(GL_TRIANGLES, 0, endvert);
+            glBufferData_(GL_ARRAY_BUFFER, maxverts*sizeof(decalvert), NULL, GL_STREAM_DRAW);
+            glBufferSubData_(GL_ARRAY_BUFFER, 0, count*sizeof(decalvert), &verts[startvert]);
+            if(endvert < startvert)
+            {
+                glBufferSubData_(GL_ARRAY_BUFFER, count*sizeof(decalvert), endvert*sizeof(decalvert), verts);
+                count += endvert;
+            }
+            dirty = false;
         }
+        else if(endvert < startvert) count += endvert;
+
+        const decalvert *ptr = 0;
+        gle::vertexpointer(sizeof(decalvert), ptr->pos.v);
+        gle::texcoord0pointer(sizeof(decalvert), ptr->tc.v);
+        gle::colorpointer(sizeof(decalvert), ptr->color.v);
+
+        glDrawArrays(GL_TRIANGLES, 0, count);
         xtravertsva += count;
 
-        if(flags&(DF_ADD|DF_INVMOD|DF_OVERBRIGHT)) glFogfv(GL_FOG_COLOR, oldfogc);
-        if(flags&(DF_OVERBRIGHT|DF_SATURATE) && renderpath==R_FIXEDFUNCTION && hasTE) resettmu(0);
+        if(flags&(DF_ADD|DF_INVMOD)) resetfogcolor();
 
         extern int intel_vertexarray_bug;
         if(intel_vertexarray_bug) glFlush();
@@ -293,6 +300,7 @@ struct decalrenderer
         if(next>=maxdecals) next = 0;
         if(next==startdecal) freedecal();
         enddecal = next;
+        dirty = true;
         return d;
     }
 
@@ -403,7 +411,7 @@ struct decalrenderer
         {
             vertinfo *verts = cu.ext->verts() + cu.ext->surfaces[orient].verts;
             ivec vo = ivec(o).mask(~0xFFF).shl(3);
-            loopj(numverts) pos[j] = verts[j].getxyz().add(vo).tovec().mul(1/8.0f);
+            loopj(numverts) pos[j] = vec(verts[j].getxyz().add(vo)).mul(1/8.0f);
             planes[0].cross(pos[0], pos[1], pos[2]).normalize();
             if(numverts >= 4 && !(cu.merged&(1<<orient)) && !flataxisface(cu, orient) && faceconvexity(verts, numverts, size))
             {
@@ -412,16 +420,16 @@ struct decalrenderer
             }
         }
         else if(cu.merged&(1<<orient)) return;
-        else if(!vismask || (vismask&0x40 && visibleface(cu, orient, o.x, o.y, o.z, size, MAT_AIR, (cu.material&MAT_ALPHA)^MAT_ALPHA, MAT_ALPHA)))
+        else if(!vismask || (vismask&0x40 && visibleface(cu, orient, o, size, MAT_AIR, (cu.material&MAT_ALPHA)^MAT_ALPHA, MAT_ALPHA)))
         {
             ivec v[4];
             genfaceverts(cu, orient, v);
             int vis = 3, convex = faceconvexity(v, vis), order = convex < 0 ? 1 : 0;
-            vec vo = o.tovec();
-            pos[numverts++] = v[order].tovec().mul(size/8.0f).add(vo);
-            if(vis&1) pos[numverts++] = v[order+1].tovec().mul(size/8.0f).add(vo);
-            pos[numverts++] = v[order+2].tovec().mul(size/8.0f).add(vo);
-            if(vis&2) pos[numverts++] = v[(order+3)&3].tovec().mul(size/8.0f).add(vo);
+            vec vo(o);
+            pos[numverts++] = vec(v[order]).mul(size/8.0f).add(vo);
+            if(vis&1) pos[numverts++] = vec(v[order+1]).mul(size/8.0f).add(vo);
+            pos[numverts++] = vec(v[order+2]).mul(size/8.0f).add(vo);
+            if(vis&2) pos[numverts++] = vec(v[(order+3)&3]).mul(size/8.0f).add(vo);
             planes[0].cross(pos[0], pos[1], pos[2]).normalize();
             if(convex) { planes[1].cross(pos[0], pos[2], pos[3]).normalize(); numplanes++; }
         } 
@@ -471,8 +479,8 @@ struct decalrenderer
             float tsz = flags&DF_RND4 ? 0.5f : 1.0f, scale = tsz*0.5f/decalradius,
                   tu = decalu + tsz*0.5f - ptc*scale, tv = decalv + tsz*0.5f - pbc*scale;
             pt.mul(scale); pb.mul(scale);
-            decalvert dv1 = { v2[0], pt.dot(v2[0]) + tu, pb.dot(v2[0]) + tv, decalcolor },
-                      dv2 = { v2[1], pt.dot(v2[1]) + tu, pb.dot(v2[1]) + tv, decalcolor };
+            decalvert dv1 = { v2[0], decalcolor, vec2(pt.dot(v2[0]) + tu, pb.dot(v2[0]) + tv) },
+                      dv2 = { v2[1], decalcolor, vec2(pt.dot(v2[1]) + tu, pb.dot(v2[1]) + tv) };
             int totalverts = 3*(numv-2);
             if(totalverts > maxverts-3) return;
             while(availverts < totalverts)
@@ -485,8 +493,7 @@ struct decalrenderer
                 verts[endvert++] = dv1;
                 verts[endvert++] = dv2;
                 dv2.pos = v2[k+2];
-                dv2.u = pt.dot(v2[k+2]) + tu;
-                dv2.v = pb.dot(v2[k+2]) + tv;
+                dv2.tc = vec2(pt.dot(v2[k+2]) + tu, pb.dot(v2[k+2]) + tv);
                 verts[endvert++] = dv2;
                 if(endvert>=maxverts) endvert = 0;
             }
@@ -528,7 +535,7 @@ struct decalrenderer
         {
             if(escaped&(1<<i)) 
             { 
-                ivec co(i, o.x, o.y, o.z, size);
+                ivec co(i, o, size);
                 if(cu[i].children) findescaped(cu[i].children, co, size>>1, cu[i].escaped);
                 else
                 {
@@ -546,7 +553,7 @@ struct decalrenderer
         {
             if(overlap&(1<<i))
             {
-                ivec co(i, o.x, o.y, o.z, size);
+                ivec co(i, o, size);
                 if(cu[i].ext && cu[i].ext->va && cu[i].ext->va->matsurfs)
                     findmaterials(cu[i].ext->va);
                 if(cu[i].children) gentris(cu[i].children, co, size>>1, cu[i].escaped);
@@ -562,7 +569,7 @@ struct decalrenderer
             }
             else if(escaped&(1<<i))
             {
-                ivec co(i, o.x, o.y, o.z, size);
+                ivec co(i, o, size);
                 if(cu[i].children) findescaped(cu[i].children, co, size>>1, cu[i].escaped);
                 else
                 {
@@ -578,7 +585,7 @@ decalrenderer decals[] =
 {
     decalrenderer("<grey>packages/particles/scorch.png", DF_ROTATE, 500),
     decalrenderer("<grey>packages/particles/blood.png", DF_RND4|DF_ROTATE|DF_INVMOD),
-    decalrenderer("<grey><decal>packages/particles/bullet.png", DF_OVERBRIGHT)
+    decalrenderer("<grey>packages/particles/bullet.png", DF_OVERBRIGHT)
 };
 
 void initdecals()
@@ -589,6 +596,11 @@ void initdecals()
 void cleardecals()
 {
     loopi(sizeof(decals)/sizeof(decals[0])) decals[i].cleardecals();
+}
+
+void cleanupdecals()
+{
+    loopi(sizeof(decals)/sizeof(decals[0])) decals[i].cleanup();
 }
 
 VARNP(decals, showdecals, 0, 1, 1);

@@ -165,7 +165,7 @@ void s_listclients(int *bots)
     loopv(clients) if(clients[i]->state.aitype==AI_NONE || (*bots > 0 && clients[i]->state.state!=CS_SPECTATOR))
     {
         if(buf.length()) buf.add(' ');
-        formatstring(cn)("%d", clients[i]->clientnum);
+        formatstring(cn, "%d", clients[i]->clientnum);
         buf.put(cn, strlen(cn));
     }
     buf.add('\0');

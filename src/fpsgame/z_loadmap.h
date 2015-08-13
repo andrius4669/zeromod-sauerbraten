@@ -6,8 +6,8 @@ SVAR(mappath, "packages/base");
 bool z_loadmap(const char *mname, stream *&data = mapdata)
 {
     string fname;
-    if(mappath[0]) formatstring(fname)("%s/%s.ogz", mappath, mname);
-    else formatstring(fname)("%s.ogz", mname);
+    if(mappath[0]) formatstring(fname, "%s/%s.ogz", mappath, mname);
+    else formatstring(fname, "%s.ogz", mname);
     stream *map = openrawfile(path(fname), "rb");
     if(!map) return false;
     stream::offset len = map->size();

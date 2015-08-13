@@ -105,8 +105,7 @@ struct md2 : vertmodel, vertloader<md2>
                         idx = &tchash[tckey];
                         *idx = tcverts.length();
                         tcvert &tc = tcverts.add();
-                        tc.u = u.f;
-                        tc.v = v.f;
+                        tc.tc = vec2(u.f, v.f);
                         vindexes.add((ushort)vindex);
                     }
                     idxs.add(*idx);
@@ -203,6 +202,10 @@ struct md2 : vertmodel, vertloader<md2>
 
     struct md2part : part
     {
+        md2part(animmodel *model, int index = 0) : part(model, index)
+        {
+        }
+
         void getdefaultanim(animinfo &info, int anim, uint varseed, dynent *d)
         {
             //                      0              3              6   7   8   9   10   11  12  13   14  15  16  17
@@ -246,41 +249,42 @@ struct md2 : vertmodel, vertloader<md2>
         return group;
     }
 
+    md2part &addpart()
+    {
+        md2part *p = new md2part(this, parts.length());
+        parts.add(p);
+        return *p;
+    }
+
     bool load()
     { 
-        if(loaded) return true;
-        part &mdl = *new md2part;
-        parts.add(&mdl);
-        mdl.model = this;
-        mdl.index = 0;
-        const char *pname = parentdir(loadname);
-        defformatstring(name1)("packages/models/%s/tris.md2", loadname);
+        part &mdl = addpart();
+        const char *pname = parentdir(name);
+        defformatstring(name1, "packages/models/%s/tris.md2", name);
         mdl.meshes = sharemeshes(path(name1));
         if(!mdl.meshes)
         {
-            defformatstring(name2)("packages/models/%s/tris.md2", pname);    // try md2 in parent folder (vert sharing)
+            defformatstring(name2, "packages/models/%s/tris.md2", pname);    // try md2 in parent folder (vert sharing)
             mdl.meshes = sharemeshes(path(name2));
             if(!mdl.meshes) return false;
         }
         Texture *tex, *masks;
-        loadskin(loadname, pname, tex, masks);
+        loadskin(name, pname, tex, masks);
         mdl.initskins(tex, masks);
         if(tex==notexture) conoutf("could not load model skin for %s", name1);
         loading = this;
         identflags &= ~IDF_PERSIST;
-        defformatstring(name3)("packages/models/%s/md2.cfg", loadname);
+        defformatstring(name3, "packages/models/%s/md2.cfg", name);
         if(!execfile(name3, false))
         {
-            formatstring(name3)("packages/models/%s/md2.cfg", pname);
+            formatstring(name3, "packages/models/%s/md2.cfg", pname);
             execfile(name3, false);
         }
         identflags |= IDF_PERSIST;
         loading = 0;
-        scale /= 4;
         translate.y = -translate.y;
-        parts[0]->translate = translate;
-        loopv(parts) parts[i]->meshes->shared++;
-        return loaded = true;
+        loaded();
+        return true;
     }
 };
 

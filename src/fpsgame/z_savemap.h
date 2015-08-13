@@ -17,8 +17,8 @@ bool z_savemap(const char *mname, stream *&file = mapdata)
     file->read(data, len);
     delete file;
     string fname;
-    if(mappath[0]) formatstring(fname)("%s/%s.ogz", mappath, mname);
-    else formatstring(fname)("%s.ogz", mname);
+    if(mappath[0]) formatstring(fname, "%s/%s.ogz", mappath, mname);
+    else formatstring(fname, "%s.ogz", mname);
     file = openrawfile(path(fname), "w+b");
     if(file)
     {

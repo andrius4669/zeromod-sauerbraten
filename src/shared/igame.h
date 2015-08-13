@@ -13,7 +13,7 @@ namespace entities
     extern void entradius(extentity &e, bool color);
     extern bool mayattach(extentity &e);
     extern bool attachent(extentity &e, extentity &a);
-    extern bool printent(extentity &e, char *buf);
+    extern bool printent(extentity &e, char *buf, int len);
     extern extentity *newentity();
     extern void deleteentity(extentity *e);
     extern void clearents();
@@ -53,7 +53,7 @@ namespace game
     extern void initclient();
     extern void physicstrigger(physent *d, bool local, int floorlevel, int waterlevel, int material = 0);
     extern void bounced(physent *d, const vec &surface);
-    extern void edittrigger(const selinfo &sel, int op, int arg1 = 0, int arg2 = 0, int arg3 = 0);
+    extern void edittrigger(const selinfo &sel, int op, int arg1 = 0, int arg2 = 0, int arg3 = 0, const VSlot *vs = NULL);
     extern void vartrigger(ident *id);
     extern void dynentcollide(physent *d, physent *o, const vec &dir);
     extern const char *getclientmap();
@@ -78,7 +78,7 @@ namespace game
     extern int clipconsole(int w, int h);
     extern void g3d_gamemenus();
     extern const char *defaultcrosshair(int index);
-    extern int selectcrosshair(float &r, float &g, float &b);
+    extern int selectcrosshair(vec &color);
     extern void lighteffects(dynent *d, vec &color, vec &dir);
     extern void setupcamera();
     extern bool detachcamera();

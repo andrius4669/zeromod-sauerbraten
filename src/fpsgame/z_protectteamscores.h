@@ -6,11 +6,11 @@ VAR(protectteamscores, 0, 0, 2);
 static void z_pruneteaminfos(hashset<teaminfo> *ti)
 {
     int oldnum = ti->numelems;
-    enumerates(*ti, teaminfo, t,
+    enumerate(*ti, teaminfo, t,
                if(!t.frags) ti->remove(t.team);
     );
     if(ti->numelems < oldnum) return;
-    enumerates(*ti, teaminfo, t,
+    enumerate(*ti, teaminfo, t,
                if(t.frags<=0) ti->remove(t.team);
     );
     if(ti->numelems < oldnum) return;
@@ -37,7 +37,7 @@ void z_setteaminfos(hashset<teaminfo> *&dst, hashset<teaminfo> *src)
     if(!src) { DELETEP(dst); return; }
     if(dst) dst->clear();
     int count = 0;
-    enumerates(*src, teaminfo, t,
+    enumerate(*src, teaminfo, t,
         if(t.frags) { z_calcteamscore(dst, t.team, t.frags); count++; }
     );
     if(dst && !count) DELETEP(dst);

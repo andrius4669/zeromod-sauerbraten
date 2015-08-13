@@ -3,7 +3,7 @@
 namespace game
 {
     vector<rpgobj *> objects, stack;
-    hashtable<char *, char *> names;
+    hashset<char *> names;
     
     rpgobj *pointingat = NULL;
     rpgobj *playerobj = NULL;
@@ -128,18 +128,16 @@ namespace game
     {
         for(rpgquest *q = quests; q; q = q->next) if(q->completed==completed)
         {
-            defformatstring(info)("%s: %s", q->npc, q->questline);
+            defformatstring(info, "%s: %s", q->npc, q->questline);
             g.text(info, 0xAAAAAA, "info");
         }
     }
     
     char *stringpool(char *name)
     {
-        char **n = names.access(name);
-        if(n) return *n;
-        name = newstring(name);
-        names[name] = name;
-        return name;
+        char *exists = names.find(name, NULL);
+        if(exists) return exists;
+        return names.add(newstring(name));
     }
     
     void renderobjects() { loopv(objects) objects[i]->render();   }
