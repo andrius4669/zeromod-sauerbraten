@@ -112,6 +112,7 @@ bool z_applyspecban(clientinfo *ci)
 {
     if(ci->local) return false;
     uint ip = getclientip(ci->clientnum);
+    // check against regular bans
     loopv(bannedips) if(bannedips[i].ip==ip && (bannedips[i].type==BAN_SPECTATE || (teamkillspectate && bannedips[i].type==BAN_TEAMKILL)))
     {
         ban &b = bannedips[i];
@@ -124,6 +125,20 @@ bool z_applyspecban(clientinfo *ci)
         z_format(tmp, sizeof(tmp), ban_message_specreason, ft);
         if(*tmp) sendf(ci->clientnum, 1, "ris", N_SERVMSG, tmp);
         return true;
+    }
+    // check against global bans
+    gbaninfo *p;
+    uint hip = ENET_NET_TO_HOST_32(ip);
+    loopv(gbans)
+    {
+        const char *ident, *wlauth, *banmsg;
+        int mode;
+        if(!getmasterbaninfo(i, ident, mode, wlauth, banmsg) || mode != 2) continue;
+        if((p = gbans[i].find(hip)) && p->check(hip))
+        {
+            if(banmsg && banmsg[0]) sendf(ci->clientnum, 1, "ris", N_SERVMSG, banmsg);
+            return true;
+        }
     }
     return false;
 }

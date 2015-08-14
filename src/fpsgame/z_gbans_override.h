@@ -169,12 +169,12 @@ static bool checkgban(uint ip, clientinfo *ci, bool connect = false)
         const char *ident, *wlauth, *banmsg;
         int mode;
         if(!getmasterbaninfo(i, ident, mode, wlauth, banmsg)) continue;
-        if(mode == 0 && !ident) continue;   // do not perform lookup at all
+        if(mode != 1 && mode != -1 && !ident) continue;   // do not perform lookup at all
         if((p = gbans[i].find(hip)) && p->check(hip))
         {
             if(ident && !ci->xi.geoip.network) ci->xi.geoip.network = newstring(ident); // gban used to identify network
-            if(mode == 0) continue;
-            if(mode == 2) return false;
+            if(mode == -1) return false;
+            if(mode != 1) continue;
             if(connect && showbanreason && banmsg)
             {
                 string banstr, msg;

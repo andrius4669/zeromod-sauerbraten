@@ -331,10 +331,10 @@ ICOMMAND(masterbanmessage, "s", (char *s),
     mss[currmss].banmessage = *s ? newstring(s) : NULL;
 });
 
-ICOMMAND(masterbanmode, "i", (int *i),    // 0 - ignore, 1 (default) - blacklist, 2 - whitelist
+ICOMMAND(masterbanmode, "i", (int *i),    // -1 - whitelist, 0 - ignore, 1 (default) - blacklist, 2 - specban
 {
     if(!mss.inrange(currmss)) addms();
-    mss[currmss].banmode = clamp(*i, 0, 2);
+    mss[currmss].banmode = clamp(*i, -1, 2);
 });
 
 bool getmasterbaninfo(int m, const char *&ident, int &disc, const char *&wlauth, const char *&banmsg)
