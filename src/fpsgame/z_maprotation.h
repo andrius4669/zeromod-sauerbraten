@@ -54,8 +54,6 @@ static forcenextmapstruct *z_forcenextmap = NULL;
 
 void z_nextmap(clientinfo &ci, const char *map, int mode)
 {
-    extern const char *colorname(clientinfo *ci, const char *name = NULL);
-    extern void sendservmsgf(const char *fmt, ...);
     sendservmsgf("%s forced %s on map %s for next match", colorname(&ci), modename(mode), map);
     if(z_forcenextmap) delete z_forcenextmap;
     z_forcenextmap = new forcenextmapstruct;
@@ -65,9 +63,6 @@ void z_nextmap(clientinfo &ci, const char *map, int mode)
 
 void z_servcmd_nextmap(int argc, char **argv, int sender)
 {
-    extern clientinfo *getinfo(int n);
-    extern int findmaprotation(int mode, const char *map);
-
     clientinfo &ci = *getinfo(sender);
     if(argc < 2)
     {

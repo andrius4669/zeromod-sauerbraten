@@ -18,8 +18,6 @@ void nullifyclientpos(clientinfo &ci)
 
 static inline bool z_isghost(clientinfo &ci)
 {
-    extern bool isracemode();
-    extern bool z_race_shouldhide(clientinfo &ci);
     return ci.xi.ghost || (isracemode() && z_race_shouldhide(ci));
 }
 

@@ -176,7 +176,7 @@ namespace server
         }
     };
 
-    extern void z_setteaminfos(hashset<teaminfo> *&dst, hashset<teaminfo> *src);
+    #include "z_tools.h"
 
     struct savedscore
     {
@@ -880,7 +880,7 @@ namespace server
         return false;
     }
 
-    const char *colorname(clientinfo *ci, const char *name = NULL)
+    const char *colorname(clientinfo *ci, const char *name)
     {
         if(!name) name = ci->name;
         if(name[0] && !ci->spy && !duplicatename(ci, name) && ci->state.aitype == AI_NONE) return name;
@@ -1168,7 +1168,6 @@ namespace server
 
     void setupdemorecord()
     {
-        extern bool isracemode();
         if(!m_mp(gamemode) || (m_edit && !isracemode())) return;
 
         demotmp = opentempfile("demorecord", "w+b");
@@ -1224,7 +1223,6 @@ namespace server
         {
             clientinfo *ci = clients[i];
             if(ci->getmap == packet) ci->xi.maploaded = 0;
-            extern void race_gotmap(clientinfo *);
             if(ci->getmap == packet) race_gotmap(ci);
             if(ci->getmap == packet) ci->getmap = NULL;
         }
@@ -1351,7 +1349,6 @@ namespace server
         if(!gamepaused) return;
         int admins = 0;
         loopv(clients) if(clients[i]->privilege >= (restrictpausegame ? PRIV_ADMIN : PRIV_MASTER) || clients[i]->local) admins++;
-        extern bool holdpausecontrol();
         if(!admins && !holdpausecontrol()) pausegame(false);
     }
 
@@ -3006,8 +3003,8 @@ namespace server
         if(servermotd[0]) sendf(ci->clientnum, 1, "ris", N_SERVMSG, servermotd);
 
         if(m_edit && z_autosendmap == 1) z_sendmap(ci, NULL);
-        extern bool z_autoeditmute; ci->xi.editmute = z_autoeditmute;
-        extern int z_nodamage; ci->xi.nodamage = z_nodamage;
+        ci->xi.editmute = z_autoeditmute;
+        ci->xi.nodamage = z_nodamage;
     }
 
     #include "z_msgfilter.h"

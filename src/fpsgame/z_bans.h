@@ -40,7 +40,6 @@ void z_kickteamkillers(uint ip)
         loopv(clients) if(clients[i]->state.aitype==AI_NONE && clients[i]->state.state!=CS_SPECTATOR && getclientip(clients[i]->clientnum)==ip)
         {
             if(clients[i]->local || clients[i]->privilege >= PRIV_MASTER) continue;
-            extern void forcespectator(clientinfo *);
             forcespectator(clients[i]);
             sendf(clients[i]->clientnum, 1, "ris", N_SERVMSG, ban_message_teamkillspectate);
         }
@@ -53,7 +52,6 @@ SVAR(ban_message_kickbanreason, "ip you are connecting from is banned because: %
 
 bool z_checkban(uint ip, clientinfo *ci)
 {
-    extern int showbanreason;
     loopv(bannedips) if(bannedips[i].ip==ip) switch(bannedips[i].type)
     {
         case BAN_TEAMKILL:
@@ -224,13 +222,7 @@ static int z_readbantime(char *str)
 
 void z_servcmd_ban(int argc, char **argv, int sender)
 {
-    extern void z_log_kick(clientinfo *, const char *, const char *, int, clientinfo *, const char *);
-    extern void z_log_kickdone();
-    extern void z_showban(clientinfo *, const char *, const char *, int, const char *);
-    extern bool z_parseclient_verify(const char *str, int &cn, bool allowall, bool allowbot = false, bool allowspy = false);
-    extern clientinfo *getinfo(int n);
     extern const char *colorname(clientinfo *ci, const char *name = NULL);
-    extern void forcespectator(clientinfo *ci);
 
     static const char * const banstrings[] = { "ban", "specban", "muteban" };
     clientinfo *target, *ci = (clientinfo *)getclientinfo(sender);

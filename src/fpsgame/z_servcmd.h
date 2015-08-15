@@ -14,7 +14,7 @@ bool z_parseclient(const char *str, int &cn)
     return false;
 }
 
-bool z_parseclient_verify(const char *str, int &cn, bool allowall, bool allowbot = false, bool allowspy = false)
+bool z_parseclient_verify(const char *str, int &cn, bool allowall, bool allowbot, bool allowspy)
 {
     if(!z_parseclient(str, cn)) return false;
     if(cn < 0) return allowall;
@@ -72,7 +72,6 @@ void z_servcmd_parse(int sender, char *text)
     }
     if(!cc->canexec(ci->privilege, ci->local))
     {
-        extern const char *privname(int type);
         sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("you need to claim %s to execute this server command", privname(cc->privilege)));
         return;
     }
