@@ -64,11 +64,11 @@ static bool checkgban(uint ip, clientinfo *ci, bool connect = false)
         time(&sbans[i].lasthit);
         if(connect && showbanreason && sbans[i].comment)
         {
-            string banstr, msg;
-            sbans[i].print(banstr);
+            string addr, msg;
+            sbans[i].print(addr);
             z_formattemplate ft[] =
             {
-                { 'a', "%s", banstr },
+                { 'a', "%s", addr },
                 { 'r', "%s", sbans[i].comment },
                 { 0, 0, 0 }
             };
@@ -89,17 +89,16 @@ static bool checkgban(uint ip, clientinfo *ci, bool connect = false)
             if(ident && !ci->xi.geoip.network) ci->xi.geoip.network = newstring(ident); // gban used to identify network
             if(mode == -1) return false;
             if(mode != 1) continue;
-            if(connect && showbanreason && banmsg)
+            if(connect && banmsg)
             {
-                string banstr, msg;
-                p->print(banstr);
+                string addr, msg;
+                p->print(addr);
                 z_formattemplate ft[] =
                 {
-                    { 'a', "%s", banstr },
-                    { 'r', "%s", banmsg },
+                    { 'a', "%s", addr },
                     { 0, 0, 0 }
                 };
-                z_format(msg, sizeof(msg), ban_message_banned, ft);
+                z_format(msg, sizeof(msg), banmsg, ft);
                 if(*msg) ci->xi.setdiscreason(msg);
             }
             if(wlauth)

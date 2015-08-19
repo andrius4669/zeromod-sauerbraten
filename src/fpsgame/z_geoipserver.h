@@ -12,18 +12,18 @@ static bool checkgeoipban(clientinfo *ci)
     if(geoip_ban_anonymous && gs.anonymous) return true;
     loopv(z_geoipbans)
     {
-        const char *str;
-        switch(z_geoipbans[i].type)
+        // country is uppercase, continent is lowercase
+        if((z_geoipbans[i].type != GIB_CONTINENT ? gs.extcountry.s : gs.extcontinent.s) ==  z_geoipbans[i].key.s)
         {
-            case GIB_COUNTRY: default: str = gs.country; break;
-            case GIB_CONTINENT: str = gs.continent; break;
-        }
-        if(!strcasestr(str, z_geoipbans[i].key))
-        {
-            if(z_geoipbans[i].message && !geoip_ban_mode) ci->xi.setdiscreason(z_geoipbans[i].message);
+            if(!geoip_ban_mode)
+            {
+                if(z_geoipbans[i].message) ci->xi.setdiscreason(z_geoipbans[i].message);
+                else if(geoip_ban_message[0]) ci->xi.setdiscreason(geoip_ban_message);
+            }
             return !geoip_ban_mode;
         }
     }
+    if(geoip_ban_mode && geoip_ban_message[0]) ci->xi.setdiscreason(geoip_ban_message);
     return !!geoip_ban_mode;
 }
 

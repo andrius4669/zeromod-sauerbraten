@@ -1,18 +1,33 @@
 #ifndef Z_GEOIPSTATE_H
 #define Z_GEOIPSTATE_H
 
+union geoshortconv
+{
+    char b[2];
+    short s;
+
+    geoshortconv() {}
+    geoshortconv(short s_): s(s_) {}
+
+    void set_upper(const char *code)
+    {
+        if(code && code[0] && code[1]) { loopi(2) b[i] = toupper(code[i]); }
+        else s = 0;
+    }
+
+    void set_lower(const char *code)
+    {
+        if(code && code[0] && code[1]) { loopi(2) b[i] = tolower(code[i]); }
+        else s = 0;
+    }
+};
+
 struct geoipstate
 {
     char *network, *city, *region, *country, *continent;
     // 1 - anonymous proxy, 2 - satellite provider
     int anonymous;
-    union shortconv
-    {
-        char b[2];
-        short s;
-        shortconv() {}
-        shortconv(short s_): s(s_) {}
-    } extcountry, extcontinent;
+    geoshortconv extcountry, extcontinent;
 
     geoipstate(): network(NULL), city(NULL), region(NULL), country(NULL), continent(NULL), anonymous(0), extcountry(0), extcontinent(0) {}
     geoipstate(const geoipstate &s): network(NULL), city(NULL), region(NULL), country(NULL), continent(NULL) { *this = s; }
@@ -47,24 +62,10 @@ struct geoipstate
         return *this;
     }
 
-    void setextinfo(const char *countrycode, const char *continent)
+    void setextinfo(const char *countrycode, const char *continentcode)
     {
-        if(countrycode && countrycode[0] && countrycode[1])
-        {
-            loopi(2) extcountry.b[i] = countrycode[i] < 'a' || countrycode[i] > 'z' ? countrycode[i] : countrycode[i] - 'a' + 'A';
-        }
-        else
-        {
-            extcountry.s = 0;
-        }
-        if(continent && continent[0] && continent[1])
-        {
-            loopi(2) extcontinent.b[i] = continent[i] >= 'A' && continent[i] <= 'Z' ? continent[i] - 'A' + 'a' : continent[i];
-        }
-        else
-        {
-            extcontinent.s = 0;
-        }
+        extcountry.set_upper(countrycode);
+        extcontinent.set_lower(continentcode);
     }
 };
 

@@ -85,9 +85,9 @@ enum { GIB_COUNTRY = 0, GIB_CONTINENT };
 struct z_geoipban
 {
     int type;
-    char *key;
+    geoshortconv key;
     char *message;
-    ~z_geoipban() { delete[] key; delete[] message; }
+    ~z_geoipban() { delete[] message; }
 };
 vector<z_geoipban> z_geoipbans;
 
@@ -95,12 +95,15 @@ void z_geoip_addban(int type, const char *key, const char *message)
 {
     z_geoipban &ban = z_geoipbans.add();
     ban.type = type;
-    ban.key = newstring(key);
+    // country is uppercase, continent is lowercase
+    if(type != GIB_CONTINENT) ban.key.set_upper(key);
+    else ban.key.set_lower(key);
     ban.message = message[0] ? newstring(message) : NULL;
 }
 ICOMMAND(geoip_clearbans, "", (), z_geoipbans.shrink(0));
 ICOMMAND(geoip_ban_country, "ss", (char *country, char *message), z_geoip_addban(GIB_COUNTRY, country, message));
 ICOMMAND(geoip_ban_continent, "ss", (char *continent, char *message), z_geoip_addban(GIB_CONTINENT, continent, message));
+SVAR(geoip_ban_message, "");
 
 static void z_init_geoip()
 {
@@ -271,7 +274,7 @@ void z_geoip_resolveclient(geoipstate &gs, enet_uint32 ip)
 
             // continent name
             mmdb_error = MMDB_get_value(&result.entry, &data, "continent", "names", geoip_mmdb_lang, NULL);
-            if((mmdb_error != MMDB_SUCCESS || !data.has_data) && strcmp(geoip_mmdb_lang, "en"))
+            if((mmdb_error != MMDB_SUCCESS || !data.has_data) && strcmp(geoip_mmdb_lang, "en")) // fallback to english
                 mmdb_error = MMDB_get_value(&result.entry, &data, "continent", "names", "en", NULL);
             if(mmdb_error == MMDB_SUCCESS && data.has_data && data.type == MMDB_DATA_TYPE_UTF8_STRING)
             {
