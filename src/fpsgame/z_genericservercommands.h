@@ -49,25 +49,56 @@ void z_servcmd_info(int argc, char **argv, int sender)
 SCOMMANDAH(info, PRIV_NONE, z_servcmd_info, 1);
 SCOMMANDA(uptime, PRIV_NONE, z_servcmd_info, 1);
 
+void z_servcmd_ignore(int argc, char **argv, int sender)
+{
+    if(argc <= 1) { z_servcmd_pleasespecifyclient(sender); return; }
+
+    clientinfo *sci = getinfo(sender);
+    if(!sci) return;
+
+    bool val = strcasecmp(argv[0], "unignore")!=0;
+
+    loopi(argc-1)
+    {
+        int cn;
+        if(!z_parseclient_verify(argv[i+1], cn, false, true))
+        {
+            z_servcmd_unknownclient(argv[i+1], sender);
+            continue;
+        }
+        if(val) sci->xi.ignores.addunique((uchar)cn);
+        else sci->xi.ignores.removeobj((uchar)cn);
+        sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("%s server messages from %s", val ? "ignoring" : "unignoring", colorname(getinfo(cn))));
+    }
+}
+SCOMMAND(ignore, PRIV_NONE, z_servcmd_ignore);
+SCOMMAND(unignore, PRIV_NONE, z_servcmd_ignore);
+
 VAR(servcmd_pm_comfirmation, 0, 1, 1);
 void z_servcmd_pm(int argc, char **argv, int sender)
 {
     if(argc <= 1) { z_servcmd_pleasespecifyclient(sender); return; }
     if(argc <= 2) { z_servcmd_pleasespecifymessage(sender); return; }
     int cn;
-    clientinfo *ci;
     if(!z_parseclient_verify(argv[1], cn, false, false, true))
     {
         z_servcmd_unknownclient(argv[1], sender);
         return;
     }
-    ci = getinfo(sender);
-    if(z_checkchatmute(ci)) { sendf(sender, 1, "ris", N_SERVMSG, "your pms are muted"); return; }
-    sendf(cn, 1, "ris", N_SERVMSG, tempformatstring("\f6pm: \f7%s \f5(%d)\f7: \f0%s", ci->name, ci->clientnum, argv[2]));
+    clientinfo *ci = getinfo(cn);
+    clientinfo *sci = getinfo(sender);
+    if(!ci || !sci) return;
+
+    if(z_checkchatmute(sci)) { sendf(sender, 1, "ris", N_SERVMSG, "your pms are muted"); return; }
+
+    if(ci->xi.ignores.find((uchar)sender) < 0)
+    {
+        sendf(cn, 1, "ris", N_SERVMSG, tempformatstring("\f6pm: \f7%s \f5(%d)\f7: \f0%s", sci->name, sci->clientnum, argv[2]));
+    }
+
     if(servcmd_pm_comfirmation)
     {
-        ci = getinfo(cn);
-        sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("your private message was successfully sent to %s \f5(%d)", ci->name, ci->clientnum));
+        sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("your pm was successfully sent to %s \f5(%d)", ci->name, ci->clientnum));
     }
 }
 SCOMMANDA(pm, PRIV_NONE, z_servcmd_pm, 2);

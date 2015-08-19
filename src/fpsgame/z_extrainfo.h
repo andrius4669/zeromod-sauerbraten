@@ -122,6 +122,7 @@ struct z_extrainfo
     z_posqueue postrack;
     bool ghost;
     uint tele_overflow, jump_overflow;
+    vector<uchar> ignores;
 
     z_extrainfo(): disc_reason(NULL), wlauth(NULL) {}
     ~z_extrainfo() { delete[] disc_reason; delete[] wlauth; }
@@ -149,6 +150,7 @@ struct z_extrainfo
         lastchat = lastedit = 0;
         authident = false;
         ghost = false;
+        ignores.setsize(0);
     }
 
     void clearws()
