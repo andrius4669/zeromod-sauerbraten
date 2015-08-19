@@ -132,9 +132,14 @@ bool z_applyspecban(clientinfo *ci)
         const char *ident, *wlauth, *banmsg;
         int mode;
         if(!getmasterbaninfo(i, ident, mode, wlauth, banmsg) || mode != 2) continue;
+        if(wlauth && ci->xi.ident.isset() && !strcmp(ci->xi.ident.desc, wlauth)) continue;
         if((p = gbans[i].find(hip)) && p->check(hip))
         {
             if(banmsg && banmsg[0]) sendf(ci->clientnum, 1, "ris", N_SERVMSG, banmsg);
+            if(wlauth && ci->authmaster < 0 && !ci->authchallenge)
+            {
+                sendf(ci->clientnum, 1, "ris", N_REQAUTH, wlauth);
+            }
             return true;
         }
     }

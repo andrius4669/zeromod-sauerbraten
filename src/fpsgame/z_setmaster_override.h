@@ -34,6 +34,7 @@ bool setmaster(clientinfo *ci, bool val, const char *pass = "",
         {
             z_log_ident(ci, authname, authdesc);
             ci->xi.ident.set(authname, authdesc);
+            ci->xi.authident = false;
             wantpriv = PRIV_NONE;
         }
         if(wantpriv <= ci->privilege) return true;
