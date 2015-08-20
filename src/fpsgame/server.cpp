@@ -2984,7 +2984,7 @@ namespace server
         ci->connectauth = 0;
         ci->connected = true;
         ci->needclipboard = totalmillis ? totalmillis : 1;
-        if(mastermode>=MM_LOCKED || z_applyspecban(ci)) ci->state.state = CS_SPECTATOR;
+        if(mastermode>=MM_LOCKED || z_applyspecban(ci, true)) ci->state.state = CS_SPECTATOR;
         ci->state.lasttimeplayed = lastmillis;
 
         const char *worst = m_teammode ? chooseworstteam(NULL, ci) : NULL;

@@ -106,7 +106,7 @@ static bool z_checkchatmute(clientinfo *ci, clientinfo *cq = NULL)
 
 SVAR(ban_message_specreason, "you are spectated because of %t ban");
 
-bool z_applyspecban(clientinfo *ci)
+bool z_applyspecban(clientinfo *ci, bool connecting = false)
 {
     if(ci->local) return false;
     uint ip = getclientip(ci->clientnum);
@@ -135,9 +135,12 @@ bool z_applyspecban(clientinfo *ci)
         if(wlauth && ci->xi.ident.isset() && !strcmp(ci->xi.ident.desc, wlauth)) continue;
         if((p = gbans[i].find(hip)) && p->check(hip))
         {
-            if(banmsg && banmsg[0]) sendf(ci->clientnum, 1, "ris", N_SERVMSG, banmsg);
+            // message gonna be cleared by N_WELCOME anyway
+            if(!connecting && banmsg && banmsg[0]) sendf(ci->clientnum, 1, "ris", N_SERVMSG, banmsg);
             if(wlauth && ci->authmaster < 0 && !ci->authchallenge)
             {
+                // we haven't yet sent N_WELCOME at this point
+                if(connecting) sendf(ci->clientnum, 1, "ri", N_WELCOME);
                 sendf(ci->clientnum, 1, "ris", N_REQAUTH, wlauth);
             }
             return true;
