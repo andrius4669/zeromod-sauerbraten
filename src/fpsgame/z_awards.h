@@ -183,7 +183,7 @@ VAR(awards_fallback, 0, 1, 1);
 
 static inline const char *z_pickawardstemplate()
 {
-    if(!z_statsstyles.empty())
+    if(!z_awardsstyles.empty())
     {
         int best = z_pickbestawardsstyle();
         if(best >= 0) return z_awardsstyles[best].awards;
