@@ -67,10 +67,10 @@ struct z_statsstyle
 {
     int modes;
     static int exclude;
-    char *stats, *awards;
+    char *stats;
 
-    z_statsstyle(): stats(NULL), awards(NULL) {}
-    ~z_statsstyle() { delete[] stats; delete[] awards; }
+    z_statsstyle(): stats(NULL) {}
+    ~z_statsstyle() { delete[] stats; }
 
     int calcmask() const { return modes & (1<<NUMGAMEMODES) ? modes & ~exclude : modes; }
     bool hasmode(int mode, int offset = STARTGAMEMODE) const { return (calcmask() & (1 << (mode - offset))) != 0; }
@@ -79,29 +79,55 @@ struct z_statsstyle
 int z_statsstyle::exclude = 0;
 vector<z_statsstyle> z_statsstyles;
 
-static void z_stats_addstyle(int modemask, const char *sstr, const char *astr)
+
+struct z_awardsstyle
+{
+    int modes;
+    static int exclude;
+    char *awards;
+
+    z_awardsstyle(): awards(NULL) {}
+    ~z_awardsstyle() { delete[] awards; }
+
+    int calcmask() const { return modes & (1<<NUMGAMEMODES) ? modes & ~exclude : modes; }
+    bool hasmode(int mode, int offset = STARTGAMEMODE) const { return (calcmask() & (1 << (mode - offset))) != 0; }
+    bool issubset(z_awardsstyle &as) const { return (modes & as.modes) == as.modes; }
+};
+int z_awardsstyle::exclude = 0;
+vector<z_awardsstyle> z_awardsstyles;
+
+
+static void z_stats_addstatstyle(int modemask, const char *sstr)
 {
     if(!modemask) return;
     if(!(modemask&(1<<NUMGAMEMODES))) z_statsstyle::exclude |= modemask;
     z_statsstyle &s = z_statsstyles.add();
     s.modes = modemask;
     if(sstr && sstr[0]) s.stats = newstring(sstr);
+}
+
+static void z_stats_addawardstyle(int modemask, const char *astr)
+{
+    if(!modemask) return;
+    if(!(modemask&(1<<NUMGAMEMODES))) z_awardsstyle::exclude |= modemask;
+    z_awardsstyle &s = z_awardsstyles.add();
+    s.modes = modemask;
     if(astr && astr[0]) s.awards = newstring(astr);
 }
 
 void stats_style(tagval *args, int numargs)
 {
     vector<char *> modes;
-    for(int i = 0; i+1 < numargs; i += 3)
+    for(int i = 0; i < numargs; i += 2)
     {
-        if(i+2 < numargs) explodelist(args[i+2].getstr(), modes);
+        if(i+1 < numargs) explodelist(args[i+1].getstr(), modes);
         if(modes.empty()) modes.add(newstring("*"));
         int modemask = genmodemask(modes);
-        z_stats_addstyle(modemask, args[i].getstr(), args[i+1].getstr());
+        z_stats_addstatstyle(modemask, args[i].getstr());
         modes.deletearrays();
     }
 }
-COMMAND(stats_style, "sss3V");
+COMMAND(stats_style, "ss2V");
 
 void stats_stylereset()
 {
@@ -110,7 +136,28 @@ void stats_stylereset()
 }
 COMMAND(stats_stylereset, "");
 
-static int z_pickbeststyle()
+void awards_style(tagval *args, int numargs)
+{
+    vector<char *> modes;
+    for(int i = 0; i < numargs; i += 2)
+    {
+        if(i+1 < numargs) explodelist(args[i+1].getstr(), modes);
+        if(modes.empty()) modes.add(newstring("*"));
+        int modemask = genmodemask(modes);
+        z_stats_addawardstyle(modemask, args[i].getstr());
+        modes.deletearrays();
+    }
+}
+COMMAND(awards_style, "ss2V");
+
+void awards_stylereset()
+{
+    z_awardsstyle::exclude = 0;
+    z_awardsstyles.shrink(0);
+}
+COMMAND(awards_stylereset, "");
+
+static int z_pickbeststatsstyle()
 {
     int best = -1;
     loopv(z_statsstyles)
@@ -121,12 +168,26 @@ static int z_pickbeststyle()
     return best;
 }
 
+static int z_pickbestawardsstyle()
+{
+    int best = -1;
+    loopv(z_awardsstyles)
+    {
+        z_awardsstyle &s = z_awardsstyles[i];
+        if(s.hasmode(gamemode) && (best < 0 || z_awardsstyles[best].issubset(s))) best = i;
+    }
+    return best;
+}
+
+VAR(awards_fallback, 0, 1, 1);
+
 static inline const char *z_pickawardstemplate()
 {
     if(!z_statsstyles.empty())
     {
-        int best = z_pickbeststyle();
-        return best >= 0 ? z_statsstyles[best].awards : NULL;
+        int best = z_pickbestawardsstyle();
+        if(best >= 0) return z_awardsstyles[best].awards;
+        if(!awards_fallback) return NULL;
     }
     // some default hardcoded templates
     if(m_ctf)
@@ -337,12 +398,15 @@ SVAR(stats_style_normal, "\f6stats: \f7%C: \f2frags: \f7%f\f2, deaths: \f7%l\f2,
 SVAR(stats_style_teamplay, "\f6stats: \f7%C: \f2frags: \f7%f\f2, deaths: \f7%l\f2, suicides: \f7%s\f2, teamkills: \f7%t\f2, accuracy(%%): \f7%a\f2, kpd: \f7%p");
 SVAR(stats_style_ctf, "\f6stats: \f7%C: \f2frags: \f7%f\f2, flags: \f7%g\f2, deaths: \f7%l\f2, suicides: \f7%s\f2, teamkills: \f7%t\f2, accuracy(%%): \f7%a\f2, kpd: \f7%p");
 
+VAR(stats_fallback, 0, 1, 1);
+
 static inline const char *z_pickstatstemplate()
 {
     if(!z_statsstyles.empty())
     {
-        int best = z_pickbeststyle();
-        return best >= 0 ? z_statsstyles[best].awards : NULL;
+        int best = z_pickbeststatsstyle();
+        if(best >= 0) return z_statsstyles[best].stats;
+        if(!stats_fallback) return NULL;
     }
     // fallback to defaults
     if(m_ctf) return stats_style_ctf;
