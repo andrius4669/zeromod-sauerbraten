@@ -174,5 +174,8 @@ void s_listclients(int *bots)
 COMMAND(s_listclients, "b");
 
 ICOMMAND(s_getclientname, "i", (int *cn), { clientinfo *ci = getinfo(*cn); result(ci && ci->connected ? ci->name : ""); });
+ICOMMAND(s_getclientprivilege, "i", (int *cn), { clientinfo *ci = getinfo(*cn); intret(ci && ci->connected ? ci->privilege : 0); });
+ICOMMAND(s_getclientprivname, "i", (int *cn), { clientinfo *ci = getinfo(*cn); result(ci && ci->connected ? privname(ci->privilege) : ""); });
+ICOMMAND(s_getclienthostname, "i", (int *cn), { const char *hn = getclienthostname(*cn); result(hn ? hn : ""); });
 
 #endif // Z_SCRIPTING_H
