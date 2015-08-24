@@ -106,22 +106,25 @@ static bool z_checkchatmute(clientinfo *ci, clientinfo *cq = NULL)
 
 SVAR(ban_message_specreason, "you are spectated because of %t ban");
 
-bool z_applyspecban(clientinfo *ci, bool connecting = false)
+bool z_applyspecban(clientinfo *ci, bool connecting = false, bool quiet = false)
 {
     if(ci->local) return false;
     uint ip = getclientip(ci->clientnum);
     // check against regular bans
     loopv(bannedips) if(bannedips[i].ip==ip && (bannedips[i].type==BAN_SPECTATE || (teamkillspectate && bannedips[i].type==BAN_TEAMKILL)))
     {
-        ban &b = bannedips[i];
-        string tmp;
-        z_formattemplate ft[] =
+        if(!quiet)
         {
-            { 't', "%s", b.type==BAN_TEAMKILL ? "teamkills" : "spectate" },
-            { 0, 0, 0 }
-        };
-        z_format(tmp, sizeof(tmp), ban_message_specreason, ft);
-        if(*tmp) sendf(ci->clientnum, 1, "ris", N_SERVMSG, tmp);
+            ban &b = bannedips[i];
+            string tmp;
+            z_formattemplate ft[] =
+            {
+                { 't', "%s", b.type==BAN_TEAMKILL ? "teamkills" : "spectate" },
+                { 0, 0, 0 }
+            };
+            z_format(tmp, sizeof(tmp), ban_message_specreason, ft);
+            if(*tmp) sendf(ci->clientnum, 1, "ris", N_SERVMSG, tmp);
+        }
         return true;
     }
     // check against global bans
@@ -135,13 +138,16 @@ bool z_applyspecban(clientinfo *ci, bool connecting = false)
         if(wlauth && ci->xi.ident.isset() && !strcmp(ci->xi.ident.desc, wlauth)) continue;
         if((p = gbans[i].find(hip)) && p->check(hip))
         {
-            // message gonna be cleared by N_WELCOME anyway
-            if(!connecting && banmsg && banmsg[0]) sendf(ci->clientnum, 1, "ris", N_SERVMSG, banmsg);
-            if(wlauth && ci->authmaster < 0 && !ci->authchallenge)
+            if(!quiet)
             {
-                // we haven't yet sent N_WELCOME at this point
-                if(connecting) sendf(ci->clientnum, 1, "ri", N_WELCOME);
-                sendf(ci->clientnum, 1, "ris", N_REQAUTH, wlauth);
+                // message gonna be cleared by N_WELCOME anyway
+                if(!connecting && banmsg && banmsg[0]) sendf(ci->clientnum, 1, "ris", N_SERVMSG, banmsg);
+                if(wlauth && ci->authmaster < 0 && !ci->authchallenge)
+                {
+                    // we haven't yet sent N_WELCOME at this point
+                    if(connecting) sendf(ci->clientnum, 1, "ri", N_WELCOME);
+                    sendf(ci->clientnum, 1, "ris", N_REQAUTH, wlauth);
+                }
             }
             return true;
         }

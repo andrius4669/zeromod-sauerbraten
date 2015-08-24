@@ -6,6 +6,10 @@
 #include "z_geoipstate.h"
 #include "z_geoip.h"
 
+VAR(geoip_admin_restriction, 0, 1, 1);  // restrictions shall apply for lower than admin privs, or lower than master?
+
+static inline bool z_is_geoip_admin(clientinfo *ci) { return ci->privilege >= (geoip_admin_restriction ? PRIV_ADMIN : PRIV_MASTER) || ci->local; }
+
 static bool checkgeoipban(clientinfo *ci)
 {
     geoipstate &gs = ci->xi.geoip;
@@ -50,7 +54,7 @@ static void z_geoip_print(vector<char> &buf, clientinfo *ci, bool admin)
     }
 }
 
-VAR(geoip_log, 0, 0, 2);
+VAR(geoip_log, 0, 0, 2);    // 0 - no info, 1 - restricted (censored) info, 2 - full info
 
 void z_geoip_log(clientinfo *ci)
 {
@@ -65,9 +69,9 @@ void z_geoip_log(clientinfo *ci)
 }
 
 SVAR(geoip_style_normal, "%C connected from %L");
-SVAR(geoip_style_normal_query, "%C is connected from %L");
+SVAR(geoip_style_normal_query, "%C\tis connected from %L");
 SVAR(geoip_style_local, "%C connected as local client");
-SVAR(geoip_style_local_query, "%C is connected as local client");
+SVAR(geoip_style_local_query, "%C\tis connected as local client");
 SVAR(geoip_style_failed_query, "failed to get any geoip information about %C");
 
 void z_geoip_show(clientinfo *ci)
@@ -87,7 +91,7 @@ void z_geoip_show(clientinfo *ci)
     bool filled_in[2] = { false, false };
     for(int i = demorecord ? -1 : 0; i < clients.length(); i++) if(i < 0 || clients[i]->state.aitype==AI_NONE)
     {
-        bool isadmin = i >= 0 && (clients[i]->privilege >= PRIV_ADMIN || clients[i]->local);
+        bool isadmin = i >= 0 && z_is_geoip_admin(clients[i]);
         int idx = isadmin ? 1 : 0;
         if(!filled_in[idx])
         {
@@ -194,7 +198,7 @@ void z_servcmd_geoip(int argc, char **argv, int sender)
 {
     clientinfo *ci, *sci = getinfo(sender);
     vector<clientinfo *> cis;
-    const bool isadmin = sci->privilege>=PRIV_ADMIN || sci->local;
+    const bool isadmin = z_is_geoip_admin(sci);
 
     for(int i = 1; i < argc; i++)
     {
@@ -244,20 +248,21 @@ SCOMMAND(getip, ZC_HIDDEN | PRIV_NONE, z_servcmd_geoip);
 void z_servcmd_whois(int argc, char **argv, int sender)
 {
     clientinfo * const sci = getinfo(sender);
-    const bool isadmin = sci->privilege>=PRIV_ADMIN || sci->local;
+    const bool isadmin = z_is_geoip_admin(sci);
     string msg;
 
     if(argc < 2) { z_servcmd_pleasespecifyclient(sender); return; }
 
     int cn;
-    if(!z_parseclient_verify(argv[1], cn, false, false, isadmin))
+    if(!z_parseclient_verify(argv[1], cn, true, false, isadmin))
     {
         z_servcmd_unknownclient(argv[1], sender);
         return;
     }
-    clientinfo *ci = getinfo(cn);
+    clientinfo *ci = cn >= 0 ? getinfo(cn) : sci;
+    const char *cname = colorname(ci);
 
-    z_geoip_print_query(msg, sizeof(msg), ci, isadmin);
+    z_geoip_print_query(msg, sizeof(msg), ci, (ci==sci) || isadmin);
     if(*msg) sendf(sender, 1, "ris", N_SERVMSG, msg);
 
     if(ci->privilege > PRIV_NONE && z_canseemypriv(ci, sci))
@@ -265,26 +270,33 @@ void z_servcmd_whois(int argc, char **argv, int sender)
         if(ci->xi.claim.isset())
         {
             if(*ci->xi.claim.desc) formatstring(msg, "%s is claimed %s%s as '\fs\f5%s\fr' [\fs\f0%s\fr]",
-                                                     colorname(ci), z_isinvpriv(ci, ci->privilege) ? "invisible " : "",
+                                                     cname, z_isinvpriv(ci, ci->privilege) ? "invisible " : "",
                                                      privname(ci->privilege), ci->xi.claim.name, ci->xi.claim.desc);
             else formatstring(msg, "%s is claimed %s%s as '\fs\f5%s\fr'",
-                                   colorname(ci), z_isinvpriv(ci, ci->privilege) ? "invisible " : "",
+                                   cname, z_isinvpriv(ci, ci->privilege) ? "invisible " : "",
                                    privname(ci->privilege), ci->xi.claim.name);
         }
         else
         {
-            formatstring(msg, "%s is claimed %s%s", colorname(ci), z_isinvpriv(ci, ci->privilege) ? "invisible " : "", privname(ci->privilege));
+            formatstring(msg, "%s is claimed %s%s", cname, z_isinvpriv(ci, ci->privilege) ? "invisible " : "", privname(ci->privilege));
         }
         sendf(sender, 1, "ris", N_SERVMSG, msg);
     }
 
-    if(isadmin && ci->xi.ident.isset())
+    if(((ci==sci) || isadmin) && ci->xi.ident.isset())
     {
-        if(*ci->xi.ident.desc) formatstring(msg, "%s is identified as '\fs\f5%s\fr' [\fs\f0%s\fr]", colorname(ci),
+        if(*ci->xi.ident.desc) formatstring(msg, "%s is identified as '\fs\f5%s\fr' [\fs\f0%s\fr]", cname,
                                                  ci->xi.ident.name, ci->xi.ident.desc);
-        else formatstring(msg, "%s is identified as '\fs\f5%s\fr'", colorname(ci), ci->xi.ident.name);
+        else formatstring(msg, "%s is identified as '\fs\f5%s\fr'", cname, ci->xi.ident.name);
         sendf(sender, 1, "ris", N_SERVMSG, msg);
     }
+
+    if(z_checkchatmute(ci, ci)) sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("%s is muted", cname));
+    if(z_isghost(*ci)) sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("%s is ghosted", cname));
+    if(ci->xi.editmute) sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("%s is editmuted", cname));
+    if(ci->xi.namemute) sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("%s is namemuted", cname));
+    if(ci->xi.specmute) sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("%s is specmuted", cname));
+    if(z_applyspecban(ci, false, true)) sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("%s is specbanned", cname));
 
     uint mspassed = uint(totalmillis-ci->connectmillis);
     if(mspassed/1000 != 0)
@@ -294,7 +306,7 @@ void z_servcmd_whois(int argc, char **argv, int sender)
         if(timebuf.length())
         {
             timebuf.add(0);
-            sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("%s connected %s ago", colorname(ci), timebuf.getbuf()));
+            sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("%s connected %s ago", cname, timebuf.getbuf()));
         }
     }
 }
@@ -303,6 +315,17 @@ SCOMMAND(whois, PRIV_NONE, z_servcmd_whois);
 ICOMMAND(s_geoip_resolveclients, "", (),
 {
     loopv(clients) if(clients[i]->state.aitype == AI_NONE) z_geoip_resolveclient(clients[i]->xi.geoip, getclientip(clients[i]->clientnum));
+});
+
+ICOMMAND(s_geoip_client, "ib", (int *cn, int *a),
+{
+    clientinfo *ci = (clientinfo *)getclientinfo(*cn);
+    if(!ci || !ci->connected) { result(""); return; }
+    vector<char> buf;
+    z_geoip_print(buf, ci, *a > 0);
+    if(buf.empty()) { result(""); return; }
+    buf.add('\0');
+    result(buf.getbuf());
 });
 
 #endif // Z_GEOIPSERVER_H

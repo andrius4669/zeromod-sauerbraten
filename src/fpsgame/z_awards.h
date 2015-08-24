@@ -394,9 +394,9 @@ void z_awards()
     else sendservmsg(buf);
 }
 
-SVAR(stats_style_normal, "\f6stats: \f7%C: \f2frags: \f7%f\f2, deaths: \f7%l\f2, suicides: \f7%s\f2, accuracy(%%): \f7%a\f2, kpd: \f7%p");
-SVAR(stats_style_teamplay, "\f6stats: \f7%C: \f2frags: \f7%f\f2, deaths: \f7%l\f2, suicides: \f7%s\f2, teamkills: \f7%t\f2, accuracy(%%): \f7%a\f2, kpd: \f7%p");
-SVAR(stats_style_ctf, "\f6stats: \f7%C: \f2frags: \f7%f\f2, flags: \f7%g\f2, deaths: \f7%l\f2, suicides: \f7%s\f2, teamkills: \f7%t\f2, accuracy(%%): \f7%a\f2, kpd: \f7%p");
+SVAR(stats_style_normal, "\f6stats: \f7%C:\t\f2frags: \f7%f\f2,\tdeaths: \f7%l\f2,\tsuicides: \f7%s\f2,\taccuracy(%%): \f7%a\f2,\tkpd: \f7%p");
+SVAR(stats_style_teamplay, "\f6stats: \f7%C:\t\f2frags: \f7%f\f2,\tdeaths: \f7%l\f2,\tsuicides: \f7%s\f2,\tteamkills: \f7%t\f2,\taccuracy(%%): \f7%a\f2,\tkpd: \f7%p");
+SVAR(stats_style_ctf, "\f6stats: \f7%C:\t\f2frags: \f7%f\f2,\tflags: \f7%g\f2,\tdeaths: \f7%l\f2,\tsuicides: \f7%s\f2,\tteamkills: \f7%t\f2,\taccuracy(%%): \f7%a\f2,\tkpd: \f7%p");
 
 VAR(stats_fallback, 0, 1, 1);
 
