@@ -2948,7 +2948,6 @@ namespace server
         if(ci->state.state==CS_SPECTATOR && !ci->privilege && !ci->local) return;
         if(z_iseditmuted(ci)) { sendf(sender, 1, "ris", N_SERVMSG, "your sendmap was muted"); return; }
         if(mapdata) DELETEP(mapdata);
-        if(!len) return;
         mapdata = opentempfile("mapdata", "w+b");
         if(!mapdata) { sendf(sender, 1, "ris", N_SERVMSG, "failed to open temporary file for map"); return; }
         mapdata->write(data, len);
@@ -3164,7 +3163,7 @@ namespace server
                         while(curmsg<p.length()) cp->position.add(p.buf[curmsg++]);
                     }
                     if(!ci->xi.maploaded && cp->state.state==CS_ALIVE) z_maploaded(ci);
-                    if(smode && cp->state.state==CS_ALIVE) smode->moved(cp, cp->state.o, cp->gameclip, pos, (flags&0x80)!=0);
+                    if(smode && cp->state.state==CS_ALIVE && !z_isghost(*cp)) smode->moved(cp, cp->state.o, cp->gameclip, pos, (flags&0x80)!=0);
                     cp->state.o = pos;
                     cp->gameclip = (flags&0x80)!=0;
                     z_processpos(ci, cp);
