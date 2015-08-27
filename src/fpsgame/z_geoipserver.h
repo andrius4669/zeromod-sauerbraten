@@ -69,9 +69,9 @@ void z_geoip_log(clientinfo *ci)
 }
 
 SVAR(geoip_style_normal, "%C connected from %L");
-SVAR(geoip_style_normal_query, "%C\tis connected from %L");
+SVAR(geoip_style_normal_query, "%C is connected from %L");
 SVAR(geoip_style_local, "%C connected as local client");
-SVAR(geoip_style_local_query, "%C\tis connected as local client");
+SVAR(geoip_style_local_query, "%C is connected as local client");
 SVAR(geoip_style_failed_query, "failed to get any geoip information about %C");
 
 void z_geoip_show(clientinfo *ci)
