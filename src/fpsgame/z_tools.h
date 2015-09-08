@@ -98,6 +98,31 @@ extern z_avltree<gbaninfo> pbans;
 extern vector<pbaninfo> sbans;
 
 
+typedef void (* z_sleepfunc)(void *);
+typedef void (* z_freevalfunc)(void *);
+
+enum
+{
+    ZS_SLEEPS = 0,
+    ZS_ANNOUNCES,
+    ZS_NUM
+};
+
+struct z_sleepstruct
+{
+    int delay, millis;
+    void *val;
+    bool reload;
+    z_sleepfunc func;
+    z_freevalfunc freeval;
+
+    z_sleepstruct() {}
+    ~z_sleepstruct() { if(freeval) freeval(val); }
+};
+
+extern void z_checksleep();
+
+
 extern void z_setteaminfos(hashset<teaminfo> *&dst, hashset<teaminfo> *src);
 
 

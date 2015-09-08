@@ -3,27 +3,6 @@
 
 #include "z_servcmd.h"
 
-typedef void (* z_sleepfunc)(void *);
-typedef void (* z_freevalfunc)(void *);
-
-enum
-{
-    ZS_SLEEPS = 0,
-    ZS_ANNOUNCES,
-    ZS_NUM
-};
-
-struct z_sleepstruct
-{
-    int delay, millis;
-    void *val;
-    bool reload;
-    z_sleepfunc func;
-    z_freevalfunc freeval;
-
-    z_sleepstruct() {}
-    ~z_sleepstruct() { if(freeval) freeval(val); }
-};
 vector<z_sleepstruct> z_sleeps[ZS_NUM];
 
 static void z_addsleep(vector<z_sleepstruct> &sleeps, int offset, int delay, bool reload, z_sleepfunc func, void *val, z_freevalfunc freeval)
@@ -177,5 +156,13 @@ ICOMMAND(s_getclientname, "i", (int *cn), { clientinfo *ci = getinfo(*cn); resul
 ICOMMAND(s_getclientprivilege, "i", (int *cn), { clientinfo *ci = getinfo(*cn); intret(ci && ci->connected ? ci->privilege : 0); });
 ICOMMAND(s_getclientprivname, "i", (int *cn), { clientinfo *ci = getinfo(*cn); result(ci && ci->connected ? privname(ci->privilege) : ""); });
 ICOMMAND(s_getclienthostname, "i", (int *cn), { const char *hn = getclienthostname(*cn); result(hn ? hn : ""); });
+
+ICOMMAND(s_numclients, "bbbb", (int *exclude, int *nospec, int *noai, int *priv),
+{
+    intret(numclients(*exclude >= 0 ? *exclude : -1, *nospec!=0, *noai!=0, *priv>0));
+});
+
+ICOMMAND(s_addai, "ib", (int *skill, int *limit), aiman::addai(*skill, *limit));
+ICOMMAND(s_delai, "", (), aiman::deleteai());
 
 #endif // Z_SCRIPTING_H

@@ -2487,7 +2487,6 @@ namespace server
         ci->timesync = false;
     }
 
-    #include "z_scripting.h"
     #include "z_gbans_override.h"
 
     void serverupdate()
@@ -3966,6 +3965,7 @@ namespace server
 
     #include "aiman.h"
 
+    #include "z_scripting.h"
     #include "z_genericservercommands.h"
     #include "z_talkbot.h"
 }
