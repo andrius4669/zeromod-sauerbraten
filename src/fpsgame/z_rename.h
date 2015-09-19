@@ -40,16 +40,28 @@ void z_servcmd_rename(int argc, char **argv, int sender)
     if(ci)
     {
         z_log_rename(ci, name, actor);
-        copystring(ci->name, name);
-        z_rename(ci, name);
+        copystring(ci->name, name, MAXNAMELEN+1);
+        z_rename(ci, ci->name);
     }
     else loopv(clients) if(!clients[i]->spy)
     {
         z_log_rename(clients[i], name, actor);
-        copystring(clients[i]->name, name);
-        z_rename(clients[i], name);
+        copystring(clients[i]->name, name, MAXNAMELEN+1);
+        z_rename(clients[i], clients[i]->name);
     }
 }
 SCOMMANDA(rename, PRIV_AUTH, z_servcmd_rename, 2);
+
+ICOMMAND(s_rename, "is", (int *cn, char *newname),
+{
+    clientinfo *ci = getinfo(*cn);
+    if(!ci) return;
+    string name;
+    filtertext(name, newname, false, false, MAXNAMELEN);
+    if(!name[0]) copystring(name, "unnamed");
+    z_log_rename(ci, name);
+    copystring(ci->name, name, MAXNAMELEN+1);
+    z_rename(ci, ci->name);
+});
 
 #endif // Z_RENAME_H

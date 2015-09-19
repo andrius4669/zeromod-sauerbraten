@@ -162,7 +162,22 @@ ICOMMAND(s_numclients, "bbbb", (int *exclude, int *nospec, int *noai, int *priv)
     intret(numclients(*exclude >= 0 ? *exclude : -1, *nospec!=0, *noai!=0, *priv>0));
 });
 
-ICOMMAND(s_addai, "ib", (int *skill, int *limit), aiman::addai(*skill, *limit));
-ICOMMAND(s_delai, "", (), aiman::deleteai());
+ICOMMAND(s_addai, "ib", (int *skill, int *limit), intret(aiman::addai(*skill, *limit) ? 1 : 0));
+ICOMMAND(s_delai, "", (), intret(aiman::deleteai() ? 1 : 0));
+
+ICOMMAND(s_setteam, "is", (int *cn, char *newteam, int *mode),
+{
+    string team;
+    filtertext(team, newteam, false, false, MAXTEAMLEN);
+    clientinfo *ci = getinfo(*cn);
+    if(!m_teammode || !team[0] || !ci || !ci->connected || !strcmp(ci->team, team) || ci->spy) return;
+    if((!smode || smode->canchangeteam(ci, ci->team, team)) && addteaminfo(team))
+    {
+        if(ci->state.state==CS_ALIVE) suicide(ci);
+        copystring(ci->team, team, MAXTEAMLEN+1);
+    }
+    aiman::changeteam(ci);
+    sendf(-1, 1, "riisi", N_SETTEAM, ci->clientnum, ci->team, *mode);
+});
 
 #endif // Z_SCRIPTING_H
