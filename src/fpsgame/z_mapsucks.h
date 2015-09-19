@@ -4,13 +4,14 @@
 #include "z_servercommands.h"
 #include "z_format.h"
 
-ICOMMAND(mapsucks, "i", (int *i), z_enable_command("mapsucks", *i!=0));
+VARF(mapsucks, 0, 0, 2, z_enable_command("mapsucks", mapsucks!=0));
 VAR(mapsucks_time, 0, 30, 3600);
 
 SVAR(mapsucks_style_vote, "%C thinks this map sucks. current mapsucks votes: [%z/%l]. you can rate this map with #mapsucks");
 SVAR(mapsucks_style_waitsuccess, "mapsucks voting succeeded, staring intermission in %t seconds");
 SVAR(mapsucks_style_success, "mapsucks voting succeeded, starting intermission");
 SVAR(mapsucks_style_speccantvote, "Spectators may not rate map");
+SVAR(mapsucks_style_editmode, "mapsucks is disabled in coop edit mode");
 
 void z_mapsucks(clientinfo *ci)
 {
@@ -74,6 +75,7 @@ void z_servcmd_mapsucks(int argc, char **argv, int sender)
 {
     clientinfo *ci = getinfo(sender);
     if(!ci) return;
+    if(mapsucks != 1 && m_edit) { sendf(sender, 1, "ris", N_SERVMSG, mapsucks_style_editmode); return; }
     if(ci->state.state==CS_SPECTATOR) { sendf(sender, 1, "ris", N_SERVMSG, mapsucks_style_speccantvote); return; }
     z_mapsucks(ci);
 }
