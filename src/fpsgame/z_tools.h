@@ -153,7 +153,7 @@ extern int z_nodamage;
 
 extern bool isracemode();
 extern bool holdpausecontrol();
-extern void race_gotmap(clientinfo *ci);
+extern void race_maploaded(clientinfo *ci);
 extern bool z_race_shouldhide(clientinfo &ci);
 
 

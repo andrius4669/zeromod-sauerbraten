@@ -14,6 +14,8 @@ static void z_maploaded(clientinfo *ci, bool val = true)
         z_sendallpatches(ci);
     }
     else if(!val) ci->xi.maploaded = 0;
+
+    if(val) race_maploaded(ci);
 }
 
 #endif // Z_MAPLOADED_H

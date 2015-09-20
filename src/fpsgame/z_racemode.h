@@ -6,6 +6,8 @@
 #include "z_loadmap.h"
 #include "z_format.h"
 
+enum { Z_RC_NONE = 0, Z_RC_EDITMODE, Z_RC_EDITING };
+
 bool z_racemode = false;
 VARF(racemode_enabled, 0, 0, 1,
 {
@@ -218,7 +220,7 @@ struct raceservmode: servmode
 
     int hasplace(clientinfo &ci)
     {
-        loopv(race_winners) if(race_winners[i].cn == ci.clientnum) return race_winners.length()-i;
+        loopv(race_winners) if(race_winners[i].cn == ci.clientnum) return race_winners.length() - i;
         return 0;
     }
 
@@ -256,7 +258,7 @@ struct raceservmode: servmode
 
     static bool clientready(clientinfo *ci)
     {
-        if(z_autosendmap == 2) return ci->mapcrc && !ci->getmap && ci->xi.maploaded;
+        if(z_autosendmap == 2) return ci->mapcrc && !ci->getmap && ci->xi.maploaded && !ci->warned;
         if(z_autosendmap == 1) return !ci->getmap && ci->xi.maploaded;
         return ci->mapcrc && ci->xi.maploaded;
     }
@@ -285,12 +287,14 @@ struct raceservmode: servmode
             // leave lower places to allow others to win
             // remark: this is still illogical sometimes...
             for(int j = race_winners.length()-1; j > avaiable_place; j--)
+            {
                 if(race_winners[j].cn == ci->clientnum && (!racemode_strict || !racemode_allowmultiplaces || race_winners[j].lifesequence == ci->state.lifesequence))
                 {
                     race_winners[j].cn = -1;
                     // don't increase player's racetime
                     racemillis = race_winners[j].racemillis;
                 }
+            }
             if(!racemillis) racemillis = totalmillis - ci->state.lastdeath;      /* lastdeath is reused for spawntime */
             race_winners[avaiable_place].cn = ci->clientnum;
             race_winners[avaiable_place].racemillis = racemillis;
@@ -310,7 +314,7 @@ struct raceservmode: servmode
             z_format(buf, sizeof(buf), racemode_style_enterplace, ft);
             if(buf[0]) sendservmsg(buf);
 
-            int plv = race_winners.length()-avaiable_place;
+            int plv = race_winners.length() - avaiable_place;
             if(ci->state.frags < plv) updateclientfragsnum(*ci, plv);
 
             break;
@@ -327,15 +331,15 @@ struct raceservmode: servmode
 
     static void warnracecheat(clientinfo *ci)
     {
-        if(ci->state.flags != 1 && ci->state.flags != 2) return;
-        sendf(ci->clientnum, 1, "ris", N_SERVMSG, ci->state.flags == 1 ? racemode_message_editmode : racemode_message_editing);
+        if(ci->state.flags != Z_RC_EDITMODE && ci->state.flags != Z_RC_EDITING) return;
+        sendf(ci->clientnum, 1, "ris", N_SERVMSG, ci->state.flags == Z_RC_EDITMODE ? racemode_message_editmode : racemode_message_editing);
     }
 
     void racecheat(clientinfo *ci, int type)
     {
-        if(racemode_allowcheat) { setracecheat(*ci, 0); return; }
-        if(!racemode_alloweditmode && type == 1) type = 2;
-        if((state < ST_STARTED && type < 2) || state > ST_FINISHED) return;
+        if(racemode_allowcheat) { setracecheat(*ci, Z_RC_NONE); return; }
+        if(!racemode_alloweditmode && type == Z_RC_EDITMODE) type = Z_RC_EDITING;       // treat editmode as editing, if not allowed
+        if((state < ST_STARTED && type < Z_RC_EDITING) || state > ST_FINISHED) return;  // editmode is allright before match starts
         if(ci->state.flags < type)
         {
             setracecheat(*ci, type);
@@ -356,7 +360,7 @@ struct raceservmode: servmode
             ci->state.frags = 0;
             int npl = race_winners.length();
             int leftplace = -1;
-            for(int i = npl-1; i >= 0; i--) if(race_winners[i].cn == ci->clientnum)
+            for(int i = npl - 1; i >= 0; i--) if(race_winners[i].cn == ci->clientnum)
             {
                 if(state < ST_INT)
                 {
@@ -386,7 +390,7 @@ struct raceservmode: servmode
                     if(race_winners[i].cn < 0)
                     {
                         int rpl = -1;
-                        for(int j = i+1; j < npl; j++)
+                        for(int j = i + 1; j < npl; j++)
                         {
                             if(racemode_strict && j > minraceend) break;
                             if(race_winners[j].cn >= 0)
@@ -402,7 +406,7 @@ struct raceservmode: servmode
                         clientinfo *ci = getinfo(race_winners[i].cn);
                         if(ci)
                         {
-                            int plv = npl-i;
+                            int plv = npl - i;
                             if(ci->state.frags < plv) updateclientfragsnum(*ci, plv);
                         }
                     }
@@ -414,12 +418,12 @@ struct raceservmode: servmode
 
     void spawned(clientinfo *ci)
     {
-        if(ci->state.flags == 1)
+        if(ci->state.flags == Z_RC_EDITMODE)
         {
-            setracecheat(*ci, 0);
+            setracecheat(*ci, Z_RC_NONE);
             if(ci->state.aitype==AI_NONE) sendf(ci->clientnum, 1, "ris", N_SERVMSG, racemode_message_respawn);
         }
-        else if(ci->state.flags == 2 && ci->state.aitype==AI_NONE) warnracecheat(ci);
+        else if(ci->state.flags == Z_RC_EDITING && ci->state.aitype==AI_NONE) warnracecheat(ci);
     }
 
     static void sendmaptoclients()
@@ -434,14 +438,18 @@ struct raceservmode: servmode
                 loopv(clients) if(clients[i]->state.aitype==AI_NONE && (racemode_sendspectators || clients[i]->state.state!=CS_SPECTATOR))
                 {
                     z_sendmap(clients[i], NULL, NULL, true, false);
+                    clients[i]->xi.mapsent = true;
                 }
                 return;
             case 2:
                 sendservmsg("[waiting for clients to load map]");
+#if 0   // we shouldn't need this anymore
                 if(racemode_sendspectators) loopv(clients) if(clients[i]->state.aitype==AI_NONE && clients[i]->state.state==CS_SPECTATOR)
                 {
                     z_sendmap(clients[i], NULL, NULL, true, false);
+                    clients[i]->xi.mapsent = true;
                 }
+#endif  // if 0
                 return;
         }
     }
@@ -667,15 +675,24 @@ bool isracemode()
     return smode==&racemode;
 }
 
-void race_gotmap(clientinfo *ci)
+void race_maploaded(clientinfo *ci)
 {
     extern raceservmode racemode;
-    if(smode==&racemode && ci->state.flags > 0)
+    if(smode==&racemode)
     {
-        if(!racemode_allowcheat) racemode.setracecheat(*ci, ci->state.state!=CS_EDITING ? 0 : racemode_alloweditmode ? 1 : 2);
-        else racemode.setracecheat(*ci, 0);
-        if(ci->state.flags) raceservmode::warnracecheat(ci);
-        else sendf(ci->clientnum, 1, "ris", N_SERVMSG, racemode_message_gotmap);
+        if(ci->state.flags > Z_RC_NONE && !ci->warned)
+        {
+            if(!racemode_allowcheat) racemode.setracecheat(*ci, ci->state.state!=CS_EDITING ? 0 : racemode_alloweditmode ? Z_RC_EDITMODE : Z_RC_EDITING);
+            else racemode.setracecheat(*ci, Z_RC_NONE);
+            if(ci->state.flags) raceservmode::warnracecheat(ci);
+            else sendf(ci->clientnum, 1, "ris", N_SERVMSG, racemode_message_gotmap);
+        }
+        else if(!ci->state.flags && ci->warned)
+        {
+            if(!racemode_allowcheat) racemode.setracecheat(*ci, Z_RC_EDITING);
+            else racemode.setracecheat(*ci, Z_RC_NONE);
+            if(ci->state.flags) raceservmode::warnracecheat(ci);
+        }
     }
 }
 

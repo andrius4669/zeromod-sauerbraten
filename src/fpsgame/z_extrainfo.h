@@ -123,6 +123,7 @@ struct z_extrainfo
     bool ghost;
     uint tele_overflow, jump_overflow;
     vector<uchar> ignores;
+    bool mapsent;   // used for autosendmap 2 not to resend map again
 
     z_extrainfo(): disc_reason(NULL), wlauth(NULL) {}
     ~z_extrainfo() { delete[] disc_reason; delete[] wlauth; }
@@ -130,6 +131,7 @@ struct z_extrainfo
     void mapchange()
     {
         maploaded = 0;
+        mapsent = false;
         mapsucks = 0;
         tele_overflow = jump_overflow = 0;
         postrack.reset();

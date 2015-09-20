@@ -1223,7 +1223,6 @@ namespace server
         {
             clientinfo *ci = clients[i];
             if(ci->getmap == packet) ci->xi.maploaded = 0;
-            if(ci->getmap == packet) race_gotmap(ci);
             if(ci->getmap == packet) ci->getmap = NULL;
         }
     }
@@ -2615,11 +2614,11 @@ namespace server
         loopv(clients)
         {
             clientinfo *ci = clients[i];
-            if(ci->state.state==CS_SPECTATOR || ci->state.aitype != AI_NONE || ci->clientmap[0] || ci->mapcrc >= 0 || (req < 0 && ci->warned)) continue;
+            if((!m_edit && ci->state.state==CS_SPECTATOR) || ci->state.aitype != AI_NONE || ci->clientmap[0] || ci->mapcrc >= 0 || (req < 0 && ci->warned)) continue;
             formatstring(msg, "%s has modified map \"%s\"", colorname(ci), smapname);
             if(!m_edit || req >= 0) sendf(req, 1, "ris", N_SERVMSG, msg);
             if(req < 0) ci->warned = true;
-            if(req < 0 && m_edit) z_sendmap(ci, NULL, NULL, true);
+            if(req < 0 && m_edit && !ci->xi.mapsent) { z_sendmap(ci, NULL, NULL, true); ci->xi.mapsent = true; }
         }
         if(crcs.length() >= 2) loopv(crcs)
         {
@@ -2627,11 +2626,11 @@ namespace server
             if(i || info.matches <= crcs[i+1].matches) loopvj(clients)
             {
                 clientinfo *ci = clients[j];
-                if(ci->state.state==CS_SPECTATOR || ci->state.aitype != AI_NONE || !ci->clientmap[0] || ci->mapcrc != info.crc || (req < 0 && ci->warned)) continue;
+                if((!m_edit && ci->state.state==CS_SPECTATOR) || ci->state.aitype != AI_NONE || !ci->clientmap[0] || ci->mapcrc != info.crc || (req < 0 && ci->warned)) continue;
                 formatstring(msg, "%s has modified map \"%s\"", colorname(ci), smapname);
                 if(!m_edit || req >= 0) sendf(req, 1, "ris", N_SERVMSG, msg);
                 if(req < 0) ci->warned = true;
-                if(req < 0 && m_edit) z_sendmap(ci, NULL, NULL, true);
+                if(req < 0 && m_edit && !ci->xi.mapsent) { z_sendmap(ci, NULL, NULL, true); ci->xi.mapsent = true; }
             }
         }
         if(m_edit) return;
@@ -3258,8 +3257,9 @@ namespace server
                 }
                 copystring(ci->clientmap, text);
                 ci->mapcrc = text[0] ? crc : 1;
-                z_maploaded(ci);
+                if(m_edit) ci->warned = false;  // in coop edit players can load map more than once
                 checkmaps();
+                z_maploaded(ci);
                 if(cq && cq != ci && cq->ownernum != ci->clientnum) cq = NULL;
                 break;
             }
