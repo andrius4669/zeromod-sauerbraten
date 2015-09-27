@@ -178,13 +178,13 @@ sub process_ircuser_command {
 	}
 }
 
-sub notify_irc_join;   # someome joined
-sub notify_irc_part;   # someone parted
-sub notify_irc_quit;   # someone quit
-sub notify_irc_kick;   # someone got kicked
-sub notify_irc_nick;   # someone changed nick
-sub notify_irc_chat;   # someone said something
-sub notify_irc_action; # someone said something using CTCP ACTION
+sub notify_irc_join;       # someome joined
+sub notify_irc_part;       # someone parted
+sub notify_irc_quit;       # someone quit
+sub notify_irc_kick;       # someone got kicked
+sub notify_irc_nick;       # someone changed nick
+sub notify_irc_chat;       # someone said something
+sub notify_irc_action;     # someone said something using CTCP ACTION
 sub trigger_irc_namereply; # we got list of nicks in channel
 sub trigger_irc_part;      # we got parted off from channel
 sub trigger_irc_kick;      # we got kicked off from channel
