@@ -863,7 +863,7 @@ sub process_stdin {
 				if($msg =~ /^[^ ]+ \([0-9]+\) is now known as [^ ]+$/) {
 					irc_bcast_msg("\cC02rename:\cO \cB$oname\cO \cC06($cn)\cO is now known as \cB$nname\cO");
 				}
-				elsif($msg = /^[^ ]+ \([0-9]+\) is now known as [^ ]+ by ([^ ]+) \(([0-9]+)\)$/) {
+				elsif($msg =~ /^[^ ]+ \([0-9]+\) is now known as [^ ]+ by ([^ ]+) \(([0-9]+)\)$/) {
 					my ($aname, $acn) = ($1, $2);
 					irc_bcast_msg("\cC02rename:\cO \cB$oname\cO \cC06($cn)\cO is now known as \cB$nname\cO by \cB$aname\cO \cC06($acn)\cO");
 				}

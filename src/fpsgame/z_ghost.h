@@ -27,7 +27,7 @@ void z_setghost(clientinfo &ci, bool val)
     if(ci.xi.ghost!=val)
     {
         ci.xi.ghost = val;
-        if(val) smode->leavegame(&ci);
+        if(val && smode) smode->leavegame(&ci);
         if(ci.state.aitype==AI_NONE) sendf(ci.clientnum, 1, "ris", N_SERVMSG, tempformatstring("you got %s", val ? "ghosted" : "unghosted"));
         if(!val) sendresume(&ci);
     }
