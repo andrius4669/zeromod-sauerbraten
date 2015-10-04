@@ -6,41 +6,13 @@ use Socket qw(getaddrinfo SOCK_STREAM);
 use POSIX qw(EINTR);
 
 
-# settable vars
-# irc server
-my $server = 'irc.andrius4669.org';
-# irc server port
-my $serverport = 6667;
-# autojoin channels
-my @channels = ('#test');
-# nicks which shall be ignored
-my %ignored_nicks = ();
-# nick for our bot
-my $ircnick = 'tester';
-# username for our bot
-my $ircuser = 'tester';
-# realname for our bot
-my $ircreal = '-';
-# irc password
-my $ircpass = '';
-# message use on quit
-my $irc_quit_message = '';
-# irc command characters
-my @irccmdchars = ();
-# talkbot number. -1 = don't use talkbot
-my $usetalkbot = -1;
-# talkbot per-channel overrides. channel names must be lowerchar
-my %talkbotchans = ();
-# whether to show join/part/quit/kick/nick (irc channel consistency) messages
-my $showjoinpart = 1;
-# $showjoinpart per channel override
-my %joinpartchans = ();
-# show sauer ips? this is overriden by geoip message by server anyway. only relevant if server don't give geoip info to bot
-my $showsauerips = 1;
-# irc channel privileges treated as op
-my @ircopprivs = ('@', '%', '&');
-# CTCP VERSION reply
-my $ctcp_version;
+# quick and dirty way to read config file
+my %cfg;
+unless(%cfg = do "ircconfig.pl") {
+	die "couldn't parse ircconfig.pl: $@\n";
+}
+# some sanity checks
+die("server/serverport are undefined!\n") if !defined($cfg{server}) or !defined($cfg{serverport});
 
 warn "ohayo!\n";
 
@@ -56,16 +28,21 @@ my $autojoined;
 my %joinedchans;
 my $myircnick;
 
+sub is_ignored_nick {
+	return 1 if defined($cfg{ignored_nicks}) and exists($cfg{ignored_nicks}->{$_[0]});
+	return 0;
+}
+
 sub sauer_use_talkbot {
 	my $chan = lc $_[0];
-	return $talkbotchans{$chan} if defined $talkbotchans{$chan};
-	return $usetalkbot;
+	return $cfg{talkbotchans}->{$chan} if defined $cfg{talkbotchans}->{$chan};
+	return $cfg{usetalkbot};
 }
 
 sub sauer_show_joinpart {
 	my $chan = lc $_[0];
-	return $joinpartchans{$chan} if defined $joinpartchans{$chan};
-	return $showjoinpart;
+	return $cfg{joinpartchans}->{$chan} if defined $cfg{joinpartchans}->{$chan};
+	return $cfg{showjoinpart};
 }
 
 sub irc_reset {
@@ -73,7 +50,7 @@ sub irc_reset {
 	$registered = 0;
 	$autojoined = 0;
 	%joinedchans = ();
-	$myircnick = $ircnick;
+	$myircnick = $cfg{ircnick};
 }
 
 sub irc_connect {
@@ -135,7 +112,7 @@ sub filter_irc_text {
 
 sub is_irc_command {
 	my $chr = $_[0];
-	for (@irccmdchars) {
+	for (@{$cfg{irccmdchars}}) {
 		return $chr if $chr eq $_;
 	}
 	return undef;
@@ -148,7 +125,7 @@ sub ircuser_has_op {
 		$priv = $joinedchans{$chan}->{$nick};
 	}
 	if(defined($priv)) {
-		for (@ircopprivs) {
+		for (@{$cfg{ircopprivs}}) {
 			return 1 if $priv eq $_;
 		}
 	}
@@ -193,10 +170,13 @@ sub trigger_irc_quit;      # we got disconnected from irc network
 sub handle_term {
 	if(!$quitting) {
 		if(defined($s)) {
-			irc_send("QUIT :$irc_quit_message\r\n") if $registered;
+			irc_send("QUIT :$cfg{irc_quit_message}\r\n") if $registered and defined($cfg{irc_quit_message});
 			shutdown $s, 1;
 		}
 		$quitting = 1;
+	} else {
+		close($s) if defined($s);
+		exit;
 	}
 }
 $SIG{HUP} = "IGNORE";
@@ -225,13 +205,13 @@ sub process_ctcp {
 			$m .= " CLIENTINFO";
 			$m .= " ACTION";
 			$m .= " PING";
-			$m .= " VERSION" if defined($ctcp_version) and (length($ctcp_version) > 0);
+			$m .= " VERSION" if defined($cfg{ctcp_version}) and (length($cfg{ctcp_version}) > 0);
 			$m .= "\cA\r\n";
 			irc_send($m);
 		}
 	}
 	elsif($cmd eq 'ACTION') {
-		if(defined($chan) and !exists($ignored_nicks{$nick})) {
+		if(defined($chan) and !is_ignored_nick($nick)) {
 			notify_irc_action($chan, $nick, $args);
 		}
 	}
@@ -242,8 +222,8 @@ sub process_ctcp {
 		irc_send($m);
 	}
 	elsif($cmd eq 'VERSION') {
-		if(!defined($chan) and defined($ctcp_version) and (length($ctcp_version) > 0)) {
-			irc_send("NOTICE $nick :\cAVERSION $ctcp_version\cA\r\n");
+		if(!defined($chan) and defined($cfg{ctcp_version}) and (length($cfg{ctcp_version}) > 0)) {
+			irc_send("NOTICE $nick :\cAVERSION $cfg{ctcp_version}\cA\r\n");
 		}
 	}
 }
@@ -305,7 +285,7 @@ sub do_irc_command {
 				if($cmd_nick ne $myircnick) {
 					if(defined($joinedchans{$chan}) && !exists($joinedchans{$chan}->{$cmd_nick})) {
 						$joinedchans{$chan}->{$cmd_nick} = '';
-						notify_irc_join $ch, $cmd_nick if !exists $ignored_nicks{$cmd_nick};
+						notify_irc_join $ch, $cmd_nick if !is_ignored_nick($cmd_nick);
 					}
 				}
 				else {
@@ -322,7 +302,7 @@ sub do_irc_command {
 				my $chan = lc $ch;
 				if($cmd_nick ne $myircnick) {
 					if(defined $joinedchans{$chan} and exists $joinedchans{$chan}->{$cmd_nick}) {
-						notify_irc_part $ch, $cmd_nick, $cmd_args[1] if !exists $ignored_nicks{$cmd_nick};
+						notify_irc_part $ch, $cmd_nick, $cmd_args[1] if !is_ignored_nick($cmd_nick);
 						delete $joinedchans{$chan}->{$cmd_nick};
 					}
 				}
@@ -337,7 +317,7 @@ sub do_irc_command {
 	}
 	elsif($cmd eq 'QUIT') {
 		if($cmd_nick ne $myircnick) {
-			notify_irc_quit $cmd_nick, $cmd_args[0] if !exists $ignored_nicks{$cmd_nick};
+			notify_irc_quit $cmd_nick, $cmd_args[0] if !is_ignored_nick($cmd_nick);
 			foreach my $chan (keys %joinedchans) {
 				if(exists($joinedchans{$chan}->{$cmd_nick})) {
 					delete $joinedchans{$chan}->{$cmd_nick};
@@ -359,7 +339,7 @@ sub do_irc_command {
 					if(length($nick) > 0) {
 						if($nick ne $myircnick) {
 							if(defined($joinedchans{$chan}) and exists($joinedchans{$chan}->{$nick})) {
-								notify_irc_kick $cmd_nick, $ch, $nick, $cmd_args[2] if !exists $ignored_nicks{$nick};
+								notify_irc_kick $cmd_nick, $ch, $nick, $cmd_args[2] if !is_ignored_nick($nick);
 								delete $joinedchans{$chan}->{$nick};
 							}
 						}
@@ -384,7 +364,7 @@ sub do_irc_command {
 			}
 		}
 		if($cmd_nick ne $myircnick) {
-			notify_irc_nick $cmd_nick, $newnick if !exists($ignored_nicks{$cmd_nick}) or !exists($ignored_nicks{$newnick});
+			notify_irc_nick $cmd_nick, $newnick if !is_ignored_nick($cmd_nick) or !is_ignored_nick($newnick);
 		}
 		else {
 			# rename myself if I am being renamed
@@ -402,7 +382,7 @@ sub do_irc_command {
 		}
 	}
 	elsif($cmd eq 'PRIVMSG') {
-		if(defined($cmd_nick) and !exists($ignored_nicks{$cmd_nick})) {
+		if(defined($cmd_nick) and !is_ignored_nick($cmd_nick)) {
 			my ($target, $msg) = @cmd_args;
 			my $ctcp;
 			my $msglen = length($msg);
@@ -441,35 +421,15 @@ sub do_irc_command {
 			}
 		}
 	}
-#	elsif($cmd eq 'NOTICE') {
-#		if(defined($cmd_nick) and !exists($ignored_nicks{$cmd_nick})) {
-#			# only watch chans I'm in, and filter out crap
-#			my $chr = substr($cmd_args[0], 0, 1);
-#			# if it's chan
-#			if($chr eq '#' or $chr eq '!' or $chr eq '+' or $chr eq '&') {
-#				my $chan = lc $cmd_args[0];
-#				if(defined($joinedchans{$chan}) and ($cmd_nick ne $myircnick)) {
-#					notify_irc_chat $cmd_args[0], $cmd_nick, $cmd_args[1];
-#				}
-#			}
-#		}
-#	}
 	elsif($cmd eq 'ERROR') {
 		trigger_irc_quit;
 		%joinedchans = ();
 	}
-#	print '>';
-#	print "[nick=$cmd_nick]" if defined $cmd_nick;
-#	print "[host=$cmd_host]" if defined $cmd_host;
-#	print "[user=$cmd_user]" if defined $cmd_user;
-#	print "cmd:[$cmd]" if defined $cmd;
-#	print "args:";
-#	for(@cmd_args) { print "[$_]"; }
-#	print "\n";
 }
 
 sub process_irc_input {
 	my $line = $_[0];
+	warn ">$line\n";
 	my $cmd_nick; # nickname in case it's user, empty in case server
 	my $cmd_host; # hostname in case it's user, server name in case server
 	my $cmd_user; # username in case it's user
@@ -806,7 +766,7 @@ sub process_stdin {
 			if($msg =~ /^client ([0-9]+) \(([0-9A-Za-z.:-]+)\) connected$/) {
 				my ($cn, $ip) = ($1, $2);
 				# record ip address
-				if($showsauerips) {
+				if($cfg{showsauerips}) {
 					$sauer_ips[$cn] = $ip;
 				}
 				else {
@@ -837,7 +797,7 @@ sub process_stdin {
 			elsif($msg =~ /^client ([0-9]+) \(([0-9A-Za-z.:-]+)\) disconnected(.*)$/) {
 				my ($cn, $ip, $rest) = ($1, $2, $3);
 				my $name = $sauer_names[$cn];
-				undef $ip if !$showsauerips;
+				undef $ip if !$cfg{showsauerips};
 				$ip = $sauer_ips[$cn] if defined($sauer_ips[$cn]);
 				if(defined($name)) {
 					my ($action, $reason);
@@ -941,7 +901,7 @@ MAINLOOP: for(;;) {
 	sleep $reconnectwait if $reconnectwait > 0;
 	last if $quitting;
 	# connect to server
-	$s = irc_connect($server, $serverport);
+	$s = irc_connect($cfg{server}, $cfg{serverport});
 	last if $quitting;
 	# if failed, schedule next reconnect
 	if(!defined($s)) {
@@ -951,16 +911,16 @@ MAINLOOP: for(;;) {
 	# reset state vars
 	irc_reset;
 	# first of all, register to server
-	irc_send("PASS $ircpass\r\n") if $ircpass;
-	irc_send("USER $ircuser 0 $server :$ircreal\r\n");
-	irc_send("NICK $ircnick\r\n");
+	irc_send("PASS $cfg{ircpass}\r\n") if defined($cfg{ircpass}) and length($cfg{ircpass}) > 0;
+	irc_send("USER $cfg{ircuser} 0 $cfg{server} :$cfg{ircreal}\r\n");
+	irc_send("NICK $cfg{ircnick}\r\n");
 	# we successfully connected
 	$reconnectwait = 0;
-	my $rin = '';
 	my $rout;
-	vec($rin, fileno($s), 1) = 1;
 	SELECTLOOP: for(;;) {
-		vec($rin, fileno(STDIN), 1) = $autojoined && !$quitting; # only accept stdin after we passed autojoin stage
+		my $rin = '';
+		vec($rin, fileno($s), 1) = 1;
+		vec($rin, fileno(STDIN), 1) = 1 if $autojoined and !$quitting; # only accept stdin after we passed autojoin stage
 		my $nfd = select($rout = $rin, undef, undef, 3);
 		if($nfd < 0) {
 			next SELECTLOOP if $! == EINTR;
@@ -1021,7 +981,7 @@ MAINLOOP: for(;;) {
 
 		# if we registered to server, we can send join commands
 		if($registered and !$autojoined and !$quitting) {
-			irc_joinchan @channels;
+			irc_joinchan @{$cfg{channels}};
 			$autojoined = 1;
 		}
 	}
