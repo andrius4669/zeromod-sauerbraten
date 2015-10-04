@@ -1,0 +1,26 @@
+-- manual how to setup zeromod with ircbot.pl --
+first of all, server-init.cfg will need some extra settings:
+	serveracceptstdin 1 -- allows server to accept cubescript commands from stdin
+	geoip_log 1 or 2 -- in case you want to see geoip locations of clients in irc
+next, edit ircconfig.pl. I recommend copying it somewhere else off main git tree
+
+to connect server and irc bot, you will need to redirect server's log to irc bot
+and irc bot's output to server's standard input. in other words, 69
+
+in case you want to run server and irc bot in foreground mode (in tmux, for example)
+there's example commands you'd type:
+[in terminal 1]
+$ mkfifo ircfifo
+$ touch log
+$ ./sauer_server < ircfifo | tee -a log # output stuff to console and also to file log
+[in terminal 2]
+$ tail -f log | ./ircbot.pl > ircfifo # run bot, read from log, write to fifo
+
+if you need to run it in background, use something like this:
+if ! [ -p ircfifo ]; then
+	rm -f ircfifo
+	mkfifo ircfifo
+fi
+touch log
+nohup ./sauer_server -glog < irclog &> /dev/null &
+tail -f log | ./ircbot.pl > ircfifo 2>ircbotlog &
