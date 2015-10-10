@@ -429,7 +429,6 @@ sub do_irc_command {
 
 sub process_irc_input {
 	my $line = $_[0];
-	warn ">$line\n";
 	my $cmd_nick; # nickname in case it's user, empty in case server
 	my $cmd_host; # hostname in case it's user, server name in case server
 	my $cmd_user; # username in case it's user
@@ -884,7 +883,6 @@ sub process_stdin {
 				}
 			}
 		}
-		#else { print ">>>not processing dis message, nigger\n"; }
 	}
 }
 
