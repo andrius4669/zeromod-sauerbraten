@@ -63,7 +63,7 @@ static void z_patchvar(const char *name, const tagval &v)
     }
 }
 
-VAR(s_patchreliable, 0, 1, 1);
+VAR(s_patchreliable, 0, 1, 1); // use reliable packets or unreliable ones?
 static void z_sendpatchpacket(clientinfo *ci = NULL)
 {
     if(z_patchpacket.length() <= 0) return;
@@ -105,7 +105,7 @@ void z_sendallpatches(clientinfo *ci)
 }
 
 void s_sendallpatches() { z_sendallpatches(NULL); }
-COMMAND(s_sendallpatches, "");
+COMMAND(s_sendallpatches, ""); // sends out all var and ent patches
 
 void s_sendentpatches(int *n)
 {
@@ -113,7 +113,7 @@ void s_sendentpatches(int *n)
     z_addentpatches(*n);
     z_sendpatchpacket();
 }
-COMMAND(s_sendentpatches, "i");
+COMMAND(s_sendentpatches, "i"); // sends out last x ent patches. if x is unspecified, send out all ent patches
 
 void s_sendvarpatches(int *n)
 {
@@ -121,8 +121,10 @@ void s_sendvarpatches(int *n)
     z_addvarpatches(*n);
     z_sendpatchpacket();
 }
+COMMAND(s_sendvarpatches, "i"); // sends out last x var patches. if x is unspecified, send out all var patches
 
-VAR(s_undoentpatches, 0, 1, 1);
+VAR(s_undoentpatches, 0, 1, 1); // should we clear/undo ents when doing s_clearentpatches/s_clearpatches?
+
 static void z_clearentpatches(int n = 0)
 {
     entity emptyent =
@@ -155,16 +157,16 @@ void s_clearpatches()
     z_clearvarpatches();
     z_clearentpatches();
 }
-COMMAND(s_clearpatches, "");
+COMMAND(s_clearpatches, ""); // undos/clears var and ent patches
 
 void s_clearentpatches(int *n) { z_clearentpatches(*n); }
-COMMAND(s_clearentpatches, "i");
+COMMAND(s_clearentpatches, "i"); // undos/clears last x ent patches
 
 void s_clearvarpatches(int *n) { z_clearvarpatches(*n); }
-COMMAND(s_clearvarpatches, "i");
+COMMAND(s_clearvarpatches, "i"); // clears last x var patches
 
-VAR(s_autosendpatch, 0, 1, 1);
-VAR(s_patchadd, 0, 1, 1);
+VAR(s_autosendpatch, 0, 1, 1); // whether to automatically send patches on s_patchent/s_patchvar* or not
+VAR(s_patchadd, 0, 1, 1); // whether to add patch to list or not
 
 void s_patchent(char *name, int *id, float *x, float *y, float *z, int *type, int *a1,int *a2, int *a3, int *a4, int *a5)
 {
@@ -191,7 +193,7 @@ void s_patchent(char *name, int *id, float *x, float *y, float *z, int *type, in
 
     if(!s_patchadd) z_entpatches.drop();
 }
-COMMAND(s_patchent, "sifffiiiiii");
+COMMAND(s_patchent, "sifffiiiiii"); // map id x y z type a1 a2 a3 a4 a5
 
 static void z_checkvarpatch(const z_varpatch &vp)
 {
