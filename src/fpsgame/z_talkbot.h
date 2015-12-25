@@ -64,6 +64,7 @@ static int addtalkbot(int wantcn, const char *name)
     {
         talkbots[cn] = new clientinfo;
         talkbots[cn]->clientnum = MAXCLIENTS + MAXBOTS + cn;
+        clients.add(talkbots[cn]);
 
         putint(p, N_SPECTATOR);
         putint(p, talkbots[cn]->clientnum);
@@ -82,7 +83,6 @@ static int addtalkbot(int wantcn, const char *name)
     ci->state.lasttimeplayed = lastmillis;
     ci->aireinit = 0;
     ci->reassign();
-    clients.add(ci);
 
     puttalkbotinit(p, ci);
 
