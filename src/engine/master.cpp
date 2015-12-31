@@ -715,6 +715,7 @@ int main(int argc, char **argv)
     setvbuf(logfile, NULL, _IOLBF, BUFSIZ);
 #ifndef WIN32
     signal(SIGUSR1, reloadsignal);
+    signal(SIGHUP, reloadsignal);
 #endif
     setupserver(port, ip);
     for(;;)
