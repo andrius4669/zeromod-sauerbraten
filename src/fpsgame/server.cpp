@@ -3270,7 +3270,7 @@ namespace server
 
             case N_TRYSPAWN:
                 if(!ci || !cq || cq->state.state!=CS_DEAD || cq->state.lastspawn>=0 || (smode && !smode->canspawn(cq))) break;
-                z_maploaded(ci);
+                if(!ci->xi.maploaded) z_maploaded(ci);
                 if(!ci->clientmap[0] && !ci->mapcrc)
                 {
                     ci->mapcrc = -1;
@@ -3308,7 +3308,7 @@ namespace server
                 cq->state.gunselect = gunselect >= GUN_FIST && gunselect <= GUN_PISTOL ? gunselect : GUN_FIST;
                 cq->exceeded = 0;
                 if(smode) smode->spawned(cq);
-                z_maploaded(ci);
+                if(!ci->xi.maploaded) z_maploaded(ci);
                 QUEUE_AI;
                 QUEUE_BUF({
                     putint(cm->messages, N_SPAWN);
