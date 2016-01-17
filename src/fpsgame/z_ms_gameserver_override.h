@@ -214,7 +214,7 @@ void processmasterinput(int m, const char *cmd, int cmdlen, const char *args)
     else if(!strncmp(cmd, "cleargbans", cmdlen))
         cleargbans(m);
     else if(sscanf(cmd, "addgban %100s", val) == 1)
-        addgban(m, val);
+        addban(m, val);
     else if(sscanf(cmd, "z_priv %100s", val) == 1)
     {
         switch(val[0])

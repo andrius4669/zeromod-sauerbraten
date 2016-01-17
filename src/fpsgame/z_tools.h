@@ -94,7 +94,7 @@ struct pbaninfo: ipmask
 };
 
 extern vector< z_avltree<gbaninfo> > gbans;
-extern z_avltree<gbaninfo> pbans;
+extern z_avltree<gbaninfo> ipbans;
 extern vector<pbaninfo> sbans;
 
 

@@ -2521,7 +2521,7 @@ namespace server
             }
         }
         if((gamepaused || !shouldstep) && smode==&racemode) smode->update();
-        if(nextpbanscheck && nextpbanscheck-totalmillis < 0) checkexpiredpbans();
+        if(nextsbanscheck && nextsbanscheck-totalmillis < 0) checkexpiredsbans();
 
         while(bannedips.length() && bannedips[0].expire-totalmillis <= 0) bannedips.remove(0);
         loopv(connects) if(totalmillis-connects[i]->connectmillis>15000) disconnect_client(connects[i]->clientnum, DISC_TIMEOUT);
@@ -2741,32 +2741,50 @@ namespace server
     int reserveclients() { return 3; }
 
 #if 0
-    vector<ipmask> gbans;
 
-    void cleargbans()
+    extern void verifybans();
+
+    struct banlist
     {
-        gbans.shrink(0);
+        vector<ipmask> bans;
+
+        void clear() { bans.shrink(0); }
+
+        bool check(uint ip)
+        {
+            loopv(bans) if(bans[i].check(ip)) return true;
+            return false;
+        }
+
+        void add(const char *ipname)
+        {
+            ipmask ban;
+            ban.parse(ipname);
+            bans.add(ban);
+
+            verifybans();
+        }
+    } ipbans, gbans; 
+
+    bool checkbans(uint ip)
+    {
+        loopv(bannedips) if(bannedips[i].ip==ip) return true;
+        return ipbans.check(ip) || gbans.check(ip);
     }
 
-    bool checkgban(uint ip)
+    void verifybans()
     {
-        loopv(gbans) if(gbans[i].check(ip)) return true;
-        return false;
-    }
-
-    void addgban(const char *name)
-    {
-        ipmask ban;
-        ban.parse(name);
-        gbans.add(ban);
-
         loopvrev(clients)
         {
             clientinfo *ci = clients[i];
             if(ci->state.aitype != AI_NONE || ci->local || ci->privilege >= PRIV_ADMIN) continue;
-            if(checkgban(getclientip(ci->clientnum))) disconnect_client(ci->clientnum, DISC_IPBAN);
+            if(checkbans(getclientip(ci->clientnum))) disconnect_client(ci->clientnum, DISC_IPBAN);
         }
     }
+
+    ICOMMAND(clearipbans, "", (), ipbans.clear());
+    ICOMMAND(ipban, "s", (const char *ipname), ipbans.add(ipname));
+
 #endif
        
     int allowconnect(clientinfo *ci, const char *pwd = "")
@@ -2783,7 +2801,7 @@ namespace server
         if(adminpass[0] && checkpassword(ci, adminpass, pwd)) return DISC_NONE;
         if(numclients(-1, false, true)>=maxclients) return DISC_MAXCLIENTS;
         if(z_checkban(ip, ci)) return DISC_IPBAN;
-        if(checkgban(ip, ci, true)) return DISC_IPBAN;
+        if(checkbans(ip, ci, true)) return DISC_IPBAN;
         if(checkgeoipban(ci)) return DISC_IPBAN;
         if(mastermode>=MM_PRIVATE && allowedips.find(ip)<0) return DISC_PRIVATE;
         return DISC_NONE;
@@ -2930,9 +2948,9 @@ namespace server
         else if(sscanf(cmd, "chalauth %u %255s", &id, val) == 2)
             authchallenged(id, val);
         else if(matchstring(cmd, cmdlen, "cleargbans"))
-            cleargbans();
+            gbans.clear();
         else if(sscanf(cmd, "addgban %100s", val) == 1)
-            addgban(val);
+            gbans.add(val);
     }
 #endif
 

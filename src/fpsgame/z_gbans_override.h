@@ -6,7 +6,7 @@
 #include "z_tree.h"
 
 vector< z_avltree<gbaninfo> > gbans;
-z_avltree<gbaninfo> pbans;
+z_avltree<gbaninfo> ipbans;
 vector<pbaninfo> sbans;
 
 static void cleargbans(int m = -1)
@@ -23,12 +23,12 @@ SVAR(ban_message_banned, "ip/range you are connecting from is banned because: %r
 SVAR(pbans_file, "pbans.cfg");
 VAR(pbans_expire, 0, 0, INT_MAX);    // pbans expiration time, in seconds
 
-static int nextpbanscheck = 0;
+static int nextsbanscheck = 0;
 
 // remove pban from sbans after certain ammount of time
-void checkexpiredpbans()
+void checkexpiredsbans()
 {
-    nextpbanscheck = 0;
+    nextsbanscheck = 0;
     if(!pbans_expire) return;
     time_t currsecs;
     time(&currsecs);
@@ -43,21 +43,21 @@ void checkexpiredpbans()
         }
         // if time difference is more than can be expressed in long, clamp
         if(timediff > LONG_MAX/1000) timediff = LONG_MAX/1000;
-        nextpbanscheck = max(nextpbanscheck, int(min(timediff*1000, time_t(INT_MAX-1))));
+        nextsbanscheck = max(nextsbanscheck, int(min(timediff*1000, time_t(INT_MAX-1))));
     }
-    if(nextpbanscheck)
+    if(nextsbanscheck)
     {
-        nextpbanscheck += totalmillis;
-        if(!nextpbanscheck) nextpbanscheck = 1;
+        nextsbanscheck += totalmillis;
+        if(!nextsbanscheck) nextsbanscheck = 1;
     }
 }
 
-static bool checkgban(uint ip, clientinfo *ci, bool connect = false)
+static bool checkbans(uint ip, clientinfo *ci, bool connect = false)
 {
     uint hip = ENET_NET_TO_HOST_32(ip);
     gbaninfo *p;
 
-    if((p = pbans.find(hip)) && p->check(hip)) return true;
+    if((p = ipbans.find(hip)) && p->check(hip)) return true;
 
     loopv(sbans) if(sbans[i].check(ip))
     {
@@ -116,18 +116,18 @@ static bool checkgban(uint ip, clientinfo *ci, bool connect = false)
     return false;
 }
 
-static void recheckgbans(clientinfo *actor = NULL)
+static void verifybans(clientinfo *actor = NULL)
 {
     loopvrev(clients)
     {
         clientinfo *ci = clients[i];
         if(ci->state.aitype != AI_NONE || ci->local || ci->privilege >= PRIV_ADMIN) continue;
         if(actor && ((ci->privilege > actor->privilege && !actor->local) || ci->clientnum == actor->clientnum)) continue;
-        if(checkgban(getclientip(ci->clientnum), ci)) disconnect_client(ci->clientnum, DISC_IPBAN);
+        if(checkbans(getclientip(ci->clientnum), ci)) disconnect_client(ci->clientnum, DISC_IPBAN);
     }
 }
 
-static void addgban(int m, const char *name)
+static void addban(int m, const char *name)
 {
     gbaninfo ban, *old;
     ban.parse(name);
@@ -143,7 +143,7 @@ static void addgban(int m, const char *name)
     }
     else
     {
-        if(!pbans.add(ban, &old))
+        if(!ipbans.add(ban, &old))
         {
             string buf;
             old->print(buf);
@@ -151,10 +151,10 @@ static void addgban(int m, const char *name)
         }
     }
 
-    recheckgbans();
+    verifybans();
 }
 
-static void addpban(const char *name, const char *comment, time_t dateadded, time_t lasthit)
+static void addsban(const char *name, const char *comment, time_t dateadded, time_t lasthit)
 {
     pbaninfo &ban = sbans.add();
     ban.parse(name);
@@ -162,9 +162,9 @@ static void addpban(const char *name, const char *comment, time_t dateadded, tim
     ban.dateadded = dateadded;
     ban.lasthit = lasthit;
 
-    checkexpiredpbans();
+    checkexpiredsbans();
 
-    recheckgbans();
+    verifybans();
 }
 
 void pban(char *name, char *dateadded, char *comment, char *lasthit)
@@ -180,17 +180,20 @@ void pban(char *name, char *dateadded, char *comment, char *lasthit)
     lh = (time_t)strtoull(lasthit, &end, 10);
     if(!end || *end) lh = 0;
 
-    if(!ta) addgban(-1, name);
-    else addpban(name, comment, ta, lh);
+    if(!ta) addban(-1, name);
+    else addsban(name, comment, ta, lh);
 }
 COMMAND(pban, "ssss");
 
 void clearpbans(int *all)
 {
-    pbans.clear();
+    ipbans.clear();
     if(*all) sbans.shrink(0);
 }
 COMMAND(clearpbans, "i");
+
+ICOMMAND(ipban, "s", (const char *ipname), addban(-1, ipname));
+ICOMMAND(clearipbans, "", (), ipbans.clear());
 
 static void z_savepbans()
 {
@@ -306,9 +309,9 @@ void z_servcmd_pban(int argc, char **argv, int sender)
     ban.print(buf);
     sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("added pban for %s", buf));
 
-    checkexpiredpbans();
+    checkexpiredsbans();
 
-    recheckgbans(getinfo(sender));
+    verifybans(getinfo(sender));
 }
 SCOMMANDA(pban, PRIV_ADMIN, z_servcmd_pban, 2);
 
@@ -334,9 +337,9 @@ void z_servcmd_pbanip(int argc, char **argv, int sender)
     ban.print(buf);
     sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("added pban for %s", buf));
 
-    checkexpiredpbans();
+    checkexpiredsbans();
 
-    recheckgbans(getinfo(sender));
+    verifybans(getinfo(sender));
 }
 SCOMMANDA(pbanip, PRIV_ADMIN, z_servcmd_pbanip, 2);
 
