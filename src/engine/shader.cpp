@@ -110,6 +110,9 @@ static void compileglslshader(GLenum type, GLuint &obj, const char *def, const c
     int numparts = 0;
     static const struct { int version; const char * const header; } glslversions[] =
     {
+        { 330, "#version 330\n" },
+        { 150, "#version 150\n" },
+        { 130, "#version 130\n" },
         { 120, "#version 120\n" }
     };
     loopi(sizeof(glslversions)/sizeof(glslversions[0])) if(glslversion >= glslversions[i].version)
@@ -117,7 +120,24 @@ static void compileglslshader(GLenum type, GLuint &obj, const char *def, const c
         parts[numparts++] = glslversions[i].header;
         break;
     }
-
+    if(glslversion >= 130)
+    {
+        if(type == GL_VERTEX_SHADER) parts[numparts++] =
+            "#define attribute in\n"
+            "#define varying out\n";
+        else if(type == GL_FRAGMENT_SHADER)
+        {
+            parts[numparts++] = "#define varying in\n";
+            if(glslversion < 150) parts[numparts++] = "precision highp float;\n";
+            if(glversion >= 300) parts[numparts++] =
+                "out vec4 cube2_FragColor;\n"
+                "#define gl_FragColor cube2_FragColor\n";
+        }
+        parts[numparts++] =
+            "#define texture2D(sampler, coords) texture(sampler, coords)\n"
+            "#define texture2DProj(sampler, coords) textureProj(sampler, coords)\n"
+            "#define textureCube(sampler, coords) texture(sampler, coords)\n";
+    }
     parts[numparts++] = source;
 
     obj = glCreateShader_(type);
@@ -177,6 +197,10 @@ static void linkglslprogram(Shader &s, bool msg = true)
             attribs |= 1<<a.loc;
         }
         loopi(gle::MAXATTRIBS) if(!(attribs&(1<<i))) glBindAttribLocation_(s.program, i, gle::attribnames[i]);
+        if(glversion >= 300)
+        {
+            glBindFragDataLocation_(s.program, 0, "cube2_FragColor");
+        }
         glLinkProgram_(s.program);
         glGetProgramiv_(s.program, GL_LINK_STATUS, &success);
     }
@@ -478,8 +502,6 @@ void Shader::bindprograms()
     lastshader = this;
 }
 
-VARF(shaderprecision, 0, 0, 2, initwarning("shader quality"));
-
 bool Shader::compile()
 {
     if(!vsstr) vsobj = !reusevs || reusevs->invalid() ? 0 : reusevs->vsobj;
@@ -606,8 +628,11 @@ void setupshaders()
     maxvsuniforms = val/4;
     glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS, &val);
     maxfsuniforms = val/4;
-    glGetIntegerv(GL_MAX_VARYING_FLOATS, &val);
-    maxvaryings = val;
+    if(glversion < 300)
+    {
+        glGetIntegerv(GL_MAX_VARYING_COMPONENTS, &val);
+        maxvaryings = val;
+    }
 
     standardshaders = true;
     nullshader = newshader(0, "<init>null",
@@ -746,7 +771,7 @@ static bool genwatervariant(Shader &s, const char *sname, const char *vs, const 
     return variant!=NULL;
 }
 
-bool minimizedynlighttcusage() { return maxvaryings < 48; }
+bool minimizedynlighttcusage() { return glversion < 300 && maxvaryings < 48; }
 
 static void gendynlightvariant(Shader &s, const char *sname, const char *vs, const char *ps, int row = 0)
 {
@@ -1266,7 +1291,7 @@ static int allocatepostfxtex(int scale)
     postfxtex &t = postfxtexs.add();
     t.scale = scale;
     glGenTextures(1, &t.id);
-    createtexture(t.id, max(screen->w>>scale, 1), max(screen->h>>scale, 1), NULL, 3, 1, GL_RGB);
+    createtexture(t.id, max(screenw>>scale, 1), max(screenh>>scale, 1), NULL, 3, 1, GL_RGB);
     return postfxtexs.length()-1;
 }
 
@@ -1289,11 +1314,11 @@ void renderpostfx()
 {
     if(postfxpasses.empty()) return;
 
-    if(postfxw != screen->w || postfxh != screen->h) 
+    if(postfxw != screenw || postfxh != screenh) 
     {
         cleanuppostfx(false);
-        postfxw = screen->w;
-        postfxh = screen->h;
+        postfxw = screenw;
+        postfxh = screenh;
     }
 
     int binds[NUMPOSTFXBINDS];
@@ -1303,7 +1328,7 @@ void renderpostfx()
     binds[0] = allocatepostfxtex(0);
     postfxtexs[binds[0]].used = 0;
     glBindTexture(GL_TEXTURE_2D, postfxtexs[binds[0]].id);
-    glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, screen->w, screen->h);
+    glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, screenw, screenh);
 
     if(postfxpasses.length() > 1)
     {
@@ -1328,8 +1353,8 @@ void renderpostfx()
             glFramebufferTexture2D_(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, postfxtexs[tex].id, 0);
         }
 
-        int w = tex >= 0 ? max(screen->w>>postfxtexs[tex].scale, 1) : screen->w, 
-            h = tex >= 0 ? max(screen->h>>postfxtexs[tex].scale, 1) : screen->h;
+        int w = tex >= 0 ? max(screenw>>postfxtexs[tex].scale, 1) : screenw, 
+            h = tex >= 0 ? max(screenh>>postfxtexs[tex].scale, 1) : screenh;
         glViewport(0, 0, w, h);
         p.shader->set();
         LOCALPARAM(params, p.params);
@@ -1338,8 +1363,8 @@ void renderpostfx()
         {
             if(!tmu)
             {
-                tw = max(screen->w>>postfxtexs[binds[j]].scale, 1);
-                th = max(screen->h>>postfxtexs[binds[j]].scale, 1);
+                tw = max(screenw>>postfxtexs[binds[j]].scale, 1);
+                th = max(screenh>>postfxtexs[binds[j]].scale, 1);
             }
             else glActiveTexture_(GL_TEXTURE0 + tmu);
             glBindTexture(GL_TEXTURE_2D, postfxtexs[binds[j]].id);

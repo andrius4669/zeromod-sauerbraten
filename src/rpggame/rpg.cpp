@@ -117,7 +117,7 @@ namespace game
    
     void bounced(physent *d, const vec &surface) {}
  
-    void edittrigger(const selinfo &sel, int op, int arg1, int arg2, int arg3) {}
+    void edittrigger(const selinfo &sel, int op, int arg1, int arg2, int arg3, const VSlot *vs) {}
     void vartrigger(ident *id) {}
 
     const char *getclientmap() { return mapname; }
@@ -125,6 +125,10 @@ namespace game
     void resetgamestate() {}
     void suicide(physent *d) {}
     void newmap(int size) {}
+
+    void loadingmap(const char *name)
+    {
+    }
 
     void startmap(const char *name)
     {
@@ -261,7 +265,7 @@ namespace game
     const char *gameident()     { return "rpg"; }
     const char *savedconfig()   { return "rpg_config.cfg"; }
     const char *restoreconfig() { return "rpg_restore.cfg"; }
-    const char *defaultconfig() { return "data/defaults.cfg"; }
+    const char *defaultconfig() { return "data/defaults_rpg.cfg"; }
     const char *autoexec()      { return "rpg_autoexec.cfg"; }
     const char *savedservers()  { return NULL; }
 
