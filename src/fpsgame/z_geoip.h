@@ -60,24 +60,25 @@ VAR(geoip_country_use_db, 0, 2, 2);
 VAR(geoip_fix_country, 0, 1, 1);
 VAR(geoip_ban_mode, 0, 0, 1);   // 0 - blacklist, 1 - whitelist
 VAR(geoip_ban_anonymous, 0, 0, 1);
+VAR(geoip_default_networks, 0, 1, 1); // whether to include default list of hardcoded network names
 
+// http://www.iana.org/assignments/iana-ipv4-special-registry/iana-ipv4-special-registry.xhtml
 static const struct
 {
     uint ip, mask;      // in host byte order
     const char *name;
 } reservedips[] =
 {
-    // localhost
+    // [RFC1122], section 3.2.1.3 -- Loopback
     { 0x7F000000, 0xFF000000, "localhost" },            // 127.0.0.0/8
-    // lan
-    { 0xC0A80000, 0xFFFF0000, "Local Area Network" },   // 192.168.0.0/16
+    // [RFC1918] -- Private Address Space
     { 0x0A000000, 0xFF000000, "Local Area Network" },   // 10.0.0.0/8
-    { 0x64400000, 0xFFC00000, "Local Area Network" },   // 100.64.0.0/10
     { 0xAC100000, 0xFFF00000, "Local Area Network" },   // 172.16.0.0/12
-    { 0xC0000000, 0xFFFFFFF8, "Local Area Network" },   // 192.0.0.0/29
-    { 0xC6120000, 0xFFFE0000, "Local Area Network" },   // 198.18.0.0/15
-    // autoconfigured lan
-    { 0xA9FE0000, 0xFFFF0000, "Local Area Network" }    // 169.254.0.0/16
+    { 0xC0A80000, 0xFFFF0000, "Local Area Network" },   // 192.168.0.0/16
+    // [RFC3927] -- Link-Local Address Selection
+    { 0xA9FE0000, 0xFFFF0000, "Local Area Network" },   // 169.254.0.0/16
+    // [RFC6598] -- Shared Address Space
+    { 0x64400000, 0xFFC00000, "Local Area Network" }    // 100.64.0.0/10
 };
 
 enum { GIB_COUNTRY = 0, GIB_CONTINENT };
@@ -158,6 +159,7 @@ static void z_init_geoip()
 
     #ifndef GEOIP_OPENMODE
         #ifndef _WIN32
+            // only avaiable in unix systems
             #define GEOIP_OPENMODE GEOIP_MMAP_CACHE
         #else
             #define GEOIP_OPENMODE GEOIP_INDEX_CACHE
@@ -229,12 +231,16 @@ void z_geoip_resolveclient(geoipstate &gs, enet_uint32 ip)
     if(!geoip_enable || !ip) return;
     z_init_geoip();
     enet_uint32 hip = ENET_NET_TO_HOST_32(ip);
-    // look in list of reserved ips
-    loopi(sizeof(reservedips)/sizeof(reservedips[0])) if((hip & reservedips[i].mask) == reservedips[i].ip)
+
+    if(geoip_default_networks)
     {
-        gs.network = newstring(reservedips[i].name);
-        // if ip is reserved, geoip won't find it anyway
-        return;
+        // look in list of default network names
+        loopi(sizeof(reservedips)/sizeof(reservedips[0])) if((hip & reservedips[i].mask) == reservedips[i].ip)
+        {
+            gs.network = newstring(reservedips[i].name);
+            // if ip is in one of these networks, it's unlikelly geoip will have info on it
+            return;
+        }
     }
 
 #if defined(USE_GEOIP) || defined(USE_MMDB)
@@ -290,7 +296,7 @@ void z_geoip_resolveclient(geoipstate &gs, enet_uint32 ip)
 
             // country name
             mmdb_error = MMDB_get_value(&result.entry, &data, "country", "names", geoip_mmdb_lang, NULL);
-            if((mmdb_error != MMDB_SUCCESS || !data.has_data) && strcmp(geoip_mmdb_lang, "en"))
+            if((mmdb_error != MMDB_SUCCESS || !data.has_data) && strcmp(geoip_mmdb_lang, "en")) // fallback to english
                 mmdb_error = MMDB_get_value(&result.entry, &data, "country", "names", "en", NULL);
             if(mmdb_error == MMDB_SUCCESS && data.has_data && data.type == MMDB_DATA_TYPE_UTF8_STRING)
             {
@@ -347,7 +353,7 @@ void z_geoip_resolveclient(geoipstate &gs, enet_uint32 ip)
             mmdb_error = MMDB_get_value(&result.entry, &data, "traits", "is_anonymous_proxy", NULL);
             if(mmdb_error == MMDB_SUCCESS && data.has_data)
             {
-                // expects true
+                // expects true value, if exists
                 gs.anonymous = 1;
                 gs.network = newstring("Anonymous Proxy");
             }
@@ -407,7 +413,7 @@ void z_geoip_resolveclient(geoipstate &gs, enet_uint32 ip)
             }
             break;
         case 2:
-            /* if both country and city datas exists, and city one doesn't matches country one, drop city data */
+            /* if both country and city datas exist, and city one doesn't match country one, drop city data */
             if(z_gi && country_id > 0)
             {
                 continent_code = GeoIP_continent_by_id(country_id);

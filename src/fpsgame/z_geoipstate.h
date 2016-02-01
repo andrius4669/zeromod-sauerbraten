@@ -35,11 +35,11 @@ struct geoipstate
 
     void cleanup()
     {
-        DELETEP(network);
-        DELETEP(city);
-        DELETEP(region);
-        DELETEP(country);
-        DELETEP(continent);
+        DELETEA(network);
+        DELETEA(city);
+        DELETEA(region);
+        DELETEA(country);
+        DELETEA(continent);
         anonymous = 0;
         extcountry.s = 0;
         extcontinent.s = 0;
