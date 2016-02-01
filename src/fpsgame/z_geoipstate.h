@@ -7,7 +7,7 @@ union geoshortconv
     short s;
 
     geoshortconv() {}
-    geoshortconv(short s_): s(s_) {}
+    explicit geoshortconv(short s_): s(s_) {}
 
     void set_upper(const char *code)
     {

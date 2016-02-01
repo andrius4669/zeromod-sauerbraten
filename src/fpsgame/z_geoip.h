@@ -81,6 +81,17 @@ static const struct
     { 0x64400000, 0xFFC00000, "Local Area Network" }    // 100.64.0.0/10
 };
 
+struct z_geoipoverrideinfo: ipmask { geoipstate gs; };
+vector<z_geoipoverrideinfo> z_geoip_overrides;
+
+ICOMMAND(geoip_override_network, "ss", (const char *ip, const char *network),
+{
+    z_geoipoverrideinfo &gioi = z_geoip_overrides.add();
+    gioi.parse(ip);
+    if(network[0]) gioi.gs.network = newstring(network);
+});
+ICOMMAND(geoip_clearoverrides, "", (), z_geoip_overrides.shrink(0));
+
 enum { GIB_COUNTRY = 0, GIB_CONTINENT };
 
 struct z_geoipban
@@ -229,7 +240,14 @@ void z_geoip_resolveclient(geoipstate &gs, enet_uint32 ip)
 {
     gs.cleanup();
     if(!geoip_enable || !ip) return;
-    z_init_geoip();
+
+    // check for overrides
+    loopv(z_geoip_overrides) if(z_geoip_overrides[i].check(ip))
+    {
+        gs = z_geoip_overrides[i].gs;
+        return;
+    }
+
     enet_uint32 hip = ENET_NET_TO_HOST_32(ip);
 
     if(geoip_default_networks)
@@ -242,6 +260,8 @@ void z_geoip_resolveclient(geoipstate &gs, enet_uint32 ip)
             return;
         }
     }
+
+    z_init_geoip();
 
 #if defined(USE_GEOIP) || defined(USE_MMDB)
     uchar buf[MAXSTRLEN];

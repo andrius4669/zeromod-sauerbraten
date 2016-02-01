@@ -10,7 +10,7 @@
 // gban/pban struct optimised for use in tree
 struct gbaninfo
 {
-    // in host byte order, cause easier to compare
+    // in host byte order, because easier to compare
     uint first, last;
 
     void parse(const char *name)

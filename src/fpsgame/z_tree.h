@@ -15,7 +15,7 @@ template<typename T> struct z_avltree
         {
             if(left && right)
             {
-                height = (left->height > right->height)
+                height = (left->height >= right->height)
                     ? (left->height + 1)
                     : (right->height + 1);
             }
@@ -90,7 +90,6 @@ template<typename T> struct z_avltree
     bool add(const T &val, T **result = NULL)
     {
         treenode **p = &root;
-        stack.setsize(0);
         for(;;)
         {
             if(*p != NULL)
@@ -101,6 +100,7 @@ template<typename T> struct z_avltree
                 else if(cmp > 0) p = &(*p)->right;
                 else
                 {
+                    stack.setsize(0);
                     if(result) *result = &(*p)->data;
                     return false;
                 }
@@ -123,7 +123,6 @@ template<typename T> struct z_avltree
     void clear()
     {
         treenode **p = &root;
-        stack.setsize(0);
         while(*p)
         {
             if((*p)->left)
