@@ -759,6 +759,9 @@ VARP(nompedit, 0, 1, 1);
 
 void makeundo(selinfo &s)
 {
+#ifdef OLDPROTO
+    if(nompedit && multiplayer(false)) return;
+#endif
     undoblock *u = newundocube(s);
     if(u) addundo(u);
 }

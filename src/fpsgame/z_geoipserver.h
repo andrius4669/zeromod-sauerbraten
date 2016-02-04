@@ -245,6 +245,7 @@ void z_servcmd_geoip(int argc, char **argv, int sender)
 SCOMMAND(geoip, PRIV_NONE, z_servcmd_geoip);
 SCOMMAND(getip, ZC_HIDDEN | PRIV_NONE, z_servcmd_geoip);
 
+// TODO: move this logic to somewhere else
 void z_servcmd_whois(int argc, char **argv, int sender)
 {
     clientinfo * const sci = getinfo(sender);
@@ -297,6 +298,7 @@ void z_servcmd_whois(int argc, char **argv, int sender)
     if(ci->xi.namemute) sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("%s is namemuted", cname));
     if(ci->xi.specmute) sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("%s is specmuted", cname));
     if(z_applyspecban(ci, false, true)) sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("%s is specbanned", cname));
+    if(ci->warned) sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("%s has modified map \"%s\"", cname, smapname));
 
     uint mspassed = uint(totalmillis-ci->connectmillis);
     if(mspassed/1000 != 0)
