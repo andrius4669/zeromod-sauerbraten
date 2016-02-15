@@ -12,9 +12,9 @@ directory at "~/.sauerbraten".
 
 Clients will need the following dynamic link libraries present:
 * libGL (OpenGL)
-* SDL (>= 1.2.10)
-* SDL_image
-* SDL_mixer
+* SDL2 (>= 2.0.0)
+* SDL2_image
+* SDL2_mixer
 * libpng
 * libjpeg
 * zlib
