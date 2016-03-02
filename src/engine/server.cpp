@@ -621,7 +621,7 @@ void checkserversockets()        // reply all server info requests
     }
 }
 
-VAR(serveruprate, 0, 0, INT_MAX);
+VARF(serveruprate, 0, 0, INT_MAX, { if(serverhost) enet_host_bandwidth_limit(serverhost, 0, serveruprate); });
 SVAR(serverip, "");
 VARF(serverport, 0, server::serverport(), 0xFFFF-1, { if(!serverport) serverport = server::serverport(); });
 
