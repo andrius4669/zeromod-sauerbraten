@@ -875,7 +875,7 @@ sub process_stdin {
 					# send all info to irc
 					my $m = "\cC04kick:\cO \cB$name\cO \cC06($cn)\cO ";
 					$m .= "as '\cC06,99$aname\cO' " if defined($aname);
-					$m .= "[\cC06,99$adesc\cO] " if defined($adesc);
+					$m .= "[\cC03,99$adesc\cO] " if defined($adesc);
 					$m .= "(\cC03$apriv\cO) " if defined($apriv);
 					$m .= "kicked \cB$vname\cO \cC06($vcn)\cO";
 					$m .= " because: $reason" if defined($reason);

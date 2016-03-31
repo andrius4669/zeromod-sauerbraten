@@ -120,8 +120,22 @@ template<typename T> struct z_avltree
         }
     }
 
+    // static because pointer to this instance is not needed
+    static void clear_rec(treenode *t)
+    {
+        if(t->left) clear_rec(t->left);
+        if(t->right) clear_rec(t->right);
+        delete t;
+    }
+
     void clear()
     {
+        if(root)
+        {
+            clear_rec(root);
+            root = NULL;
+        }
+#if 0 // pointless NULL assignments
         treenode **p = &root;
         while(*p)
         {
@@ -142,6 +156,7 @@ template<typename T> struct z_avltree
                 if(stack.length()) p = stack.pop();
             }
         }
+#endif
     }
 };
 
