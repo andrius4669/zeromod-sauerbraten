@@ -143,6 +143,7 @@ namespace game
         int bouncetype, variant;
         vec offset;
         int offsetmillis;
+        float offsetheight;
         int id;
         entitylight light;
 
@@ -150,6 +151,24 @@ namespace game
         {
             type = ENT_BOUNCE;
         }
+
+        vec offsetpos()
+        {
+            vec pos(o);
+            if(offsetmillis > 0)
+            {
+                pos.add(vec(offset).mul(offsetmillis/float(OFFSETMILLIS)));
+                if(offsetheight >= 0) pos.z = max(pos.z, o.z - max(offsetheight - eyeheight, 0.0f));
+            }
+            return pos;
+        }
+
+        void limitoffset()
+        {
+            if(bouncetype == BNC_GRENADE && offsetmillis > 0 && offset.z < 0)
+                offsetheight = raycube(vec(o.x + offset.x, o.y + offset.y, o.z), vec(0, 0, -1), -offset.z);
+            else offsetheight = -1;
+        } 
     };
 
     vector<bouncer *> bouncers;
@@ -192,6 +211,7 @@ namespace game
         else bnc.offset = from;
         bnc.offset.sub(bnc.o);
         bnc.offsetmillis = OFFSETMILLIS;
+        bnc.limitoffset();
 
         bnc.resetinterp();
     }
@@ -212,8 +232,7 @@ namespace game
             bouncer &bnc = *bouncers[i];
             if(bnc.bouncetype==BNC_GRENADE && bnc.vel.magnitude() > 50.0f)
             {
-                vec pos(bnc.o);
-                pos.add(vec(bnc.offset).mul(bnc.offsetmillis/float(OFFSETMILLIS)));
+                vec pos = bnc.offsetpos();
                 regular_particle_splash(PART_SMOKE, 1, 150, pos, 0x404040, 2.4f, 50, -20);
             }
             vec old(bnc.o);
@@ -247,6 +266,7 @@ namespace game
             {
                 bnc.roll += old.sub(bnc.o).magnitude()/(4*RAD);
                 bnc.offsetmillis = max(bnc.offsetmillis-time, 0);
+                bnc.limitoffset();
             }
         }
     }
@@ -469,8 +489,7 @@ namespace game
                     bouncer &b = *bouncers[i];
                     if(b.bouncetype == BNC_GRENADE && b.owner == d && b.id == id && !b.local)
                     {
-                        vec pos(b.o);
-                        pos.add(vec(b.offset).mul(b.offsetmillis/float(OFFSETMILLIS)));
+                        vec pos = b.offsetpos();
                         explode(b.local, b.owner, pos, NULL, 0, GUN_GL);
                         adddecal(DECAL_SCORCH, pos, vec(0, 0, 1), guns[gun].exprad/2);
                         delete bouncers.remove(i);
@@ -818,8 +837,7 @@ namespace game
         {
             bouncer &bnc = *bouncers[i];
             if(bnc.bouncetype!=BNC_GRENADE) continue;
-            vec pos(bnc.o);
-            pos.add(vec(bnc.offset).mul(bnc.offsetmillis/float(OFFSETMILLIS)));
+            vec pos = bnc.offsetpos();
             adddynlight(pos, 8, vec(0.25f, 1, 1));
         }
     }
@@ -843,8 +861,7 @@ namespace game
         loopv(bouncers)
         {
             bouncer &bnc = *bouncers[i];
-            vec pos(bnc.o);
-            pos.add(vec(bnc.offset).mul(bnc.offsetmillis/float(OFFSETMILLIS)));
+            vec pos = bnc.offsetpos();
             vec vel(bnc.vel);
             if(vel.magnitude() <= 25.0f) yaw = bnc.lastyaw;
             else
