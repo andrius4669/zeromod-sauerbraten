@@ -16,20 +16,34 @@ void nullifyclientpos(clientinfo &ci)
     p.put(0); p.put(0); // veldir
 }
 
-static inline bool z_isghost(clientinfo &ci)
+static inline bool z_isghost(clientinfo *ci)
 {
-    return ci.xi.ghost || (isracemode() && z_race_shouldhide(ci));
+    return ci->xi.ghost || (isracemode() && z_race_shouldhide(ci));
+}
+
+static inline bool z_shouldhidepos(clientinfo *ci)
+{
+    return z_isghost(ci);
+}
+
+static inline bool z_shouldblockgameplay(clientinfo *ci)
+{
+    return z_isghost(ci);
 }
 
 #if 1
-void z_setghost(clientinfo &ci, bool val)
+static inline void z_setghost(clientinfo *ci, bool val)
 {
-    if(ci.xi.ghost!=val)
+    if(ci->xi.ghost!=val)
     {
-        ci.xi.ghost = val;
-        if(val && smode) smode->leavegame(&ci);
-        if(ci.state.aitype==AI_NONE) sendf(ci.clientnum, 1, "ris", N_SERVMSG, tempformatstring("you got %s", val ? "ghosted" : "unghosted"));
-        if(!val) sendresume(&ci);
+        ci->xi.ghost = val;
+        if(smode)
+        {
+            if(val) smode->leavegame(ci);
+            else smode->entergame(ci);
+        }
+        if(ci->state.aitype==AI_NONE) sendf(ci->clientnum, 1, "ris", N_SERVMSG, tempformatstring("you got %s", val ? "ghosted" : "unghosted"));
+        if(!val) sendresume(ci);
     }
 }
 
@@ -46,7 +60,7 @@ void z_servcmd_ghost(int argc, char **argv, int sender)
     if(!ci) return;
     bool val = !strcasecmp(argv[0], "ghost");
     sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("%s %s", val ? "ghosting" : "unghosting", colorname(ci)));
-    z_setghost(*ci, val);
+    z_setghost(ci, val);
 }
 SCOMMANDAH(ghost, PRIV_MASTER, z_servcmd_ghost, 1);
 SCOMMANDAH(unghost, PRIV_MASTER, z_servcmd_ghost, 1);

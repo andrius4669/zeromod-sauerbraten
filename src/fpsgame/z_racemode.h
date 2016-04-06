@@ -478,6 +478,10 @@ struct raceservmode: servmode
         else return tempformatstring("%d min", mins);
     }
 
+    bool holdpause() { return state == ST_WAITMAP || state == ST_READY; }
+
+    void pausedupdate() { update(); }
+
     void update()
     {
         switch(state)
@@ -620,7 +624,7 @@ struct raceservmode: servmode
         }
     }
 
-    int secsleft() const
+    int timeleft() const
     {
         return (state == ST_STARTED && statemillis) ? max((statemillis - totalmillis + 500)/1000, 0) : 0;
     }
@@ -696,15 +700,9 @@ void race_maploaded(clientinfo *ci)
     }
 }
 
-bool holdpausecontrol()
+bool z_race_shouldhide(clientinfo *ci)
 {
-    extern raceservmode racemode;
-    return smode==&racemode && (racemode.state==racemode.ST_WAITMAP || racemode.state==racemode.ST_READY);
-}
-
-bool z_race_shouldhide(clientinfo &ci)
-{
-    return racemode_hideeditors && ci.state.flags;
+    return racemode_hideeditors && ci->state.flags;
 }
 
 #endif // Z_RACEMODE_H

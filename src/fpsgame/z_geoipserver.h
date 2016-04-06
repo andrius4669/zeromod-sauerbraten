@@ -293,7 +293,7 @@ void z_servcmd_whois(int argc, char **argv, int sender)
     }
 
     if(z_checkchatmute(ci, ci)) sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("%s is muted", cname));
-    if(z_isghost(*ci)) sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("%s is ghosted", cname));
+    if(z_isghost(ci)) sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("%s is ghosted", cname));
     if(ci->xi.editmute) sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("%s is editmuted", cname));
     if(ci->xi.namemute) sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("%s is namemuted", cname));
     if(ci->xi.specmute) sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("%s is specmuted", cname));

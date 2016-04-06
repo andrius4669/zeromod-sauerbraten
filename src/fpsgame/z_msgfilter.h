@@ -45,7 +45,7 @@ bool allowmsg(clientinfo *ci, clientinfo *cq, int type)
                 racemode.racecheat(ci, 2);
                 return false;
             }
-            if(z_isghost(*ci))
+            if(z_shouldblockgameplay(ci))
             {
                 if(type == N_COPY || type == N_CLIPBOARD) ci->cleanclipboard();
                 return false;   // just drop without warning
@@ -81,7 +81,7 @@ bool allowmsg(clientinfo *ci, clientinfo *cq, int type)
             return true;
 
         case N_TAUNT:
-            return cq && cq->state.state==CS_ALIVE && !z_isghost(*cq);
+            return cq && cq->state.state==CS_ALIVE && !z_shouldblockgameplay(cq);
 
         default: return true;
     }
@@ -89,15 +89,10 @@ bool allowmsg(clientinfo *ci, clientinfo *cq, int type)
 
 static inline bool z_allowsound(clientinfo *ci, clientinfo *cq, int sound)
 {
-    // allow some fun
-    return cq && (cq->state.state==CS_ALIVE || cq->state.state==CS_EDITING) && !z_isghost(*cq) && sound >= S_JUMP && sound <= S_FLAGFAIL;
-}
-
-// included here basically because this is included in right place in server.cpp
-int z_timeleft()
-{
-    if(smode==&racemode) return racemode.secsleft();
-    return -1;
+    // allow some fun. but only for hearable sounds, to prevent unknown sound messages spam
+    return cq && (cq->state.state==CS_ALIVE || cq->state.state==CS_EDITING)
+        && !z_shouldblockgameplay(cq)
+        && sound >= S_JUMP && sound <= S_FLAGFAIL;
 }
 
 #endif // Z_MSGFILTER_H

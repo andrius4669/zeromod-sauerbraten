@@ -920,7 +920,11 @@ namespace server
         virtual void getteamscores(vector<teamscore> &scores) {}
         virtual bool extinfoteam(const char *team, ucharbuf &p) { return false; }
 
+        // zeromod
         virtual bool autoteam() { return false; }
+        virtual void pausedupdate() {}
+        virtual bool holdpause() { return false; }
+        virtual int timeleft() const { return -1; }
     };
 
     #define SERVMODE 1
@@ -1168,7 +1172,7 @@ namespace server
 
     void setupdemorecord()
     {
-        if(!m_mp(gamemode) || (m_edit && !isracemode())) return;
+        if(!m_recordable) return;
 
         demotmp = opentempfile("demorecord", "w+b");
         if(!demotmp) return;
@@ -1345,10 +1349,10 @@ namespace server
 
     void checkpausegame()
     {
-        if(!gamepaused) return;
+        if(!gamepaused || (smode && smode->holdpause())) return;
         int admins = 0;
         loopv(clients) if(clients[i]->privilege >= (restrictpausegame ? PRIV_ADMIN : PRIV_MASTER) || clients[i]->local) admins++;
-        if(!admins && !holdpausecontrol()) pausegame(false);
+        if(!admins) pausegame(false);
     }
 
     void forcepaused(bool paused)
@@ -2037,13 +2041,16 @@ namespace server
     #include "z_racemode.h"
     raceservmode racemode;
 
+    // 0 - never load ents/crc from file
+    // 1 - load if gamemode wants (aka not plain edit. racemode wants too)
+    // 2 - always load
     VAR(server_load_ents, 0, 1, 2);
+
     void loaditems()
     {
         resetitems();
         notgotitems = true;
-        if(server_load_ents == 0) return;
-        if((server_load_ents != 2 && !z_racemode && m_edit) || !loadents(smapname, ments, &mcrc))
+        if(server_load_ents == 0 || (server_load_ents == 1 && !m_wantents) || !loadents(smapname, ments, &mcrc))
             return;
         loopv(ments) if(canspawnitem(ments[i].type))
         {
@@ -2344,7 +2351,7 @@ namespace server
             default:
                 return;
         }
-        if(z_isghost(*ci)) return;
+        if(z_shouldblockgameplay(ci)) return;
         if(ci->xi.slay) { suicide(ci); return; }
         gs.explosivedamage += guns[gun].damage * (gs.quadmillis ? 4 : 1);
         sendf(-1, 1, "ri4x", N_EXPLODEFX, ci->clientnum, gun, id, ci->ownernum);
@@ -2380,7 +2387,7 @@ namespace server
         if(gun!=GUN_FIST) gs.ammo[gun]--;
         gs.lastshot = millis;
         gs.gunwait = guns[gun].attackdelay;
-        if(z_isghost(*ci)) return;
+        if(z_shouldblockgameplay(ci)) return;
         if(ci->xi.slay) { suicide(ci); return; }
         sendf(-1, 1, "rii9x", N_SHOTFX, ci->clientnum, gun, id,
                 int(from.x*DMF), int(from.y*DMF), int(from.z*DMF),
@@ -2419,7 +2426,7 @@ namespace server
     {
         gamestate &gs = ci->state;
         if(m_mp(gamemode) && !gs.isalive(gamemillis)) return;
-        if(z_isghost(*ci)) return;  // ghosts cannot pickup
+        if(z_shouldblockgameplay(ci)) return;
         pickup(ent, ci->clientnum);
     }
 
@@ -2520,7 +2527,7 @@ namespace server
                 if(smode) smode->update();
             }
         }
-        if((gamepaused || !shouldstep) && smode==&racemode) smode->update();
+        else if(smode) smode->pausedupdate();
         if(nextsbanscheck && nextsbanscheck-totalmillis < 0) checkexpiredsbans();
 
         while(bannedips.length() && bannedips[0].expire-totalmillis <= 0) bannedips.remove(0);
@@ -2557,8 +2564,9 @@ namespace server
             }
         }
 
-        shouldstep = clients.length() > 0;
         z_checksleep();
+
+        shouldstep = clients.length() > 0;
     }
 
     void forcespectator(clientinfo *ci)
@@ -3179,7 +3187,7 @@ namespace server
                         while(curmsg<p.length()) cp->position.add(p.buf[curmsg++]);
                     }
                     if(!ci->xi.maploaded && cp->state.state==CS_ALIVE) z_maploaded(ci);
-                    if(smode && cp->state.state==CS_ALIVE && !z_isghost(*cp)) smode->moved(cp, cp->state.o, cp->gameclip, pos, (flags&0x80)!=0);
+                    if(smode && cp->state.state==CS_ALIVE && !z_shouldhidepos(cp)) smode->moved(cp, cp->state.o, cp->gameclip, pos, (flags&0x80)!=0);
                     cp->state.o = pos;
                     cp->gameclip = (flags&0x80)!=0;
                     z_processpos(ci, cp);
@@ -3193,7 +3201,7 @@ namespace server
                 clientinfo *cp = getinfo(pcn);
                 if(cp && pcn != sender && cp->ownernum != sender) cp = NULL;
                 if(ci && ++ci->xi.tele_overflow >= 200) break;
-                if(cp && z_isghost(*cp)) break;
+                if(cp && z_shouldhidepos(cp)) break;
                 if(cp && (!ci->local || demorecord || hasnonlocalclients()) && (cp->state.state==CS_ALIVE || cp->state.state==CS_EDITING))
                 {
                     flushclientposition(*cp);
@@ -3208,10 +3216,10 @@ namespace server
                 clientinfo *cp = getinfo(pcn);
                 if(cp && pcn != sender && cp->ownernum != sender) cp = NULL;
                 if(ci && ++ci->xi.jump_overflow >= 200) break;
-                if(cp && z_isghost(*cp)) break;
                 if(cp && (!ci->local || demorecord || hasnonlocalclients()) && (cp->state.state==CS_ALIVE || cp->state.state==CS_EDITING))
                 {
                     cp->setpushed();
+                    if(z_shouldhidepos(cp)) break;
                     flushclientposition(*cp);
                     sendf(-1, 0, "ri3x", N_JUMPPAD, pcn, jumppad, cp->ownernum);
                 }
@@ -3310,7 +3318,7 @@ namespace server
                 int gunselect = getint(p);
                 if(!cq || cq->state.state!=CS_ALIVE) break;
                 cq->state.gunselect = gunselect >= GUN_FIST && gunselect <= GUN_PISTOL ? gunselect : GUN_FIST;
-                if(z_isghost(*cq)) break;
+                if(z_shouldblockgameplay(cq)) break;
                 QUEUE_AI;
                 QUEUE_MSG;
                 break;
@@ -3962,8 +3970,8 @@ namespace server
         putint(p, gamepaused || gamespeed != 100 ? 7 : 5);                   // number of attrs following
         putint(p, PROTOCOL_VERSION);    // generic attributes, passed back below
         putint(p, gamemode);
-        int z_tl = z_timeleft();
-        putint(p, z_tl >= 0 ? z_tl : m_timed ? max((gamelimit - gamemillis)/1000, 0) : 0);
+        int timeleft = smode ? smode->timeleft() : -1; // zeromod
+        putint(p, timeleft >= 0 ? timeleft : m_timed ? max((gamelimit - gamemillis)/1000, 0) : 0);
         putint(p, maxclients);
         putint(p, serverpass[0] ? MM_PASSWORD : (!m_mp(gamemode) ? MM_PRIVATE : (mastermode || mastermask&MM_AUTOAPPROVE ? mastermode : MM_AUTH)));
         if(gamepaused || gamespeed != 100)

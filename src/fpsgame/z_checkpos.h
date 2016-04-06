@@ -23,7 +23,7 @@ static void z_calcnextexceeded(clientinfo *ci)
 
 static void z_processpos(clientinfo *ci, clientinfo *cp)
 {
-    if(z_isghost(*cp)) nullifyclientpos(*cp);
+    if(z_shouldhidepos(cp)) nullifyclientpos(*cp);
     z_posqueue &pt = cp->xi.postrack;
     if(!servertrackpos || m_edit || /*ci->local ||*/ cp->state.state != CS_ALIVE)
     {
