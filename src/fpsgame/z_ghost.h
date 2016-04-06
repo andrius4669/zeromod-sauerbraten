@@ -18,17 +18,17 @@ void nullifyclientpos(clientinfo &ci)
 
 static inline bool z_isghost(clientinfo *ci)
 {
-    return ci->xi.ghost || (isracemode() && z_race_shouldhide(ci));
+    return ci->xi.ghost;
 }
 
 static inline bool z_shouldhidepos(clientinfo *ci)
 {
-    return z_isghost(ci);
+    return z_isghost(ci) || (smode && smode->shouldhidepos(ci));
 }
 
 static inline bool z_shouldblockgameplay(clientinfo *ci)
 {
-    return z_isghost(ci);
+    return z_isghost(ci) || (smode && smode->shouldblockgameplay(ci));
 }
 
 #if 1

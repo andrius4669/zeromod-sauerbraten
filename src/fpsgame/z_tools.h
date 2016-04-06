@@ -153,7 +153,6 @@ extern int z_nodamage;
 
 extern bool isracemode();
 extern void race_maploaded(clientinfo *ci);
-extern bool z_race_shouldhide(clientinfo *ci);
 
 
 #endif // Z_TOOLS_H

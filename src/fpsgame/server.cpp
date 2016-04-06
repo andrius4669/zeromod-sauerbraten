@@ -925,6 +925,8 @@ namespace server
         virtual void pausedupdate() {}
         virtual bool holdpause() { return false; }
         virtual int timeleft() const { return -1; }
+        virtual bool shouldblockgameplay(clientinfo *ci) { return false; }
+        virtual bool shouldhidepos(clientinfo *ci) { return shouldblockgameplay(ci); }
     };
 
     #define SERVMODE 1

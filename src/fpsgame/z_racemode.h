@@ -671,6 +671,11 @@ struct raceservmode: servmode
 
         if(tmp[0]) sendservmsg(tmp);
     }
+
+    bool shouldblockgameplay(clientinfo *ci)
+    {
+        return racemode_hideeditors && ci->state.flags;
+    }
 };
 
 bool isracemode()
@@ -698,11 +703,6 @@ void race_maploaded(clientinfo *ci)
             if(ci->state.flags) raceservmode::warnracecheat(ci);
         }
     }
-}
-
-bool z_race_shouldhide(clientinfo *ci)
-{
-    return racemode_hideeditors && ci->state.flags;
 }
 
 #endif // Z_RACEMODE_H
