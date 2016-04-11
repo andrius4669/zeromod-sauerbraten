@@ -533,21 +533,25 @@ namespace server
 
     int findmaprotation(int mode, const char *map)
     {
+        // try finding map in current slice starting from current maprotation pointer
         for(int i = max(curmaprotation, 0); i < maprotations.length(); i++)
         {
             maprotation &rot = maprotations[i];
             if(!rot.modes) break;
             if(rot.match(mode, map)) return i;
         }
+        // seek back to slice start
         int start;
         for(start = clamp(curmaprotation, 0, maprotations.length()) - 1; start >= 0; start--) if(!maprotations[start].modes) break;
         start++;
+        // search from begining of slice to current maprotation pointer
         for(int i = start; i < min(curmaprotation, maprotations.length()); i++)
         {
             maprotation &rot = maprotations[i];
             if(!rot.modes) break;
             if(rot.match(mode, map)) return i;
         }
+        // if still not done, try finding best matching map/mode combo in whole rotation
         int best = -1;
         loopv(maprotations)
         {
