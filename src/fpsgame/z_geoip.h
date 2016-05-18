@@ -42,24 +42,26 @@ static void z_reset_geoip()
     z_reset_geoip_city();
 }
 
-VAR(geoip_reload, 0, 1, 1);
-VARF(geoip_enable, 0, 0, 1, { if(geoip_reload) z_reset_geoip(); });
-SVARF(geoip_mmdb,    "", { if(geoip_reload) z_reset_mmdb(); });
+VAR(geoip_reload, 0, 1, 1); // whether setting any of database-related fields should trigger database reload. reload may cause noticeable lag
+VARF(geoip_enable, 0, 0, 1, { if(geoip_reload || !geoip_enable) z_reset_geoip(); });
+SVARF(geoip_mmdb, "", { if(geoip_reload) z_reset_mmdb(); });
 SVAR(geoip_mmdb_lang, "en");
 SVARF(geoip_country, "", { if(geoip_reload) z_reset_geoip_country(); });
-SVARF(geoip_city,    "", { if(geoip_reload) z_reset_geoip_city(); });
+SVARF(geoip_city, "", { if(geoip_reload) z_reset_geoip_city(); });
 
-VAR(geoip_show_ip, 0, 2, 2);
-VAR(geoip_show_network, 0, 1, 2);
-VAR(geoip_show_city, 0, 0, 2);
-VAR(geoip_show_region, 0, 0, 2);
-VAR(geoip_show_country, 0, 1, 2);
-VAR(geoip_show_continent, 0, 0, 2);
-VAR(geoip_skip_duplicates, 0, 1, 2);
-VAR(geoip_country_use_db, 0, 2, 2);
-VAR(geoip_fix_country, 0, 1, 1);
-VAR(geoip_ban_mode, 0, 0, 1);   // 0 - blacklist, 1 - whitelist
-VAR(geoip_ban_anonymous, 0, 0, 1);
+// for following variables: 0 - no, 1 - for privileged clients only, 2 - always
+VAR(geoip_show_ip, 0, 2, 2);          // IP address
+VAR(geoip_show_network, 0, 1, 2);     // network description
+VAR(geoip_show_city, 0, 0, 2);        // city
+VAR(geoip_show_region, 0, 0, 2);      // region
+VAR(geoip_show_country, 0, 1, 2);     // country
+VAR(geoip_show_continent, 0, 0, 2);   // continent
+
+VAR(geoip_skip_duplicates, 0, 1, 2);  // skip duplicate fields. 1 - only if without gaps, 2 - with gaps too
+VAR(geoip_country_use_db, 0, 2, 2);   // in case of old libgeoip, select the way we handle cases with 2 databases (country & city).
+VAR(geoip_fix_country, 0, 1, 1);      // convert "Y, X of" to "X of Y"
+VAR(geoip_ban_mode, 0, 0, 1);         // 0 - blacklist, 1 - whitelist
+VAR(geoip_ban_anonymous, 0, 0, 1);    // 1 - ban networks marked anonymous by geoip
 VAR(geoip_default_networks, 0, 1, 1); // whether to include default list of hardcoded network names
 
 // http://www.iana.org/assignments/iana-ipv4-special-registry/iana-ipv4-special-registry.xhtml
@@ -379,8 +381,8 @@ void z_geoip_resolveclient(geoipstate &gs, enet_uint32 ip)
             }
 
             return;
-        }
-    }
+        } // if(mmdb_error == MMDB_SUCCESS && result.found_entry)
+    } // if(z_mmdb)
 #endif // USE_MMDB
 
 #ifdef USE_GEOIP
