@@ -58,11 +58,10 @@ static void z_geoip_print(vector<char> &buf, clientinfo *ci, bool admin)
         comp[5] = ci->xi.geoip.continent;
 
     const int compsz = sizeof(comp)/sizeof(comp[0]);
-    int i = geoip_style_location_order ? 0 : compsz - 1;
+
     int lastc = -1;
-    for(;;)
+    for(int i = geoip_style_location_order ? 0 : compsz - 1; i < compsz && i >= 0; i += geoip_style_location_order ? 1 : -1)
     {
-        if(i >= compsz || i < 0) break;
         if(comp[i])
         {
             if(lastc < 0 && geoip_style_location_prefix[0]) buf.put(geoip_style_location_prefix, strlen(geoip_style_location_prefix));
@@ -71,7 +70,6 @@ static void z_geoip_print(vector<char> &buf, clientinfo *ci, bool admin)
             buf.put(comp[i], strlen(comp[i]));
             lastc = i;
         }
-        i += geoip_style_location_order ? 1 : -1;
     }
     if(lastc >= 0 && geoip_style_location_postfix[0]) buf.put(geoip_style_location_postfix, strlen(geoip_style_location_postfix));
 }
