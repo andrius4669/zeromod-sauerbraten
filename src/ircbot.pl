@@ -28,17 +28,20 @@ my $autojoined;
 my %joinedchans;
 my $myircnick;
 
+# whether nick is ignored. arguments: [nick]
 sub is_ignored_nick {
 	return 1 if defined($cfg{ignored_nicks}) and exists($cfg{ignored_nicks}->{$_[0]});
 	return 0;
 }
 
+# what kind of talkbot use for this chan? args: [channame]
 sub sauer_use_talkbot {
 	my $chan = lc $_[0];
 	return $cfg{talkbotchans}->{$chan} if defined $cfg{talkbotchans}->{$chan};
 	return $cfg{usetalkbot};
 }
 
+# whether to announce presence of ppl in this channel
 sub sauer_show_joinpart {
 	my $chan = lc $_[0];
 	return $cfg{joinpartchans}->{$chan} if defined $cfg{joinpartchans}->{$chan};
@@ -635,7 +638,7 @@ sub notify_irc_action {
 	else {
 		my ($enick, $emsg) = (sauer_esc_str($nick), sauer_esc_str($msg));
 		# no better way
-		print "s_talkbot_fakesay \"*\" (concat $enick $emsg);\n";
+		print "s_talkbot_fakesay $tb \"*\" (concat $enick $emsg);\n";
 	}
 }
 
