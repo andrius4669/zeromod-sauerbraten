@@ -33,11 +33,10 @@
     VAR(extinfoip, 0, 0, 1);
 
     VAR(extinfo_enable, 0, 1, 1);           // enable extinfo functionality
-    ICOMMAND(extinfo_showip, "i", (int *i), { extinfoip = *i; logoutf("WARNING: extinfo_showip variable is deprecated, please use extinfoip"); });
     VAR(extinfo_showpriv, 0, 1, 2);         // show privileges of clients
     VAR(extinfo_showspy, 0, 0, 1);          // show spy clients
-    VAR(extinfo_noident, 0, 0, 1);          // disable mod identification
-    VAR(extinfo_noextendedstats, 0, 0, 1);  // disable extended player stats
+    VAR(extinfo_ident, 0, 1, 1);            // enable mod identification
+    VAR(extinfo_extendedstats, 0, 1, 1);    // enable extended player stats
 
     void extinfoplayer(ucharbuf &p, clientinfo *ci, bool z_extended)
     {
@@ -120,14 +119,14 @@
             case EXT_UPTIME:
             {
                 putint(p, totalsecs); //in seconds
-                if(!extinfo_noident && req.remaining() && req.get() > 0) putint(p, EXT_SERVERMOD); //server mod identification
+                if(extinfo_ident && req.remaining() && req.get() > 0) putint(p, EXT_SERVERMOD); //server mod identification
                 break;
             }
 
             case EXT_PLAYERSTATS:
             {
                 int cn = getint(req); //a special player, -1 for all
-                bool z_extended = !extinfo_noident && !extinfo_noextendedstats && req.remaining() && getint(req) > 0;
+                bool z_extended = extinfo_ident && extinfo_extendedstats && req.remaining() && getint(req) > 0;
                 
                 clientinfo *ci = NULL;
                 if(cn >= 0)
