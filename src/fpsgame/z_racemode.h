@@ -78,6 +78,128 @@ ICOMMAND(rend, "sfffii", (char *map, float *x, float *y, float *z, int *r, int *
     e.rend.place = clamp(*p, 1, RACE_MAXPLACES) - 1;    /* in command specified place starts from 1, in struct it starts from 0 */
 });
 
+static const char *formatmillisecs(int ms)
+{
+    int mins = ms / 60000;
+    ms %= 60000;
+    if(!mins) return tempformatstring("%d.%03d sec", ms/1000, ms%1000);
+    else if(mins && ms) return tempformatstring("%d min %d.%03d sec", mins, ms/1000, ms%1000);
+    else return tempformatstring("%d min", mins);
+}
+
+struct z_racerecord
+{
+    char *map;
+    char *name;
+    int timestamp;
+    uint ip; // no IPv6 ;_;
+    int time; // should fit in integer
+};
+vector<z_racerecord> z_racerecords;
+
+// clears all records
+static void z_racemode_clearrecords()
+{
+    loopv(z_racerecords)
+    {
+        DELETEA(z_racerecords[i].map);
+        DELETEA(z_racerecords[i].name);
+    }
+    z_racerecords.setsize(0);
+}
+
+VARF(racemode_record, 0, 0, 1,
+{
+    if(!racemode_record) z_racemode_clearrecords();
+});
+VAR(racemode_record_unnamed, 0, 0, 1); // whether to record unnamed players or not
+VAR(racemode_record_expire, 0, 0, INT_MAX); // expire time, in milliseconds
+VAR(racemode_record_minimal, 0, 0, INT_MAX); // smallest recordable race win time, in milliseconds
+//VAR(racemode_record_atstart, 0, 0, 1); // whether to announce current record holder at start of race
+//VAR(racemode_record_atend, 0, 0, 1); // whether to announce current record holder at end of race
+// NOTE record times are not saved in HDD in any way currently
+
+// clears old records
+static void z_racemode_checkexpiredrecords()
+{
+    if(!racemode_record_expire) return;
+    int i;
+    for(i = 0; i < z_racerecords.length() && (totalmillis - z_racerecords[i].timestamp) >= racemode_record_expire; i++)
+    {
+        DELETEA(z_racerecords[i].map);
+        DELETEA(z_racerecords[i].name);
+    }
+    z_racerecords.remove(0, i);
+}
+
+SVAR(racemode_record_style_new, "new record: %C [%t]");
+SVAR(racemode_record_style_newold, "new record: %C [%t] (old: %O [%o])");
+
+// maybe register and possibly broadcast new record
+static void z_racemode_record(clientinfo *ci, int racetime)
+{
+    // expire old records
+    z_racemode_checkexpiredrecords();
+    // check if we should register this
+    if(!racemode_record_unnamed && (!ci->name || !strcmp(ci->name, "unnamed"))) return;
+    if(racetime <= racemode_record_minimal) return;
+    // find existing record
+    bool hasold = false;
+    loopv(z_racerecords)
+    {
+        z_racerecord &r = z_racerecords[i];
+        if(!strcmp(r.map, smapname))
+        {
+            if(r.time > racetime) return; // do nothing if record is not improved
+            hasold = true;
+            // print message now because later we won't have this data
+            z_formattemplate ft[] =
+            {
+                { 'C', "%s", (const void *)colorname(ci) },
+                { 'c', "%s", (const void *)ci->name },
+                { 'n', "%d", (const void *)(long)ci->clientnum },
+                { 't', "%s", (const void *)formatmillisecs(racetime) },
+                { 'O', "%s", (const void *)r.name },
+                { 'o', "%s", (const void *)formatmillisecs(r.time) },
+                { 0, NULL, NULL }
+            };
+            string buf;
+            z_format(buf, sizeof(buf), racemode_record_style_newold, ft);
+            if(*buf) sendservmsg(buf);
+            // remove it
+            DELETEA(r.map);
+            DELETEA(r.name);
+            z_racerecords.remove(i);
+            break; // only one record for specific map
+        }
+    }
+
+    if(!hasold)
+    {
+        z_formattemplate ft[] =
+        {
+            { 'C', "%s", (const void *)colorname(ci) },
+            { 'c', "%s", (const void *)ci->name },
+            { 'n', "%d", (const void *)(long)ci->clientnum },
+            { 't', "%s", (const void *)formatmillisecs(racetime) },
+            { 'O', "%s", (const void *)"" },
+            { 'o', "%s", (const void *)"" },
+            { 0, NULL, NULL }
+        };
+        string buf;
+        z_format(buf, sizeof(buf), racemode_record_style_new, ft);
+        if(*buf) sendservmsg(buf);
+    }
+
+    // save new record
+    z_racerecord &r = z_racerecords.add();
+    r.map = newstring(smapname);
+    r.name = newstring(ci->name);
+    r.ip = getclientip(ci->clientnum);
+    r.time = racetime;
+    r.timestamp = totalmillis;
+}
+
 // styling values
 SVAR(racemode_style_winners, "\f6RACE WINNERS: %W");
 SVAR(racemode_style_winplace, "\f2%P PLACE: \f7%C (%t)");
@@ -317,6 +439,9 @@ struct raceservmode: servmode
             int plv = race_winners.length() - avaiable_place;
             if(ci->state.frags < plv) updateclientfragsnum(*ci, plv);
 
+            // possibly record it
+            z_racemode_record(ci, racemillis);
+
             break;
         }
         if(state == ST_STARTED) checkplaces();
@@ -467,15 +592,6 @@ struct raceservmode: servmode
     static bool shouldshowtimer(int secs)
     {
         return secs >= 60 ? (secs % 60 == 0) : secs >= 30 ? (secs % 10 == 0) : secs >= 5 ? (secs % 5 == 0) : (secs > 0);
-    }
-
-    static const char *formatmillisecs(int ms)
-    {
-        int mins = ms / 60000;
-        ms %= 60000;
-        if(!mins) return tempformatstring("%d.%03d sec", ms/1000, ms%1000);
-        else if(mins && ms) return tempformatstring("%d min %d.%03d sec", mins, ms/1000, ms%1000);
-        else return tempformatstring("%d min", mins);
     }
 
     bool holdpause() { return state == ST_WAITMAP || state == ST_READY; }
