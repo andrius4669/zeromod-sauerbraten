@@ -121,7 +121,7 @@ ICOMMAND(disable_commands, "sV", (tagval *args, int numargs), z_enable_commands(
 #define SCOMMANDA SCOMMANDZ
 #define SCOMMANDAH(name, opts, func, args) SCOMMANDZ(name, (opts) | ZC_HIDDEN, func, args)
 
-VAR(allowservcmd, 0, 1, 1);
+VAR(allowservcmd, 0, 0, 1);
 
 SVAR(servcmd_message_pleasespecifyclient, "please specify client number");
 static inline void z_servcmd_pleasespecifyclient(int cntosend)

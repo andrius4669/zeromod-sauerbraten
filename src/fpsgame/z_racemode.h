@@ -87,10 +87,12 @@ static const char *formatmillisecs(int ms)
     else return tempformatstring("%d min", mins);
 }
 
+// TODO: move records subsystem to different file. may be useful for flagruns too
 struct z_racerecord
 {
     char *map;
     char *name;
+    int mode;
     int timestamp;
     uint ip; // no IPv6 ;_;
     int time; // should fit in integer
@@ -114,7 +116,8 @@ VARF(racemode_record, 0, 0, 1,
 });
 VAR(racemode_record_unnamed, 0, 0, 1); // whether to record unnamed players or not
 VAR(racemode_record_expire, 0, 0, INT_MAX); // expire time, in milliseconds
-VAR(racemode_record_minimal, 0, 0, INT_MAX); // smallest recordable race win time, in milliseconds
+VAR(racemode_record_min, 0, 0, INT_MAX); // shortest recordable race win time, in milliseconds
+VAR(racemode_record_max, 0, 0, INT_MAX); // longest recordable race win time, in milliseconds. 0 = disable
 //VAR(racemode_record_atstart, 0, 0, 1); // whether to announce current record holder at start of race
 //VAR(racemode_record_atend, 0, 0, 1); // whether to announce current record holder at end of race
 // NOTE record times are not saved in HDD in any way currently
@@ -134,6 +137,7 @@ static void z_racemode_checkexpiredrecords()
 
 SVAR(racemode_record_style_new, "new record: %C [%t]");
 SVAR(racemode_record_style_newold, "new record: %C [%t] (old: %O [%o])");
+SVAR(racemode_record_style_current, "current record: %O [%o]");
 
 // maybe register and possibly broadcast new record
 static void z_racemode_record(clientinfo *ci, int racetime)
@@ -141,16 +145,17 @@ static void z_racemode_record(clientinfo *ci, int racetime)
     // expire old records
     z_racemode_checkexpiredrecords();
     // check if we should register this
-    if(!racemode_record_unnamed && (!ci->name || !strcmp(ci->name, "unnamed"))) return;
-    if(racetime <= racemode_record_minimal) return;
+    if(!racemode_record_unnamed && (!ci->name[0] || !strcmp(ci->name, "unnamed"))) return;
+    if(racetime <= racemode_record_min) return;
+    if(racemode_record_max && racetime >= racemode_record_max) return;
     // find existing record
     bool hasold = false;
     loopv(z_racerecords)
     {
         z_racerecord &r = z_racerecords[i];
-        if(!strcmp(r.map, smapname))
+        if(r.mode == gamemode && !strcmp(r.map, smapname))
         {
-            if(r.time > racetime) return; // do nothing if record is not improved
+            if(r.time < racetime) return; // do nothing if record is not improved
             hasold = true;
             // print message now because later we won't have this data
             z_formattemplate ft[] =
@@ -194,11 +199,40 @@ static void z_racemode_record(clientinfo *ci, int racetime)
     // save new record
     z_racerecord &r = z_racerecords.add();
     r.map = newstring(smapname);
+    r.mode = gamemode;
     r.name = newstring(ci->name);
     r.ip = getclientip(ci->clientnum);
     r.time = racetime;
     r.timestamp = totalmillis;
 }
+
+void z_servcmd_showrecord(int argc, char **argv, int sender)
+{
+    int r = -1;
+    const char *mn = argc > 1 ? argv[1] : smapname;
+    loopv(z_racerecords)
+    {
+        if(z_racerecords[i].mode == gamemode && !strcmp(z_racerecords[i].map, mn)) { r = i; break; }
+    }
+    if(r < 0)
+    {
+        sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("race record for \"%s\" not found", mn));
+        return;
+    }
+    clientinfo *ci = (clientinfo *)getclientinfo(sender);
+    // TODO maybe expose IP to master/auth (should be configured with some variable)
+    if(ci && ci->privilege >= PRIV_ADMIN)
+    {
+        ENetAddress ea;
+        memset(&ea, 0, sizeof(ea));
+        ea.host = z_racerecords[r].ip;
+        string host;
+        if(enet_address_get_host_ip(&ea, host, sizeof(host)) != 0) copystring(host, "unknown");
+        sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("race record for \"%s\": %s [%s] (%s)", mn, z_racerecords[r].name, formatmillisecs(z_racerecords[r].time), host));
+    }
+    else sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("race record for \"%s\": %s [%s]", mn, z_racerecords[r].name, formatmillisecs(z_racerecords[r].time)));
+}
+SCOMMANDA(showrecord, PRIV_NONE, z_servcmd_showrecord, 1);
 
 // styling values
 SVAR(racemode_style_winners, "\f6RACE WINNERS: %W");

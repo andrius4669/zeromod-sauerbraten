@@ -35,7 +35,7 @@
     VAR(extinfo_enable, 0, 1, 1);           // enable extinfo functionality
     VAR(extinfo_showpriv, 0, 1, 2);         // show privileges of clients
     VAR(extinfo_showspy, 0, 0, 1);          // show spy clients
-    VAR(extinfo_ident, 0, 1, 1);            // enable mod identification
+    VAR(extinfo_ident, 0, 0, 1);            // enable mod identification
     VAR(extinfo_extendedstats, 0, 1, 1);    // enable extended player stats
 
     void extinfoplayer(ucharbuf &p, clientinfo *ci, bool z_extended)
