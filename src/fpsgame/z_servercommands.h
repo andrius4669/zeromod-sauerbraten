@@ -91,7 +91,7 @@ void z_servcmd_set_privilege(const char *cmd, int privilege)
     loopv(z_servcommands) if(!strcasecmp(z_servcommands[i].name, cmd)) z_servcommands[i].privilege = privilege;
 }
 
-void command_prilege(tagval *args, int numargs)
+void commands_prilege(tagval *args, int numargs)
 {
     vector<char *> commands;
     for(int i = 0; i + 1 < numargs; i += 2)
@@ -101,7 +101,7 @@ void command_prilege(tagval *args, int numargs)
         commands.deletearrays();
     }
 }
-COMMAND(command_prilege, "si2V");
+COMMAND(commands_prilege, "si2V");
 
 void z_enable_command(const char *cmd, bool val)
 {
@@ -113,8 +113,21 @@ void z_enable_commands(tagval *args, int numargs, bool val)
 {
     loopi(numargs) z_enable_command(args[i].getstr(), val);
 }
-ICOMMAND(enable_commands, "sV", (tagval *args, int numargs), z_enable_commands(args, numargs, true));
-ICOMMAND(disable_commands, "sV", (tagval *args, int numargs), z_enable_commands(args, numargs, false));
+ICOMMAND(commands_enable, "sV", (tagval *args, int numargs), z_enable_commands(args, numargs, true));
+ICOMMAND(commands_disable, "sV", (tagval *args, int numargs), z_enable_commands(args, numargs, false));
+
+void z_hide_command(const char *cmd, bool val)
+{
+    if(!z_initedservcommands) z_initservcommands();
+    loopv(z_servcommands) if(!strcasecmp(z_servcommands[i].name, cmd)) z_servcommands[i].hidden = val;
+}
+
+void z_hide_commands(tagval *args, int numargs, bool val)
+{
+    loopi(numargs) z_hide_command(args[i].getstr(), val);
+}
+ICOMMAND(commands_hide, "sV", (tagval *args, int numargs), z_hide_commands(args, numargs, true));
+ICOMMAND(commands_show, "sV", (tagval *args, int numargs), z_hide_commands(args, numargs, false));
 
 #define SCOMMANDZ(name, opts, func, args) UNUSED static bool __s_dummy__##name = addservcmd(z_servcmdinfo(#name, func, opts, args))
 #define SCOMMAND(name, opts, func) SCOMMANDZ(name, opts, func, 0)
