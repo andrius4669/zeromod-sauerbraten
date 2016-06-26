@@ -116,7 +116,7 @@ void z_enable_commands(tagval *args, int numargs, bool val)
 ICOMMAND(commands_enable, "sV", (tagval *args, int numargs), z_enable_commands(args, numargs, true));
 ICOMMAND(commands_disable, "sV", (tagval *args, int numargs), z_enable_commands(args, numargs, false));
 
-void z_hide_command(const char *cmd, bool val)
+static void z_hide_command(const char *cmd, bool val)
 {
     if(!z_initedservcommands) z_initservcommands();
     loopv(z_servcommands) if(!strcasecmp(z_servcommands[i].name, cmd)) z_servcommands[i].hidden = val;
@@ -128,6 +128,37 @@ void z_hide_commands(tagval *args, int numargs, bool val)
 }
 ICOMMAND(commands_hide, "sV", (tagval *args, int numargs), z_hide_commands(args, numargs, true));
 ICOMMAND(commands_show, "sV", (tagval *args, int numargs), z_hide_commands(args, numargs, false));
+
+static void z_delete_command(const char *cmd)
+{
+    if(!z_initedservcommands) z_initservcommands();
+    loopv(z_servcommands) if(!strcasecmp(z_servcommands[i].name, cmd))
+    {
+        z_servcommands.remove(i--);
+    }
+}
+
+void z_delete_commands(tagval *args, int numargs)
+{
+    loopi(numargs) z_delete_command(args[i].getstr());
+}
+ICOMMAND(commands_delete, "sV", (tagval *args, int numargs), z_delete_commands(args, numargs));
+
+void z_clone_command(tagval *args, int numargs)
+{
+    if(numargs < 2) return;
+    if(!z_initedservcommands) z_initservcommands();
+    int c = -1;
+    const char *cmd = args[0].getstr();
+    loopv(z_servcommands) if(!strcasecmp(z_servcommands[i].name, cmd)) { c = i; break; }
+    if(c < 0) return;
+    for(int i = 1; i < numargs; ++i)
+    {
+        z_servcmdinfo &ncmd = z_servcommands.add(z_servcommands[c]);
+        copystring(ncmd.name, args[i].getstr());
+    }
+}
+ICOMMAND(commands_clone, "sV", (tagval *args, int numargs), z_clone_command(args, numargs));
 
 #define SCOMMANDZ(name, opts, func, args) UNUSED static bool __s_dummy__##name = addservcmd(z_servcmdinfo(#name, func, opts, args))
 #define SCOMMAND(name, opts, func) SCOMMANDZ(name, opts, func, 0)
