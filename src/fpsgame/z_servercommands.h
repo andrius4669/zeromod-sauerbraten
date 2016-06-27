@@ -91,7 +91,7 @@ void z_servcmd_set_privilege(const char *cmd, int privilege)
     loopv(z_servcommands) if(!strcasecmp(z_servcommands[i].name, cmd)) z_servcommands[i].privilege = privilege;
 }
 
-void commands_prilege(tagval *args, int numargs)
+void commands_privilege(tagval *args, int numargs)
 {
     vector<char *> commands;
     for(int i = 0; i + 1 < numargs; i += 2)
@@ -101,7 +101,7 @@ void commands_prilege(tagval *args, int numargs)
         commands.deletearrays();
     }
 }
-COMMAND(commands_prilege, "si2V");
+COMMAND(commands_privilege, "si2V");
 
 void z_enable_command(const char *cmd, bool val)
 {
