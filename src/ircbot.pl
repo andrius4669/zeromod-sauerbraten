@@ -899,6 +899,8 @@ sub process_stdin {
 
 irc_reset;
 
+my $stdinbuf = '';
+
 my $reconnectwait = 0;
 MAINLOOP: for(;;) {
 	# execute trigger
@@ -978,14 +980,23 @@ MAINLOOP: for(;;) {
 		}
 		if(vec($rout, fileno(STDIN), 1)) {
 			# don't use <> or read, since they buffer data. use sysread
-			my $line = '';
-			for(;;) {
-				my $r = sysread STDIN, my $chr, 1;
-				last if $r <= 0 or $chr eq "\n";
-				$line .= $chr;
+			my $r = sysread STDIN, my $rbuf, 4096;
+			if(defined($r) and $r > 0) {
+				my $searchpos = length($stdinbuf);
+				$stdinbuf .= $rbuf;
+				undef $rbuf;
+				my $totallen = $searchpos + $r;
+				my $start = 0;
+				my $foundnl;
+				while(($foundnl = index($stdinbuf, "\n", $searchpos)) >= 0) {
+					my $lineend = $foundnl;
+					$lineend-- if substr($stdinbuf, $foundnl-1, 1) eq "\r";
+					my $line = substr($stdinbuf, $start, $lineend-$start);
+					$start = $searchpos = $foundnl + 1;
+					process_stdin($line) if length($line) > 0;
+				}
+				$stdinbuf = substr($stdinbuf, $start) if $start > 0;
 			}
-			# process line from stdin
-			process_stdin($line) if length($line) > 0;
 		}
 
 		# if we registered to server, we can send join commands
