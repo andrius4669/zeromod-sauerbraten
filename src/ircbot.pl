@@ -102,9 +102,11 @@ sub filter_irc_text {
 				$i++;
 				if(($i < $l) and (($c = substr($_[0], $i, 1)) ge '0') and ($c le '9')) {
 					$i++;
-					if((($i + 1) < $l) and (substr($_[0], $i, 1) eq ',') and (($c = substr($_[0], $i + 1, 1)) ge '0') and ($c le '9')) {
-						$i += 2;
-						if(($i < $l) and (($c = substr($_[0], $i, 1)) ge '0') and ($c le '9')) { $i++; }
+				}
+				if((($i + 1) < $l) and (substr($_[0], $i, 1) eq ',') and (($c = substr($_[0], $i + 1, 1)) ge '0') and ($c le '9')) {
+					$i += 2;
+					if(($i < $l) and (($c = substr($_[0], $i, 1)) ge '0') and ($c le '9')) {
+						$i++;
 					}
 				}
 			}
