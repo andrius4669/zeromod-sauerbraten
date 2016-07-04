@@ -845,10 +845,16 @@ sub process_stdin {
 					if($rest =~ /^\((.+)\)$/) { $method = $1; }
 				}
 				elsif($rest =~ /^ \((.+)\)$/) { $method = $1; }
+				if(defined($method)) {
+					if($method =~ /^([^ ]+) by ([^ ]+) \(([0-9]+)\)$/) {
+						my ($maction, $mactor, $mactorcn) = ($1, $2, $3);
+						$method = "$maction by\cO \cB$mactor\cO \cC06($mactorcn)";
+					}
+				}
 				my $m = "\cC02master:\cO \cB$name\cO \cC06($cn)\cO $action \cC03$priv\cO";
 				$m .= " as '\cC06,99$aname\cO'" if defined($aname);
 				$m .= " [\cC03,99$adesc\cO]" if defined($adesc);
-				$m .= " (\cC02,99$method\cO)" if defined($method) and !defined($aname); # when on auth method is obvious
+				$m .= " (\cC02,99$method\cO)" if defined($method) and ((!defined($aname)) or ($method ne 'auth')); # when on auth method is obvious
 				irc_bcast_msg($m);
 			}
 		}
