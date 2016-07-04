@@ -783,7 +783,7 @@ sub process_stdin {
 				$sauer_names[$cn] = $name;
 				# print message about join
 				my $m = "\cC03join:\cO \cB$name\cO \cC06($cn)\cO";
-				$m .= " [\cC02,99$sauer_ips[$cn]\cO]" if defined($sauer_ips[$cn]) and (length($sauer_ips[$cn]) > 0);
+				$m .= " [\cC02$sauer_ips[$cn]\cO]" if defined($sauer_ips[$cn]) and (length($sauer_ips[$cn]) > 0);
 				irc_bcast_msg($m);
 			}
 		}
@@ -812,7 +812,7 @@ sub process_stdin {
 					}
 					else { $action = "leave"; }
 					my $m = "\cC14$action:\cO \cB$name\cO \cC06($cn)\cO";
-					$m .= " [\cC02,99$ip\cO]" if defined($ip) and length($ip) > 0;
+					$m .= " [\cC02$ip\cO]" if defined($ip) and length($ip) > 0;
 					$m .= " because: $reason" if defined($reason);
 					irc_bcast_msg($m);
 				}
@@ -854,9 +854,9 @@ sub process_stdin {
 					}
 				}
 				my $m = "\cC02master:\cO \cB$name\cO \cC06($cn)\cO $action \cC03$priv\cO";
-				$m .= " as '\cC06,99$aname\cO'" if defined($aname);
-				$m .= " [\cC03,99$adesc\cO]" if defined($adesc);
-				$m .= " (\cC02,99$method\cO)" if defined($method) and ((!defined($aname)) or ($method ne 'auth')); # when on auth method is obvious
+				$m .= " as '\cC06$aname\cO'" if defined($aname);
+				$m .= " [\cC03$adesc\cO]" if defined($adesc);
+				$m .= " (\cC02$method\cO)" if defined($method) and ((!defined($aname)) or ($method ne 'auth')); # when on auth method is obvious
 				irc_bcast_msg($m);
 			}
 		}
@@ -885,8 +885,8 @@ sub process_stdin {
 					}
 					# send all info to irc
 					my $m = "\cC04kick:\cO \cB$name\cO \cC06($cn)\cO ";
-					$m .= "as '\cC06,99$aname\cO' " if defined($aname);
-					$m .= "[\cC03,99$adesc\cO] " if defined($adesc);
+					$m .= "as '\cC06$aname\cO' " if defined($aname);
+					$m .= "[\cC03$adesc\cO] " if defined($adesc);
 					$m .= "(\cC03$apriv\cO) " if defined($apriv);
 					$m .= "kicked \cB$vname\cO \cC06($vcn)\cO";
 					$m .= " because: $reason" if defined($reason);
