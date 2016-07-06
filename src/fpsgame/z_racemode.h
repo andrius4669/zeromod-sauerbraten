@@ -5,6 +5,7 @@
 #include "z_autosendmap.h"
 #include "z_loadmap.h"
 #include "z_format.h"
+#include "z_records.h"
 
 enum { Z_RC_NONE = 0, Z_RC_EDITMODE, Z_RC_EDITING };
 
@@ -78,161 +79,32 @@ ICOMMAND(rend, "sfffii", (char *map, float *x, float *y, float *z, int *r, int *
     e.rend.place = clamp(*p, 1, RACE_MAXPLACES) - 1;    /* in command specified place starts from 1, in struct it starts from 0 */
 });
 
-static const char *formatmillisecs(int ms)
-{
-    int mins = ms / 60000;
-    ms %= 60000;
-    if(!mins) return tempformatstring("%d.%03d sec", ms/1000, ms%1000);
-    else if(mins && ms) return tempformatstring("%d min %d.%03d sec", mins, ms/1000, ms%1000);
-    else return tempformatstring("%d min", mins);
-}
-
-// TODO: move records subsystem to different file. may be useful for flagruns too
-struct z_racerecord
-{
-    char *map;
-    char *name;
-    int mode;
-    int timestamp;
-    uint ip; // no IPv6 ;_;
-    int time; // should fit in integer
-};
-vector<z_racerecord> z_racerecords;
-
-// clears all records
-static void z_racemode_clearrecords()
-{
-    loopv(z_racerecords)
-    {
-        DELETEA(z_racerecords[i].map);
-        DELETEA(z_racerecords[i].name);
-    }
-    z_racerecords.setsize(0);
-}
-
 VARF(racemode_record, 0, 0, 1,
 {
-    if(!racemode_record) z_racemode_clearrecords();
+    if(!racemode_record) z_clearrecords(M_EDIT);
 });
-VAR(racemode_record_unnamed, 0, 0, 1); // whether to record unnamed players or not
-VAR(racemode_record_expire, 0, 0, INT_MAX); // expire time, in milliseconds
-VAR(racemode_record_min, 0, 0, INT_MAX); // shortest recordable race win time, in milliseconds
-VAR(racemode_record_max, 0, 0, INT_MAX); // longest recordable race win time, in milliseconds. 0 = disable
-//VAR(racemode_record_atstart, 0, 0, 1); // whether to announce current record holder at start of race
-//VAR(racemode_record_atend, 0, 0, 1); // whether to announce current record holder at end of race
-// NOTE record times are not saved in HDD in any way currently
 
-// clears old records
-static void z_racemode_checkexpiredrecords()
+VAR(racemode_record_atstart, 0, 0, 1); // whether to announce current record holder at start of race
+VAR(racemode_record_atend, 0, 0, 1); // whether to announce current record holder at end of race
+SVAR(racemode_record_style_atstart, "\f6CURRENT RECORD HOLDER: \f7%O \f1(%o)");
+SVAR(racemode_record_style_atend, "\f6CURRENT RECORD HOLDER: \f7%O \f1(%o)");
+
+static void z_racemode_showcurrentrecord(const char *fmt)
 {
-    if(!racemode_record_expire) return;
-    int i;
-    for(i = 0; i < z_racerecords.length() && (totalmillis - z_racerecords[i].timestamp) >= racemode_record_expire; i++)
+    z_findcurrentrecord();
+    if(z_currentrecord < 0) return;
+    z_record &r = z_records[z_currentrecord];
+
+    z_formattemplate ft[] =
     {
-        DELETEA(z_racerecords[i].map);
-        DELETEA(z_racerecords[i].name);
-    }
-    z_racerecords.remove(0, i);
+        { 'O', "%s", (const void *)r.name },
+        { 'o', "%s", (const void *)formatmillisecs(r.time) },
+        { 0, NULL, NULL }
+    };
+    string buf;
+    z_format(buf, sizeof(buf), fmt, ft);
+    if(*buf) sendservmsg(buf);
 }
-
-SVAR(racemode_record_style_new, "new record: %C [%t]");
-SVAR(racemode_record_style_newold, "new record: %C [%t] (old: %O [%o])");
-SVAR(racemode_record_style_current, "current record: %O [%o]");
-
-// maybe register and possibly broadcast new record
-static void z_racemode_record(clientinfo *ci, int racetime)
-{
-    // expire old records
-    z_racemode_checkexpiredrecords();
-    // check if we should register this
-    if(!racemode_record_unnamed && (!ci->name[0] || !strcmp(ci->name, "unnamed"))) return;
-    if(racetime <= racemode_record_min) return;
-    if(racemode_record_max && racetime >= racemode_record_max) return;
-    // find existing record
-    bool hasold = false;
-    loopv(z_racerecords)
-    {
-        z_racerecord &r = z_racerecords[i];
-        if(r.mode == gamemode && !strcmp(r.map, smapname))
-        {
-            if(r.time < racetime) return; // do nothing if record is not improved
-            hasold = true;
-            // print message now because later we won't have this data
-            z_formattemplate ft[] =
-            {
-                { 'C', "%s", (const void *)colorname(ci) },
-                { 'c', "%s", (const void *)ci->name },
-                { 'n', "%d", (const void *)(long)ci->clientnum },
-                { 't', "%s", (const void *)formatmillisecs(racetime) },
-                { 'O', "%s", (const void *)r.name },
-                { 'o', "%s", (const void *)formatmillisecs(r.time) },
-                { 0, NULL, NULL }
-            };
-            string buf;
-            z_format(buf, sizeof(buf), racemode_record_style_newold, ft);
-            if(*buf) sendservmsg(buf);
-            // remove it
-            DELETEA(r.map);
-            DELETEA(r.name);
-            z_racerecords.remove(i);
-            break; // only one record for specific map
-        }
-    }
-
-    if(!hasold)
-    {
-        z_formattemplate ft[] =
-        {
-            { 'C', "%s", (const void *)colorname(ci) },
-            { 'c', "%s", (const void *)ci->name },
-            { 'n', "%d", (const void *)(long)ci->clientnum },
-            { 't', "%s", (const void *)formatmillisecs(racetime) },
-            { 'O', "%s", (const void *)"" },
-            { 'o', "%s", (const void *)"" },
-            { 0, NULL, NULL }
-        };
-        string buf;
-        z_format(buf, sizeof(buf), racemode_record_style_new, ft);
-        if(*buf) sendservmsg(buf);
-    }
-
-    // save new record
-    z_racerecord &r = z_racerecords.add();
-    r.map = newstring(smapname);
-    r.mode = gamemode;
-    r.name = newstring(ci->name);
-    r.ip = getclientip(ci->clientnum);
-    r.time = racetime;
-    r.timestamp = totalmillis;
-}
-
-void z_servcmd_showrecord(int argc, char **argv, int sender)
-{
-    int r = -1;
-    const char *mn = argc > 1 ? argv[1] : smapname;
-    loopv(z_racerecords)
-    {
-        if(z_racerecords[i].mode == gamemode && !strcmp(z_racerecords[i].map, mn)) { r = i; break; }
-    }
-    if(r < 0)
-    {
-        sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("race record for \"%s\" not found", mn));
-        return;
-    }
-    clientinfo *ci = (clientinfo *)getclientinfo(sender);
-    // TODO maybe expose IP to master/auth (should be configured with some variable)
-    if(ci && ci->privilege >= PRIV_ADMIN)
-    {
-        ENetAddress ea;
-        memset(&ea, 0, sizeof(ea));
-        ea.host = z_racerecords[r].ip;
-        string host;
-        if(enet_address_get_host_ip(&ea, host, sizeof(host)) != 0) copystring(host, "unknown");
-        sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("race record for \"%s\": %s [%s] (%s)", mn, z_racerecords[r].name, formatmillisecs(z_racerecords[r].time), host));
-    }
-    else sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("race record for \"%s\": %s [%s]", mn, z_racerecords[r].name, formatmillisecs(z_racerecords[r].time)));
-}
-SCOMMANDA(showrecord, PRIV_NONE, z_servcmd_showrecord, 1);
 
 // styling values
 SVAR(racemode_style_winners, "\f6RACE WINNERS: %W");
@@ -474,7 +346,7 @@ struct raceservmode: servmode
             if(ci->state.frags < plv) updateclientfragsnum(*ci, plv);
 
             // possibly record it
-            z_racemode_record(ci, racemillis);
+            if(racemode_record) z_newrecord(ci, racemillis);
 
             break;
         }
@@ -712,6 +584,7 @@ struct raceservmode: servmode
                         if(clients[i]->state.state!=CS_EDITING) sendspawn(clients[i]);
                         else racecheat(clients[i], 1);
                     }
+                    if(racemode_record && racemode_record_atstart) z_racemode_showcurrentrecord(racemode_record_style_atstart);
                 }
                 break;
 
@@ -820,6 +693,8 @@ struct raceservmode: servmode
         z_format(tmp, sizeof(tmp), racemode_style_winners, style_tmp);
 
         if(tmp[0]) sendservmsg(tmp);
+        
+        if(racemode_record && racemode_record_atend) z_racemode_showcurrentrecord(racemode_record_style_atend);
     }
 
     bool shouldblockgameplay(clientinfo *ci)

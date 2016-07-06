@@ -81,4 +81,13 @@ size_t z_formatdate(char *dst, size_t len, const time_t &t)
     return strftime(dst, len, date_format, tt);
 }
 
+static const char *formatmillisecs(int ms)
+{
+    int mins = ms / 60000;
+    ms %= 60000;
+    if(!mins) return tempformatstring("%d.%03d sec", ms/1000, ms%1000);
+    else if(mins && ms) return tempformatstring("%d min %d.%03d sec", mins, ms/1000, ms%1000);
+    else return tempformatstring("%d min", mins);
+}
+
 #endif // Z_FORMAT_H

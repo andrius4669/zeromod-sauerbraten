@@ -2086,6 +2086,7 @@ namespace server
         interm = 0;
         nextexceeded = 0;
         z_addmaptohist(s);
+        z_resetcurrentrecord();
         copystring(smapname, s);
         loaditems();
         scores.shrink(0);

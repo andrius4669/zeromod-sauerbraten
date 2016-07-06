@@ -1,0 +1,178 @@
+#ifndef Z_RECORDS_H
+#define Z_RECORDS_H
+
+#include "z_format.h"
+
+VAR(record_unnamed, 0, 0, 1); // whether to record unnamed players or not
+VAR(record_expire, 0, 0, INT_MAX); // expire time, in milliseconds
+VAR(record_min, 0, 0, INT_MAX); // shortest recordable race win time, in milliseconds
+VAR(record_max, 0, 0, INT_MAX); // longest recordable race win time, in milliseconds. 0 = disable
+// NOTE record times are not saved in HDD in any way currently
+SVAR(record_style_new, "\f6NEW RECORD: \f7%C \f1(%t)");
+SVAR(record_style_newold, "\f6NEW RECORD: \f7%C \f1(%t) \f4(old: \f7%O \f1(%o)\f4)");
+
+struct z_record
+{
+    char *map;
+    char *name;
+    int mode;
+    int timestamp;
+    uint ip; // no IPv6 ;_;
+    int time;
+};
+vector<z_record> z_records;
+static int z_currentrecord = -1; // -1 = not yet found, -2 = comfirmed not found
+
+// finds current record
+static void z_findcurrentrecord()
+{
+    if(z_currentrecord != -1) return;
+    loopv(z_records) if(z_records[i].mode == gamemode && !strcmp(z_records[i].map, smapname))
+    {
+        z_currentrecord = i;
+        return;
+    }
+    z_currentrecord = -2;
+}
+
+// resets z_currentrecord pointer (to use when switching map, etc)
+static void z_resetcurrentrecord()
+{
+    z_currentrecord = -1;
+}
+
+#if 0
+// clears all records
+static void z_clearallrecords()
+{
+    loopv(z_records)
+    {
+        DELETEA(z_records[i].map);
+        DELETEA(z_records[i].name);
+    }
+    z_records.setsize(0);
+    z_currentrecord = -2;
+}
+#endif
+
+// clears records of specific mode
+static void z_clearrecords(int mode)
+{
+    loopv(z_records) if(z_records[i].mode == mode)
+    {
+        DELETEA(z_records[i].map);
+        DELETEA(z_records[i].name);
+        z_records.remove(i);
+        if(z_currentrecord > i) z_currentrecord--;
+        else if(z_currentrecord == i) z_currentrecord = -2;
+        i--;
+    }
+}
+
+// clears old records
+static void z_checkexpiredrecords()
+{
+    if(!record_expire) return;
+    int i;
+    for(i = 0; i < z_records.length() && (totalmillis - z_records[i].timestamp) >= record_expire; i++)
+    {
+        DELETEA(z_records[i].map);
+        DELETEA(z_records[i].name);
+    }
+    z_records.remove(0, i);
+    if(z_currentrecord >= i) z_currentrecord -= i;
+    else z_currentrecord = -1;
+}
+
+// maybe register and possibly broadcast new record
+static void z_newrecord(clientinfo *ci, int time)
+{
+    // expire old records
+    z_checkexpiredrecords();
+    // check if we should register this
+    if(!record_unnamed && (!ci->name[0] || !strcmp(ci->name, "unnamed"))) return;
+    if(time <= record_min) return;
+    if(record_max && time >= record_max) return;
+    // find existing record
+    z_findcurrentrecord();
+    if(z_currentrecord >= 0)
+    {
+        z_record &r = z_records[z_currentrecord];
+        if(r.time < time) return; // do nothing if record is not improved
+        // print message now because later we won't have this data
+        z_formattemplate ft[] =
+        {
+            { 'C', "%s", (const void *)colorname(ci) },
+            { 'c', "%s", (const void *)ci->name },
+            { 'n', "%d", (const void *)(long)ci->clientnum },
+            { 't', "%s", (const void *)formatmillisecs(time) },
+            { 'O', "%s", (const void *)r.name },
+            { 'o', "%s", (const void *)formatmillisecs(r.time) },
+            { 0, NULL, NULL }
+        };
+        string buf;
+        z_format(buf, sizeof(buf), record_style_newold, ft);
+        if(*buf) sendservmsg(buf);
+        // remove it
+        DELETEA(r.map);
+        DELETEA(r.name);
+        z_records.remove(z_currentrecord);
+    }
+    else
+    {
+        z_formattemplate ft[] =
+        {
+            { 'C', "%s", (const void *)colorname(ci) },
+            { 'c', "%s", (const void *)ci->name },
+            { 'n', "%d", (const void *)(long)ci->clientnum },
+            { 't', "%s", (const void *)formatmillisecs(time) },
+            { 'O', "%s", (const void *)"" },
+            { 'o', "%s", (const void *)"" },
+            { 0, NULL, NULL }
+        };
+        string buf;
+        z_format(buf, sizeof(buf), record_style_new, ft);
+        if(*buf) sendservmsg(buf);
+    }
+
+    // save new record
+    z_currentrecord = z_records.length();
+    z_record &r = z_records.add();
+    r.map = newstring(smapname);
+    r.mode = gamemode;
+    r.name = newstring(ci->name);
+    r.ip = getclientip(ci->clientnum);
+    r.time = time;
+    r.timestamp = totalmillis;
+}
+
+void z_servcmd_showrecord(int argc, char **argv, int sender)
+{
+    int r = -1;
+    const char *mn = argc > 1 ? argv[1] : smapname;
+    loopv(z_records)
+    {
+        if(z_records[i].mode == gamemode && !strcmp(z_records[i].map, mn)) { r = i; break; }
+    }
+    if(r < 0)
+    {
+        sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("record for \"%s\" not found", mn));
+        return;
+    }
+    clientinfo *ci = (clientinfo *)getclientinfo(sender);
+    // TODO maybe expose IP to master/auth (should be configured with some variable)
+    if(ci && (ci->privilege >= PRIV_ADMIN || ci->local))
+    {
+        ENetAddress ea;
+        memset(&ea, 0, sizeof(ea));
+        ea.host = z_records[r].ip;
+        string host;
+        if(enet_address_get_host_ip(&ea, host, sizeof(host)) != 0) copystring(host, "unknown");
+        sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("record for \"%s\": %s [%s] (%s)", mn, z_records[r].name, formatmillisecs(z_records[r].time), host));
+    }
+    else sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("record for \"%s\": %s [%s]", mn, z_records[r].name, formatmillisecs(z_records[r].time)));
+}
+SCOMMANDA(showrecord, PRIV_NONE, z_servcmd_showrecord, 1);
+
+
+#endif // Z_RECORDS_H
