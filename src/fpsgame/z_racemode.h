@@ -84,10 +84,10 @@ VARF(racemode_record, 0, 0, 1,
     if(!racemode_record) z_clearrecords(M_EDIT);
 });
 
-VAR(racemode_record_atstart, 0, 0, 1); // whether to announce current record holder at start of race
-VAR(racemode_record_atend, 0, 0, 1); // whether to announce current record holder at end of race
-SVAR(racemode_record_style_atstart, "\f6CURRENT RECORD HOLDER: \f7%O \f1(%o)");
-SVAR(racemode_record_style_atend, "\f6CURRENT RECORD HOLDER: \f7%O \f1(%o)");
+VAR(racemode_record_atstart, 0, 1, 1); // whether to announce current record holder at start of race
+VAR(racemode_record_atend, 0, 1, 1); // whether to announce current record holder at end of race
+SVAR(racemode_record_style_atstart, "\f6RECORD HOLDER: \f7%O (%o)");
+SVAR(racemode_record_style_atend, "\f6RECORD HOLDER: \f7%O (%o)");
 
 static void z_racemode_showcurrentrecord(const char *fmt)
 {
