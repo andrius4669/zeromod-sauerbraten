@@ -8,8 +8,8 @@ VAR(record_expire, 0, 0, INT_MAX); // expire time, in milliseconds
 VAR(record_min, 0, 0, INT_MAX); // shortest recordable race win time, in milliseconds
 VAR(record_max, 0, 0, INT_MAX); // longest recordable race win time, in milliseconds. 0 = disable
 // NOTE record times are not saved in HDD in any way currently
-SVAR(record_style_new, "\f6NEW RECORD: \f7%C \f1(%t)");
-SVAR(record_style_newold, "\f6NEW RECORD: \f7%C (%t) \f4(old: \f7%O \f4(%o))");
+SVAR(record_style_new, "\f6NEW RECORD: \f7%C (%t)");
+SVAR(record_style_newold, "\f6NEW RECORD: \f7%C (%t) \f2(old: \f7%O (%o)\f2)");
 
 struct z_record
 {
