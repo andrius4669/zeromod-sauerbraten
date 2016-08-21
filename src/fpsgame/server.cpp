@@ -3375,7 +3375,9 @@ namespace server
                     hit.rays = getint(p);
                     loopk(3) hit.dir[k] = getint(p)/DNF;
                 }
-                if(cq) 
+                // non-moving grenades cause vanilla collect clients to shit themselves and segfault LOL
+                // rip vanilla clients if we don't filter that
+                if(cq && shot->from != shot->to) 
                 {
                     cq->addevent(shot);
                     cq->setpushed();
