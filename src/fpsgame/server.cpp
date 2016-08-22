@@ -2396,6 +2396,11 @@ namespace server
         gs.gunwait = guns[gun].attackdelay;
         if(z_shouldblockgameplay(ci)) return;
         if(ci->xi.slay) { suicide(ci); return; }
+#ifdef OLDPROTO
+        // non-moving grenades cause vanilla collect clients to shit themselves and segfault LOL
+        // rip vanilla clients if we don't filter that. 0/0 operation is spooky
+        if(from == to) return;
+#endif
         sendf(-1, 1, "rii9x", N_SHOTFX, ci->clientnum, gun, id,
                 int(from.x*DMF), int(from.y*DMF), int(from.z*DMF),
                 int(to.x*DMF), int(to.y*DMF), int(to.z*DMF),
@@ -3375,9 +3380,7 @@ namespace server
                     hit.rays = getint(p);
                     loopk(3) hit.dir[k] = getint(p)/DNF;
                 }
-                // non-moving grenades cause vanilla collect clients to shit themselves and segfault LOL
-                // rip vanilla clients if we don't filter that
-                if(cq && shot->from != shot->to) 
+                if(cq)
                 {
                     cq->addevent(shot);
                     cq->setpushed();
