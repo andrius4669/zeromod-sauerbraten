@@ -123,8 +123,11 @@ namespace game
         offset.mul((to.dist(from)/1024)*spread);
         offset.z /= 2;
         dest = vec(offset).add(to);
-        vec dir = vec(dest).sub(from).normalize();
-        raycubepos(from, dir, dest, range, RAY_CLIPMAT|RAY_ALPHAPOLY);
+        if(dest != from)
+        {
+            vec dir = vec(dest).sub(from).normalize();
+            raycubepos(from, dir, dest, range, RAY_CLIPMAT|RAY_ALPHAPOLY);
+        }
     }
 
     void createrays(int gun, const vec &from, const vec &to)             // create random spread of rays
@@ -197,7 +200,7 @@ namespace game
         }
 
         vec dir(to);
-        dir.sub(from).normalize();
+        dir.sub(from).safenormalize();
         bnc.vel = dir;
         bnc.vel.mul(speed);
 
@@ -296,7 +299,7 @@ namespace game
     void newprojectile(const vec &from, const vec &to, float speed, bool local, int id, fpsent *owner, int gun)
     {
         projectile &p = projs.add();
-        p.dir = vec(to).sub(from).normalize();
+        p.dir = vec(to).sub(from).safenormalize();
         p.o = from;
         p.to = to;
         p.offset = hudgunorigin(gun, from, to, owner);
@@ -394,7 +397,7 @@ namespace game
 
     void hitpush(int damage, dynent *d, fpsent *at, vec &from, vec &to, int gun, int rays)
     {
-        hit(damage, d, at, vec(to).sub(from).normalize(), gun, from.dist(to), rays);
+        hit(damage, d, at, vec(to).sub(from).safenormalize(), gun, from.dist(to), rays);
     }
 
     float projdist(dynent *o, vec &dir, const vec &v)
@@ -429,7 +432,7 @@ namespace game
         else if(gun==GUN_GL) adddynlight(v, 1.15f*guns[gun].exprad, vec(0.5f, 1.5f, 2), 600, 100, 0, 8, vec(0.25f, 1, 1));
         else adddynlight(v, 1.15f*guns[gun].exprad, vec(2, 1.5f, 1), 700, 100);
         int numdebris = gun==GUN_BARREL ? rnd(max(maxbarreldebris-5, 1))+5 : rnd(maxdebris-5)+5;
-        vec debrisvel = owner->o==v ? vec(0, 0, 0) : vec(owner->o).sub(v).normalize(), debrisorigin(v);
+        vec debrisvel = vec(owner->o).sub(v).safenormalize(), debrisorigin(v);
         if(gun==GUN_RL) debrisorigin.add(vec(debrisvel).mul(8));
         if(numdebris)
         {
@@ -600,7 +603,7 @@ namespace game
                 {
                     particle_splash(PART_SPARK, 20, 250, rays[i], 0xB49B4B, 0.24f);
                     particle_flare(hudgunorigin(gun, from, rays[i], d), rays[i], 300, PART_STREAK, 0xFFC864, 0.28f);
-                    if(!local) adddecal(DECAL_BULLET, rays[i], vec(from).sub(rays[i]).normalize(), 2.0f);
+                    if(!local) adddecal(DECAL_BULLET, rays[i], vec(from).sub(rays[i]).safenormalize(), 2.0f);
                 }
                 if(muzzlelight) adddynlight(hudgunorigin(gun, d->o, to, d), 30, vec(0.5f, 0.375f, 0.25f), 100, 100, DL_FLASH, 0, vec(0, 0, 0), d);
                 break;
@@ -613,7 +616,7 @@ namespace game
                 particle_flare(hudgunorigin(gun, from, to, d), to, 600, PART_STREAK, 0xFFC864, 0.28f);
                 if(muzzleflash && d->muzzle.x >= 0)
                     particle_flare(d->muzzle, d->muzzle, gun==GUN_CG ? 100 : 200, PART_MUZZLE_FLASH1, 0xFFFFFF, gun==GUN_CG ? 2.25f : 1.25f, d);
-                if(!local) adddecal(DECAL_BULLET, to, vec(from).sub(to).normalize(), 2.0f);
+                if(!local) adddecal(DECAL_BULLET, to, vec(from).sub(to).safenormalize(), 2.0f);
                 if(muzzlelight) adddynlight(hudgunorigin(gun, d->o, to, d), gun==GUN_CG ? 30 : 15, vec(0.5f, 0.375f, 0.25f), gun==GUN_CG ? 50 : 100, gun==GUN_CG ? 50 : 100, DL_FLASH, 0, vec(0, 0, 0), d);
                 break;
             }
@@ -646,7 +649,7 @@ namespace game
                 particle_trail(PART_SMOKE, 500, hudgunorigin(gun, from, to, d), to, 0x404040, 0.6f, 20);
                 if(muzzleflash && d->muzzle.x >= 0)
                     particle_flare(d->muzzle, d->muzzle, 150, PART_MUZZLE_FLASH3, 0xFFFFFF, 1.25f, d);
-                if(!local) adddecal(DECAL_BULLET, to, vec(from).sub(to).normalize(), 3.0f);
+                if(!local) adddecal(DECAL_BULLET, to, vec(from).sub(to).safenormalize(), 3.0f);
                 if(muzzlelight) adddynlight(hudgunorigin(gun, d->o, to, d), 25, vec(0.5f, 0.375f, 0.25f), 75, 75, DL_FLASH, 0, vec(0, 0, 0), d);
                 break;
         }
@@ -741,7 +744,7 @@ namespace game
             loopi(maxrays) 
             {
                 if((hits[i] = intersectclosest(from, rays[i], d, dist))) shorten(from, rays[i], dist);
-                else adddecal(DECAL_BULLET, rays[i], vec(from).sub(rays[i]).normalize(), 2.0f);
+                else adddecal(DECAL_BULLET, rays[i], vec(from).sub(rays[i]).safenormalize(), 2.0f);
             }
             loopi(maxrays) if(hits[i])
             {
@@ -761,7 +764,7 @@ namespace game
             shorten(from, to, dist);
             hitpush(qdam, o, d, from, to, d->gunselect, 1);
         }
-        else if(d->gunselect!=GUN_FIST && d->gunselect!=GUN_BITE) adddecal(DECAL_BULLET, to, vec(from).sub(to).normalize(), d->gunselect==GUN_RIFLE ? 3.0f : 2.0f);
+        else if(d->gunselect!=GUN_FIST && d->gunselect!=GUN_BITE) adddecal(DECAL_BULLET, to, vec(from).sub(to).safenormalize(), d->gunselect==GUN_RIFLE ? 3.0f : 2.0f);
     }
 
     void shoot(fpsent *d, const vec &targ)
@@ -784,22 +787,18 @@ namespace game
             return;
         }
         if(d->gunselect) d->ammo[d->gunselect]--;
-        vec from = d->o;
-        vec to = targ;
 
-        vec unitv;
-        float dist = to.dist(from, unitv);
-        unitv.div(dist);
-        vec kickback(unitv);
-        kickback.mul(guns[d->gunselect].kickamount*-2.5f);
+        vec from = d->o, to = targ, dir = vec(to).sub(from).safenormalize();
+        float dist = to.dist(from);
+        vec kickback = vec(dir).mul(guns[d->gunselect].kickamount*-2.5f);
         d->vel.add(kickback);
         float shorten = 0;
         if(guns[d->gunselect].range && dist > guns[d->gunselect].range)
             shorten = guns[d->gunselect].range;
-        float barrier = raycube(d->o, unitv, dist, RAY_CLIPMAT|RAY_ALPHAPOLY);
+        float barrier = raycube(d->o, dir, dist, RAY_CLIPMAT|RAY_ALPHAPOLY);
         if(barrier > 0 && barrier < dist && (!shorten || barrier < shorten))
             shorten = barrier;
-        if(shorten) to = vec(unitv).mul(shorten).add(from);
+        if(shorten) to = vec(dir).mul(shorten).add(from);
 
         if(guns[d->gunselect].rays > 1) createrays(d->gunselect, from, to);
         else if(guns[d->gunselect].spread) offsetray(from, to, guns[d->gunselect].spread, guns[d->gunselect].range, to);
