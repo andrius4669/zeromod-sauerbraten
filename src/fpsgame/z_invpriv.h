@@ -1,5 +1,5 @@
 #ifdef Z_INVPRIV_H
-#error "z_invpriv.h"
+#error "already z_invpriv.h"
 #endif
 #define Z_INVPRIV_H
 
