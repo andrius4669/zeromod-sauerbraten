@@ -1,8 +1,18 @@
-#ifndef Z_SERVCMD_H
+#ifdef Z_SERVCMD_H
+#error "already z_servcmd.h"
+#endif
 #define Z_SERVCMD_H
 
-#include "z_log.h"
-#include "z_servercommands.h"
+#ifndef Z_LOG_H
+#error "want z_log.h"
+#endif
+#ifndef Z_SERVERCOMMANDS_H
+#error "want z_servercommands.h"
+#endif
+
+
+#define Z_MAXSERVCMDARGS 32
+
 
 bool z_parseclient(const char *str, int &cn)
 {
@@ -34,7 +44,6 @@ bool z_servcmd_check(char *&text)
     return true;
 }
 
-#define Z_MAXSERVCMDARGS 32
 
 void z_servcmd_parse(int sender, char *text)
 {
@@ -88,5 +97,3 @@ void z_servcmd_parse(int sender, char *text)
     }
     cc->fun(argc, argv, sender);
 }
-
-#endif // Z_SERVCMD_H

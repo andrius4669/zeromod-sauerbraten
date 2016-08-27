@@ -1,7 +1,11 @@
-#ifndef Z_SENDMAP_H
+#ifdef Z_SENDMAP_H
+#error "already z_sendmap.h"
+#endif
 #define Z_SENDMAP_H
 
-#include "z_servcmd.h"
+#ifndef Z_SERVCMD_H
+#error "want z_servcmd.h"
+#endif
 
 bool z_sendmap(clientinfo *ci, clientinfo *sender = NULL, stream *map = NULL, bool force = false, bool verbose = true)
 {
@@ -43,5 +47,3 @@ void z_servcmd_sendmap(int argc, char **argv, int sender)
 }
 SCOMMANDA(sendmap, PRIV_MASTER, z_servcmd_sendmap, 1);
 SCOMMANDAH(sendto, PRIV_MASTER, z_servcmd_sendmap, 1);
-
-#endif // Z_SENDMAP_H

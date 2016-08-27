@@ -1,4 +1,6 @@
-#ifndef Z_ANNOUNCEKILLS_H
+#ifdef Z_ANNOUNCEKILLS_H
+#error "already z_announcekills.h"
+#endif
 #define Z_ANNOUNCEKILLS_H
 
 
@@ -204,5 +206,3 @@ void z_announcekill(clientinfo *actor, clientinfo *victim, int fragval)
         }
     }
 }
-
-#endif // Z_ANNOUNCEKILLS_H

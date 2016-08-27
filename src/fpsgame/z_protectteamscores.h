@@ -1,4 +1,6 @@
-#ifndef Z_PROTECTTEAMSCORES_H
+#ifdef Z_PROTECTTEAMSCORES_H
+#error "already z_protectteamscores.h"
+#endif
 #define Z_PROTECTTEAMSCORES_H
 
 VAR(protectteamscores, 0, 0, 2);
@@ -56,5 +58,3 @@ bool z_acceptfragval(clientinfo *ci, int fragval)
         case 2: return fragval > 0 ? (ci->state.frags > 0) : (ci->state.frags >= 0);
     }
 }
-
-#endif // Z_PROTECTTEAMSCORES_H

@@ -1,4 +1,6 @@
-#ifndef Z_GEOIPSTATE_H
+#ifdef Z_GEOIPSTATE_H
+#error "already z_geoipstate.h"
+#endif
 #define Z_GEOIPSTATE_H
 
 union geoshortconv
@@ -68,5 +70,3 @@ struct geoipstate
         extcontinent.set_lower(continentcode);
     }
 };
-
-#endif // Z_GEOIPSTATE_H

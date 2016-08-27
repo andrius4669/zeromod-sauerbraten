@@ -1,8 +1,15 @@
-#ifndef Z_AUTOSENDMAP_H
+#ifdef Z_AUTOSENDMAP_H
+#error "already z_autosendmap.h"
+#endif
 #define Z_AUTOSENDMAP_H
 
-#include "z_triggers.h"
-#include "z_sendmap.h"
+#ifndef Z_TRIGGERS_H
+#error "want z_triggers.h"
+#endif
+
+#ifndef Z_SENDMAP_H
+#error "want z_sendmap.h"
+#endif
 
 int z_autosendmap = 0;
 VARFN(autosendmap, defaultautosendmap, 0, 0, 2, { if(clients.empty()) z_autosendmap = defaultautosendmap; });
@@ -26,5 +33,3 @@ static void z_servcmd_autosendmap(int argc, char **argv, int sender)
 }
 SCOMMANDA(autosendmap, PRIV_MASTER, z_servcmd_autosendmap, 1);
 SCOMMANDA(connectsendmap, ZC_HIDDEN | PRIV_MASTER, z_servcmd_autosendmap, 1);
-
-#endif // Z_AUTOSENDMAP_H

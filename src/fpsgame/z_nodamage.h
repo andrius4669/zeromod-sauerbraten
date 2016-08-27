@@ -1,7 +1,11 @@
-#ifndef Z_NODAMAGE_H
+#ifdef Z_NODAMAGE_H
+#error "already z_nodamage.h"
+#endif
 #define Z_NODAMAGE_H
 
-#include "z_ghost.h"
+#ifndef Z_GHOST_H
+#error "want z_ghost.h"
+#endif
 
 VAR(antispawnkill, 0, 0, 5000); // in milliseconds
 
@@ -67,5 +71,3 @@ static void z_servcmd_nodamage(int argc, char **argv, int sender)
     }
 }
 SCOMMANDA(nodamage, PRIV_MASTER, z_servcmd_nodamage, 1);
-
-#endif // Z_NODAMAGE_H

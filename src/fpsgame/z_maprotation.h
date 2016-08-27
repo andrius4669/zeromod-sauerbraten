@@ -1,7 +1,11 @@
-#ifndef Z_MAPROTATION_H
+#ifdef Z_MAPROTATION_H
+#error "already z_maprotation.h"
+#endif
 #define Z_MAPROTATION_H
 
-#include "z_servercommands.h"
+#ifndef Z_SERVERCOMMANDS_H
+#error "want z_servercommands.h"
+#endif
 
 enum { MRT_NORMAL = 0, MRT_RANDOM, MRT_STATIC };
 int z_maprotationtype = MRT_NORMAL;
@@ -106,5 +110,3 @@ void z_servcmd_nextmap(int argc, char **argv, int sender)
     z_nextmap(ci, argv[1], gamemode);
 }
 SCOMMANDA(nextmap, PRIV_MASTER, z_servcmd_nextmap, 2);
-
-#endif // Z_MAPROTATION_H

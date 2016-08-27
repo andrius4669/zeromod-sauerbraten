@@ -1,7 +1,11 @@
-#ifndef Z_ANTIFLOOD_H
+#ifdef Z_ANTIFLOOD_H
+#error "already z_antoflood.h"
+#endif
 #define Z_ANTIFLOOD_H
 
-#include "z_queue.h"
+#ifndef Z_QUEUE_H
+#error "want z_queue.h"
+#endif
 
 VAR(antiflood_mode, 0, 2, 2);   // 0 - disconnect, 1 - rate limit, 2 - block
 VAR(antiflood_text, 0, 10, 8192);
@@ -82,5 +86,3 @@ static int z_antiflood(clientinfo *ci, int type, const char *typestr)
     if(_rr > 0) break; \
     if(_rr < 0) return; \
 }
-
-#endif // Z_ANTIFLOOD_H

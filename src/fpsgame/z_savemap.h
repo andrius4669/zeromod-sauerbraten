@@ -1,8 +1,15 @@
-#ifndef Z_SAVEMAP_H
+#ifdef Z_SAVEMAP_H
+#error "already z_savemap.h"
+#endif
 #define Z_SAVEMAP_H
 
-#include "z_servcmd.h"
-#include "z_loadmap.h"
+#ifndef Z_SERVCMD_H
+#error "want z_servcmd.h"
+#endif
+
+#ifndef Z_LOADMAP_H
+#error "want z_loadmap.h"
+#endif
 
 ICOMMAND(serversavemap, "i", (int *i), z_enable_command("savemap", *i!=0));
 
@@ -43,5 +50,3 @@ void z_servcmd_savemap(int argc, char **argv, int sender)
     else sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("failed to save map: %s", mname));
 }
 SCOMMANDA(savemap, ZC_DISABLED | PRIV_ADMIN, z_servcmd_savemap, 1);
-
-#endif // Z_SAVEMAP_H

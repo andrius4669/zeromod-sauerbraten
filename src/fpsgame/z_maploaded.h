@@ -1,7 +1,11 @@
-#ifndef Z_MAPLOADED_H
+#ifdef Z_MAPLOADED_H
+#error "already z_maploaded.h"
+#endif
 #define Z_MAPLOADED_H
 
-#include "z_patchmap.h"
+#ifndef Z_PATCHMAP_H
+#error "want z_patchmap.h"
+#endif
 
 VAR(mapload_debug, 0, 0, 1);
 
@@ -17,5 +21,3 @@ static void z_maploaded(clientinfo *ci, bool val = true)
 
     if(val) race_maploaded(ci);
 }
-
-#endif // Z_MAPLOADED_H

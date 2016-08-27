@@ -1,11 +1,23 @@
-#ifndef Z_RACEMODE_H
+#ifdef Z_RACEMODE_H
+#error "already z_racemode.h"
+#endif
 #define Z_RACEMODE_H
 
-#include "z_sendmap.h"
-#include "z_autosendmap.h"
-#include "z_loadmap.h"
-#include "z_format.h"
-#include "z_records.h"
+#ifndef Z_SENDMAP_H
+#error "want z_sendmap.h"
+#endif
+#ifndef Z_AUTOSENDMAP_H
+#error "want z_autosendmap.h"
+#endif
+#ifndef Z_LOADMAP_H
+#error "want z_loadmap.h"
+#endif
+#ifndef Z_FORMAT_H
+#error "want z_format.h"
+#endif
+#ifndef Z_RECORDS_H
+#error "want z_records.h"
+#endif
 
 enum { Z_RC_NONE = 0, Z_RC_EDITMODE, Z_RC_EDITING };
 
@@ -693,7 +705,7 @@ struct raceservmode: servmode
         z_format(tmp, sizeof(tmp), racemode_style_winners, style_tmp);
 
         if(tmp[0]) sendservmsg(tmp);
-        
+
         if(racemode_record && racemode_record_atend) z_racemode_showcurrentrecord(racemode_record_style_atend);
     }
 
@@ -729,5 +741,3 @@ void race_maploaded(clientinfo *ci)
         }
     }
 }
-
-#endif // Z_RACEMODE_H

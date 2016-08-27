@@ -1,5 +1,8 @@
-#ifndef Z_AWARDS_H
+#ifdef Z_AWARDS_H
+#error "already z_awards.h"
+#endif
 #define Z_AWARDS_H
+
 
 VAR(awards, 0, 0, 1);
 
@@ -483,5 +486,3 @@ void z_servcmd_stats(int argc, char **argv, int sender)
     }
 }
 SCOMMAND(stats, PRIV_NONE, z_servcmd_stats);
-
-#endif // Z_AWARDS_H

@@ -1,7 +1,11 @@
-#ifndef Z_PERSISTTEAMS_H
+#ifdef Z_PERSISTTEAMS_H
+#error "already z_persistteams.h"
+#endif
 #define Z_PERSISTTEAMS_H
 
-#include "z_servercommands.h"
+#ifndef Z_SERVERCOMMANDS_H
+#error "want z_servercommands.h"
+#endif
 
 int z_persistteams = 0;
 VARFN(persistteams, defaultpersistteams, 0, 0, 2, { if(clients.empty()) z_persistteams = defaultpersistteams; });
@@ -137,5 +141,3 @@ bool z_autoteam()
     }
     return false;
 }
-
-#endif // Z_PERSISTTEAMS_H

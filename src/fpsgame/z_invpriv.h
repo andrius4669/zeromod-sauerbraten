@@ -1,4 +1,6 @@
-#ifndef Z_INVPRIV_H
+#ifdef Z_INVPRIV_H
+#error "z_invpriv.h"
+#endif
 #define Z_INVPRIV_H
 
 static bool z_isinvpriv(clientinfo *ci, int priv, int inv = -1)
@@ -45,5 +47,3 @@ void z_servcmd_invpriv(int argc, char **argv, int sender)
 }
 SCOMMANDA(invpriv, PRIV_NONE, z_servcmd_invpriv, 1);
 SCOMMANDAH(hidepriv, PRIV_NONE, z_servcmd_invpriv, 1);
-
-#endif // Z_INVPRIV_H

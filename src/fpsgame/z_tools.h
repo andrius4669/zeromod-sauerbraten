@@ -2,10 +2,10 @@
  * function prototypes and structures used in mod
  */
 
-#ifndef Z_TOOLS_H
+#ifdef Z_TOOLS_H
+#error "already z_tools.h"
+#endif
 #define Z_TOOLS_H
-
-#include "z_tree.h"
 
 // gban/pban struct optimised for use in tree
 struct gbaninfo
@@ -153,6 +153,3 @@ extern int z_nodamage;
 
 extern bool isracemode();
 extern void race_maploaded(clientinfo *ci);
-
-
-#endif // Z_TOOLS_H

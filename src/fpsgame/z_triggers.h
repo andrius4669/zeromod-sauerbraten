@@ -1,4 +1,6 @@
-#ifndef Z_TRIGGERS_H
+#ifdef Z_TRIGGERS_H
+#error "already z_triggers.h"
+#endif
 #define Z_TRIGGERS_H
 
 enum
@@ -54,5 +56,3 @@ static void z_exectrigger(int type)
 }
 
 #define Z_TRIGGER(fun, type) template<int N> struct z_tname##fun; template<> struct z_tname##fun<__LINE__> { UNUSED static bool init; }; UNUSED bool z_tname##fun<__LINE__>::init = z_addtrigger(fun, type)
-
-#endif // Z_TRIGGERS_H

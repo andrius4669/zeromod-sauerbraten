@@ -1,9 +1,18 @@
-#ifndef Z_MUTES_H
-#define Z_MUTES_H 1
+#ifdef Z_MUTES_H
+#error "already z_mutes.h"
+#endif
+#define Z_MUTES_H
 
-#include "z_servcmd.h"
-#include "z_triggers.h"
-#include "z_rename.h"
+#ifndef Z_SERVCMD_H
+#error "want z_servcmd.h"
+#endif
+#ifndef Z_TRIGGERS_H
+#error "want z_triggers.h"
+#endif
+#ifndef Z_RENAME_H
+#error "want z_rename.h"
+#endif
+
 
 // used literally only for sendmap check
 static inline bool z_iseditmuted(clientinfo *ci)
@@ -148,5 +157,3 @@ void z_servcmd_autoeditmute(int argc, char **argv, int sender)
     else sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("autosendmute is %s", z_autoeditmute ? "enabled" : "disabled"));
 }
 SCOMMANDA(autoeditmute, PRIV_MASTER, z_servcmd_autoeditmute, 1);
-
-#endif // Z_MUTES_H

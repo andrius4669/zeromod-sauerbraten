@@ -1,8 +1,14 @@
-#ifndef Z_EXTRAINFO_H
+#ifdef Z_EXTRAINFO_H
+#error "already z_extrainfo.h"
+#endif
 #define Z_EXTRAINFO_H
 
-#include "z_queue.h"
-#include "z_geoipstate.h"
+#ifndef Z_QUEUE_H
+#error "want z_queue.h"
+#endif
+#ifndef Z_GEOIPSTATE_H
+#error "want z_geoipstate.h"
+#endif
 
 struct z_posrecord
 {
@@ -165,5 +171,3 @@ struct z_extrainfo
     void setwlauth(const char *s) { delete[] wlauth; wlauth = s && *s ? newstring(s) : NULL; }
     void clearwlauth() { DELETEA(wlauth); }
 };
-
-#endif // Z_EXTRAINFO_H

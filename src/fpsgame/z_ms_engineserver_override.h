@@ -1,4 +1,6 @@
-#ifndef Z_MS_ENGINESERVER_OVERRIDE_H
+#ifdef Z_MS_ENGINESERVER_OVERRIDE_H
+#error "already z_ms_engineserver_override.h"
+#endif
 #define Z_MS_ENGINESERVER_OVERRIDE_H
 
 ENetAddress serveraddress = { ENET_HOST_ANY, ENET_PORT_ANY };
@@ -346,5 +348,3 @@ bool getmasterbaninfo(int m, const char *&ident, int &disc, const char *&wlauth,
     banmsg = mss[m].banmessage;
     return true;
 }
-
-#endif // Z_MS_ENGINESERVER_OVERRIDE_H

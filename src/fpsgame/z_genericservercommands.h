@@ -1,9 +1,18 @@
-#ifndef Z_GENERICSERVERCOMMANDS_H
+#ifdef Z_GENERICSERVERCOMMANDS_H
+#error "already z_genericservercommands.h"
+#endif
 #define Z_GENERICSERVERCOMMANDS_H 1
 
-#include "z_servcmd.h"
-#include "z_format.h"
-#include "z_invpriv.h"
+#ifndef Z_SERVCMD_H
+#error "want z_servcmd.h"
+#endif
+#ifndef Z_FORMAT_H
+#error "want z_format.h"
+#endif
+#ifndef Z_INVPRIV_H
+#error "want z_invpriv.h"
+#endif
+
 
 static char z_privcolor(int priv)
 {
@@ -146,15 +155,3 @@ void z_servcmd_reqauth(int argc, char **argv, int sender)
     else loopv(clients) if(clients[i]->state.aitype==AI_NONE) sendf(clients[i]->clientnum, 1, "ris", N_REQAUTH, authdesc);
 }
 SCOMMANDA(reqauth, PRIV_ADMIN, z_servcmd_reqauth, 2);
-
-#include "z_mutes.h"
-
-#include "z_loadmap.h"
-#include "z_savemap.h"
-
-#include "z_rename.h"
-#include "z_spy.h"
-#include "z_mapsucks.h"
-#include "z_slay.h"
-
-#endif //Z_GENERICSERVERCOMMANDS_H

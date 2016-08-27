@@ -1,7 +1,11 @@
-#ifndef Z_CHECKPOS_H
+#ifdef Z_CHECKPOS_H
+#error "already z_checkpos.h"
+#endif
 #define Z_CHECKPOS_H
 
-#include "z_ghost.h"
+#ifndef Z_GHOST_H
+#error "want z_ghost.h"
+#endif
 
 static int z_nextexceeded = 0;
 
@@ -117,5 +121,3 @@ void z_test_poslen(int *cn)
     intret(ci ? ci->xi.postrack.length() : 0);
 }
 COMMAND(z_test_poslen, "i");
-
-#endif // Z_CHECKPOS_H

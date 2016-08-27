@@ -1,5 +1,8 @@
-#ifndef Z_TALKBOT_H
+#ifdef Z_TALKBOT_H
+#error "already z_talkbot.h"
+#endif
 #define Z_TALKBOT_H
+
 
 #define MAXTALKBOTS (0x100 - MAXCLIENTS - MAXBOTS)
 
@@ -230,5 +233,3 @@ ICOMMAND(listtalkbots, "s", (char *name), {
     buf.add('\0');
     result(buf.getbuf());
 });
-
-#endif // Z_TALKBOT_H

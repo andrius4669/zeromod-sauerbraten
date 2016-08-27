@@ -1,4 +1,6 @@
-#ifndef Z_LOG_H
+#ifdef Z_LOG_H
+#error "already z_log.h"
+#endif
 #define Z_LOG_H
 
 static struct z_log_kickerinfostruct
@@ -299,5 +301,3 @@ static void z_discmsg(clientinfo *ci, int n, const char *msg, bool forced)
         }
     }
 }
-
-#endif // Z_LOG_H

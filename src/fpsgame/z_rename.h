@@ -1,8 +1,15 @@
-#ifndef Z_RENAME_H
+#ifdef Z_RENAME_H
+#error "already z_rename.h"
+#endif
 #define Z_RENAME_H
 
-#include "z_log.h"
-#include "z_servcmd.h"
+#ifndef Z_LOG_H
+#error "want z_log.h"
+#endif
+#ifndef Z_SERVCMD_H
+#error "want z_servcmd.h"
+#endif
+
 
 static void z_rename(clientinfo *ci, const char *name, bool broadcast = true)
 {
@@ -63,5 +70,3 @@ ICOMMAND(s_rename, "is", (int *cn, char *newname),
     copystring(ci->name, name, MAXNAMELEN+1);
     z_rename(ci, ci->name);
 });
-
-#endif // Z_RENAME_H

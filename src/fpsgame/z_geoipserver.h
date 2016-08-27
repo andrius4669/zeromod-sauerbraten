@@ -1,10 +1,17 @@
 /* geoip subsystem part dependent on game/server.cpp */
 
-#ifndef Z_GEOIPSERVER_H
+#ifdef Z_GEOIPSERVER_H
+#error "already z_geoipserver.h"
+#endif
 #define Z_GEOIPSERVER_H
 
-#include "z_geoipstate.h"
-#include "z_geoip.h"
+#ifndef Z_GEOIPSTATE_H
+#error "want z_geoipstate.h"
+#endif
+#ifndef Z_GEOIP_H
+#error "want z_geoip.h"
+#endif
+
 
 VAR(geoip_admin_restriction, 0, 1, 1);  // restrictions shall apply for lower than admin privs, or lower than master?
 
@@ -343,5 +350,3 @@ ICOMMAND(s_geoip_client, "ib", (int *cn, int *a),
     buf.add('\0');
     result(buf.getbuf());
 });
-
-#endif // Z_GEOIPSERVER_H

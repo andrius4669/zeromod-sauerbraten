@@ -1,7 +1,11 @@
-#ifndef Z_MSGFILTER_H
+#ifdef Z_MSGFILTER_H
+#error "already z_msgfilter.h"
+#endif
 #define Z_MSGFILTER_H
 
-#include "z_rename.h"
+#ifndef Z_RENAME_H
+#error "want z_rename.h"
+#endif
 
 // message checking for editmute and flood protection
 bool allowmsg(clientinfo *ci, clientinfo *cq, int type)
@@ -94,5 +98,3 @@ static inline bool z_allowsound(clientinfo *ci, clientinfo *cq, int sound)
         && !z_shouldblockgameplay(cq)
         && sound >= S_JUMP && sound <= S_FLAGFAIL;
 }
-
-#endif // Z_MSGFILTER_H

@@ -1,7 +1,11 @@
-#ifndef Z_GEOIP_H
+#ifdef Z_GEOIP_H
+#error "already z_geoip.h"
+#endif
 #define Z_GEOIP_H
 
-#include "z_geoipstate.h"
+#ifndef Z_GEOIPSTATE_H
+#error "want z_geoipstate.h"
+#endif
 
 
 #ifdef USE_MMDB
@@ -533,5 +537,3 @@ void z_geoip_resolveclient(geoipstate &gs, enet_uint32 ip)
     if(gir) GeoIPRecord_delete(gir);
 #endif // USE_GEOIP
 }
-
-#endif // Z_GEOIP_H

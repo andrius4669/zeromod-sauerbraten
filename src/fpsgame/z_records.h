@@ -1,7 +1,12 @@
-#ifndef Z_RECORDS_H
+#ifdef Z_RECORDS_H
+#error "already z_records.h"
+#endif
 #define Z_RECORDS_H
 
-#include "z_format.h"
+#ifndef Z_FORMAT_H
+#error "want z_format.h"
+#endif
+
 
 VAR(record_unnamed, 0, 0, 1); // whether to record unnamed players or not
 VAR(record_expire, 0, 0, INT_MAX); // expire time, in milliseconds
@@ -217,4 +222,9 @@ static void z_servcmd_delrecord(int argc, char **argv, int sender)
 }
 SCOMMANDA(delrecord, PRIV_ADMIN, z_servcmd_delrecord, 1);
 
-#endif // Z_RECORDS_H
+static void z_servcmd_clearrecords(int argc, char **argv, int sender)
+{
+    z_clearrecords(gamemode);
+    sendf(sender, 1, "ris", N_SERVMSG, "cleared all records for current gamemode");
+}
+SCOMMANDA(clearrecords, PRIV_ADMIN, z_servcmd_clearrecords, 1);

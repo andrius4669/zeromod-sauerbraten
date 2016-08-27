@@ -1,5 +1,11 @@
-#ifndef Z_LOADMAP_H
+#ifdef Z_LOADMAP_H
+#error "already z_loadmap.h"
+#endif
 #define Z_LOADMAP_H
+
+#ifndef Z_SERVCMD_H
+#error "want z_servcmd.h"
+#endif
 
 SVAR(mappath, "packages/base");
 
@@ -17,8 +23,6 @@ bool z_loadmap(const char *mname, stream *&data = mapdata)
     return true;
 }
 
-#include "z_servcmd.h"
-
 void z_servcmd_loadmap(int argc, char **argv, int sender)
 {
     const char *mname = argc >= 2 ? argv[1] : smapname;
@@ -33,6 +37,7 @@ void z_servcmd_listmaps(int argc, char **argv, int sender)
     vector<char *> files;
     vector<char> line;
     listfiles(mappath, "ogz", files);
+    files.sort();
     sendf(sender, 1, "ris", N_SERVMSG, files.length() ? "server map files:" : "server has no map files");
     for(int i = 0; i < files.length();)
     {
@@ -48,5 +53,3 @@ void z_servcmd_listmaps(int argc, char **argv, int sender)
     files.deletearrays();
 }
 SCOMMANDA(listmaps, PRIV_MASTER, z_servcmd_listmaps, 1);
-
-#endif // Z_LOADMAP_H

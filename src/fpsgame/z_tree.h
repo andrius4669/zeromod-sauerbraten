@@ -1,4 +1,6 @@
-#ifndef Z_TREE_H
+#ifdef Z_TREE_H
+#error "already z_tree.h"
+#endif
 #define Z_TREE_H
 
 template<typename T> struct z_avltree
@@ -273,5 +275,3 @@ void z_testtree_speed(int *num, int *anum)
 }
 COMMAND(z_testtree_speed, "ii");
 #endif
-
-#endif // Z_TREE_H

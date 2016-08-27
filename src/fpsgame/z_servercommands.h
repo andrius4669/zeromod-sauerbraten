@@ -1,7 +1,11 @@
-#ifndef Z_SERVERCOMMANDS_H
+#ifdef Z_SERVERCOMMANDS_H
+#error "already z_servercommands.h"
+#endif
 #define Z_SERVERCOMMANDS_H
 
-#include "z_format.h"
+#ifndef Z_FORMAT_H
+#error "want z_format.h"
+#endif
 
 typedef void (* z_scmdfun)(int argc, char **argv, int sender);
 
@@ -191,5 +195,3 @@ static inline void z_servcmd_pleasespecifymessage(int cntosend)
 {
     if(*servcmd_message_pleasespecifymessage) sendf(cntosend, 1, "ris", N_SERVMSG, servcmd_message_pleasespecifymessage);
 }
-
-#endif // Z_SERVERCOMMANDS_H

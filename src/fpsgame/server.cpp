@@ -176,6 +176,7 @@ namespace server
         }
     };
 
+    #include "z_tree.h"
     #include "z_tools.h"
 
     struct savedscore
@@ -238,7 +239,10 @@ namespace server
 
     extern int gamemillis, nextexceeded;
 
+    #include "z_geoipstate.h"
+    #include "z_queue.h"
     #include "z_extrainfo.h"
+
     struct clientinfo
     {
         int clientnum, ownernum, connectmillis, sessionid, overflow;
@@ -520,6 +524,8 @@ namespace server
         maprotation::exclude = 0;
     }
 
+    #include "z_format.h"
+    #include "z_servercommands.h"
     #include "z_maprotation.h"
     void nextmaprotation()
     {
@@ -1453,6 +1459,8 @@ namespace server
 
     extern void connected(clientinfo *ci);
 
+    #include "z_log.h"
+    #include "z_invpriv.h"
     #include "z_setmaster_override.h"
 #if 0
     bool setmaster(clientinfo *ci, bool val, const char *pass = "", const char *authname = NULL, const char *authdesc = NULL, int authpriv = PRIV_MASTER, bool force = false, bool trial = false)
@@ -1524,7 +1532,6 @@ namespace server
     }
 #endif
 
-    #include "z_log.h"
     bool trykick(clientinfo *ci, int victim, const char *reason = NULL, const char *authname = NULL, const char *authdesc = NULL, int authpriv = PRIV_NONE, bool trial = false)
     {
         int priv = ci->privilege;
@@ -2044,6 +2051,11 @@ namespace server
         sendpacket(-1, 1, p.finalize(), ci->clientnum);
     }
 
+    #include "z_servcmd.h"
+    #include "z_sendmap.h"
+    #include "z_autosendmap.h"
+    #include "z_loadmap.h"
+    #include "z_records.h"
     #include "z_racemode.h"
     raceservmode racemode;
 
@@ -2601,7 +2613,6 @@ namespace server
         static bool compare(const crcinfo &x, const crcinfo &y) { return x.matches > y.matches; }
     };
 
-    #include "z_autosendmap.h"
     VAR(modifiedmapspectator, 0, 1, 2);
 
     void checkmaps(int req = -1)
@@ -2974,7 +2985,7 @@ namespace server
     }
 #endif
 
-    #include "z_sendmap.h"
+    #include "z_rename.h"
     #include "z_mutes.h"
 
     void receivefile(int sender, uchar *data, int len)
@@ -3044,7 +3055,7 @@ namespace server
     }
 
     #include "z_msgfilter.h"
-    #include "z_servcmd.h"
+    #include "z_patchmap.h"
     #include "z_maploaded.h"
     #include "z_antiflood.h"
 
@@ -4005,6 +4016,10 @@ namespace server
 
     #include "z_scripting.h"
     #include "z_genericservercommands.h"
+    #include "z_mapsucks.h"
+    #include "z_savemap.h"
+    #include "z_slay.h"
+    #include "z_spy.h"
     #include "z_talkbot.h"
 }
 

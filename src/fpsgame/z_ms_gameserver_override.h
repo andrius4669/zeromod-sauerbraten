@@ -1,7 +1,11 @@
-#ifndef Z_MS_GAMESERVER_OVERRIDE_H
-#define Z_MS_GAMESERVER_OVERRIDE_H 1
+#ifdef Z_MS_GAMESERVER_OVERRIDE_H
+#error "already z_ms_gameserver_override.h"
+#endif
+#define Z_MS_GAMESERVER_OVERRIDE_H
 
-#include "z_gbans_override.h"
+#ifndef Z_GBANS_OVERRIDE_H
+#error "want z_gbans_override.h"
+#endif
 
 VAR(authconnect, 0, 1, 2);
 VAR(anyauthconnect, 0, 0, 1);
@@ -225,5 +229,3 @@ void processmasterinput(int m, const char *cmd, int cmdlen, const char *args)
         }
     }
 }
-
-#endif // Z_MS_GAMESERVER_OVERRIDE_H

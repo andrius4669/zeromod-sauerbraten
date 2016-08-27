@@ -1,4 +1,6 @@
-#ifndef Z_FORMAT_H
+#ifdef Z_FORMAT_H
+#error "already z_format.h"
+#endif
 #define Z_FORMAT_H
 
 struct z_formattemplate
@@ -89,5 +91,3 @@ static const char *formatmillisecs(int ms)
     else if(mins && ms) return tempformatstring("%d min %d.%03d sec", mins, ms/1000, ms%1000);
     else return tempformatstring("%d min", mins);
 }
-
-#endif // Z_FORMAT_H

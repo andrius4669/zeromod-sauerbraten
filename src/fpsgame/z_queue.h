@@ -1,5 +1,8 @@
-#ifndef Z_QUEUE_H
+#ifdef Z_QUEUE_H
+#error "already z_queue.h"
+#endif
 #define Z_QUEUE_H
+
 // remove(-->) ..FXXXXXXXXXXXXXXXXL.. add(-->) pop(<--)
 //               ^ first(-->)     ^ last(<--)
 template<typename T> struct z_queue
@@ -66,5 +69,3 @@ template<typename T> struct z_queue
     T &operator[](int i) { return first(i); }
     const T &operator[](int i) const { return first(i); }
 };
-
-#endif // Z_QUEUE_H

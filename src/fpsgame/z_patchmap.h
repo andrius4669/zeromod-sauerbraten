@@ -1,4 +1,6 @@
-#ifndef Z_PATCHMAP_H
+#ifdef Z_PATCHMAP_H
+#error "already z_patchmap.h"
+#endif
 #define Z_PATCHMAP_H
 
 struct z_entpatch
@@ -237,5 +239,3 @@ void s_patchvars(char *mapname, char *varname, char *s)
     if(!s_patchadd) z_varpatches.drop();
 }
 COMMAND(s_patchvars, "sss");
-
-#endif // Z_PATCHMAP_H

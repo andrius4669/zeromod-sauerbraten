@@ -1,8 +1,15 @@
-#ifndef Z_SPY_H
+#ifdef Z_SPY_H
+#error "already z_spy.h"
+#endif
 #define Z_SPY_H
 
-#include "z_servcmd.h"
-#include "z_geoipserver.h"
+#ifndef Z_SERVCMD_H
+#error "want z_servcmd.h"
+#endif
+#ifndef Z_GEOIPSERVER_H
+#error "want z_geoipserver.h"
+#endif
+
 
 void z_setspy(clientinfo *ci, bool val)
 {
@@ -136,5 +143,3 @@ void z_servcmd_listspy(int argc, char **argv, int sender)
     }
 }
 SCOMMANDA(listspy, PRIV_ADMIN, z_servcmd_listspy, 1);
-
-#endif // Z_SPY_H

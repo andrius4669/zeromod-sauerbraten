@@ -1,7 +1,12 @@
-#ifndef Z_SLAY_H
+#ifdef Z_SLAY_H
+#error "already z_slay.h"
+#endif
 #define Z_SLAY_H
 
-#include "z_servcmd.h"
+#ifndef Z_SERVCMD_H
+#error "want z_servcmd.h"
+#endif
+
 
 // note: plz don't troll inoccent players with this
 void z_servcmd_slay(int argc, char **argv, int sender)
@@ -45,5 +50,3 @@ void z_servcmd_kill(int argc, char **argv, int sender)
     else loopv(clients) if(clients[i]->state.aitype==AI_NONE && !clients[i]->local && !clients[i]->spy) suicide(clients[i]);
 }
 SCOMMANDAH(kill, ZC_DISABLED | PRIV_AUTH, z_servcmd_kill, 1);
-
-#endif // Z_SLAY_H

@@ -1,10 +1,21 @@
-#ifndef Z_SETMASTER_OVERRIDE
-#define Z_SETMASTER_OVERRIDE
+#ifdef Z_SETMASTER_OVERRIDE_H
+#error "already z_setmaster_overrhide.h"
+#endif
+#define Z_SETMASTER_OVERRIDE_H
 
-#include "z_triggers.h"
-#include "z_servercommands.h"
-#include "z_log.h"
-#include "z_invpriv.h"
+#ifndef Z_TRIGGERS_H
+#error "want z_triggers.h"
+#endif
+#ifndef Z_SERVERCOMMANDS_H
+#error "want z_servercommands.h"
+#endif
+#ifndef Z_LOG_H
+#error "want z_log.h"
+#endif
+#ifndef Z_INVPRIV_H
+#error "want z_invpriv.h"
+#endif
+
 
 VAR(defaultmastermode, -1, 0, 3);
 
@@ -145,5 +156,3 @@ bool setmaster(clientinfo *ci, bool val, const char *pass = "",
     checkpausegame();
     return true;
 }
-
-#endif // Z_SETMASTER_OVERRIDE

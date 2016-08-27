@@ -1,8 +1,15 @@
-#ifndef Z_MAPSUCKS_H
+#ifdef Z_MAPSUCKS_H
+#error "already z_mapsucks.h"
+#endif
 #define Z_MAPSUCKS_H
 
-#include "z_servercommands.h"
-#include "z_format.h"
+#ifndef Z_SERVERCOMMANDS_H
+#error "want z_servercommands.h"
+#endif
+#ifndef Z_FORMAT_H
+#error "want z_format.h"
+#endif
+
 
 VARF(mapsucks, 0, 0, 2, z_enable_command("mapsucks", mapsucks!=0));
 VAR(mapsucks_time, 0, 30, 3600);
@@ -80,5 +87,3 @@ void z_servcmd_mapsucks(int argc, char **argv, int sender)
     z_mapsucks(ci);
 }
 SCOMMANDA(mapsucks, ZC_DISABLED | PRIV_NONE, z_servcmd_mapsucks, 1);
-
-#endif // Z_MAPSUCKS_H

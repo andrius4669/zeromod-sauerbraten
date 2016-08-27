@@ -1,7 +1,12 @@
-#ifndef Z_SCRIPTING_H
+#ifdef Z_SCRIPTING_H
+#error "already z_scripting.h"
+#endif
 #define Z_SCRIPTING_H
 
-#include "z_servcmd.h"
+#ifndef Z_SERVCMD_H
+#error "want z_servcmd.h"
+#endif
+
 
 vector<z_sleepstruct> z_sleeps[ZS_NUM];
 
@@ -179,5 +184,3 @@ ICOMMAND(s_setteam, "isi", (int *cn, char *newteam, int *mode),
     aiman::changeteam(ci);
     sendf(-1, 1, "riisi", N_SETTEAM, ci->clientnum, ci->team, *mode);
 });
-
-#endif // Z_SCRIPTING_H

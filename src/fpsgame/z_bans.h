@@ -1,8 +1,14 @@
-#ifndef Z_BANS_H
+#ifdef Z_BANS_H
+#error "already z_bans.h"
+#endif
 #define Z_BANS_H
 
-#include "z_format.h"
-#include "z_servercommands.h"
+#ifndef Z_FORMAT_H
+#error "want z_format.h"
+#endif
+#ifndef Z_SERVERCOMMANDS_H
+#error "want z_servercommands.h"
+#endif
 
 VAR(serverautounban, -1, 1, 1); // -1 = depends whether authed mode, 0 - off, 1 - on
 
@@ -390,5 +396,3 @@ void z_servcmd_unbanlast(int argc, char **argv, int sender)
     sendf(sender, 1, "ris", N_SERVMSG, "last ban removed");
 }
 SCOMMANDA(unbanlast, PRIV_MASTER, z_servcmd_unbanlast, 1);
-
-#endif // Z_BANS_H

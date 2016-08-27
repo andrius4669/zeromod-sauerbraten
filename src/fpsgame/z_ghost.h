@@ -1,4 +1,6 @@
-#ifndef Z_GHOST_H
+#ifdef Z_GHOST_H
+#error "already z_ghost.h"
+#endif
 #define Z_GHOST_H
 
 void nullifyclientpos(clientinfo &ci)
@@ -31,7 +33,6 @@ static inline bool z_shouldblockgameplay(clientinfo *ci)
     return z_isghost(ci) || (smode && smode->shouldblockgameplay(ci));
 }
 
-#if 1
 static inline void z_setghost(clientinfo *ci, bool val)
 {
     if(ci->xi.ghost!=val)
@@ -64,6 +65,3 @@ void z_servcmd_ghost(int argc, char **argv, int sender)
 }
 SCOMMANDAH(ghost, PRIV_MASTER, z_servcmd_ghost, 1);
 SCOMMANDAH(unghost, PRIV_MASTER, z_servcmd_ghost, 1);
-#endif
-
-#endif

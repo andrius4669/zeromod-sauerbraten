@@ -1,9 +1,18 @@
-#ifndef Z_GBANS_OVERRIDE_H
+#ifdef Z_GBANS_OVERRIDE_H
+#error "already z_gbans_override.h"
+#endif
 #define Z_GBANS_OVERRIDE_H
 
-#include "z_triggers.h"
-#include "z_servcmd.h"
-#include "z_tree.h"
+#ifndef Z_TRIGGERS_H
+#error "want z_triggers.h"
+#endif
+#ifndef Z_SERVCMD_H
+#error "want z_servcmd.h"
+#endif
+#ifndef Z_TREE_H
+#error "want z_tree.h"
+#endif
+
 
 vector< z_avltree<gbaninfo> > gbans;
 z_avltree<gbaninfo> ipbans;
@@ -342,5 +351,3 @@ void z_servcmd_pbanip(int argc, char **argv, int sender)
     verifybans(getinfo(sender));
 }
 SCOMMANDA(pbanip, PRIV_ADMIN, z_servcmd_pbanip, 2);
-
-#endif // Z_GBANS_OVERRIDE_H
