@@ -368,9 +368,12 @@ void z_servcmd_ipban(int argc, char **argv, int sender)
     }
 
     int bant = -1;
+    string banstr;
+    copystring(banstr, argv[0]);
+    banstr[strlen(banstr)-2] = '\0'; // cut 'ip' ending
     loopi(sizeof(z_banstrings)/sizeof(z_banstrings[0]))
     {
-        if(!strcasecmp(argv[0], z_banstrings[i])) { bant = i; break; }
+        if(!strcasecmp(banstr, z_banstrings[i])) { bant = i; break; }
     }
     if(bant < 0 || bant > 2) abort();
 
