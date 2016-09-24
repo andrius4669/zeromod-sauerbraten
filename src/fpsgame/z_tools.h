@@ -8,9 +8,10 @@
 #define Z_TOOLS_H
 
 // gban/pban struct optimised for use in tree
+// mask better not contain any gaps (preferably pure CIDR)
 struct gbaninfo
 {
-    // in host byte order, because easier to compare
+    // in host byte order, because faster to compare
     uint first, last;
 
     void parse(const char *name)

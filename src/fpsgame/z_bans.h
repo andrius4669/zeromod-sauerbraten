@@ -240,15 +240,15 @@ static int z_readbantime(char *str)
     return s;
 }
 
+static const char * const z_banstrings[] = { "ban", "specban", "muteban" };
+
 void z_servcmd_ban(int argc, char **argv, int sender)
 {
     extern const char *colorname(clientinfo *ci, const char *name = NULL);
-
-    static const char * const banstrings[] = { "ban", "specban", "muteban" };
     clientinfo *target, *ci = (clientinfo *)getclientinfo(sender);
     int bant, cn, time;
     if(argc <= 1) { z_servcmd_pleasespecifyclient(sender); return; }
-    if(!strcasecmp(argv[0], banstrings[0]))
+    if(!strcasecmp(argv[0], z_banstrings[0]))
     {
         bant = 0;
         if(!z_parseclient_verify(argv[1], cn, false))
@@ -263,7 +263,7 @@ void z_servcmd_ban(int argc, char **argv, int sender)
             return;
         }
     }
-    else if(!strcasecmp(argv[0], banstrings[1]))
+    else if(!strcasecmp(argv[0], z_banstrings[1]))
     {
         bant = 1;
         if(!z_parseclient_verify(argv[1], cn, false))
@@ -278,7 +278,7 @@ void z_servcmd_ban(int argc, char **argv, int sender)
             return;
         }
     }
-    else if(!strcasecmp(argv[0], banstrings[2]))
+    else if(!strcasecmp(argv[0], z_banstrings[2]))
     {
         bant = 2;
         if(!z_parseclient_verify(argv[1], cn, false, true))
@@ -298,7 +298,7 @@ void z_servcmd_ban(int argc, char **argv, int sender)
             return;
         }
     }
-    else return;
+    else abort();
 
     if(argc > 2)
     {
@@ -312,7 +312,7 @@ void z_servcmd_ban(int argc, char **argv, int sender)
     else time = 4*60*60000;
 
     const char *reason = argc > 3 ? argv[3] : NULL;
-    z_showban(ci, banstrings[bant], colorname(target), time, reason);
+    z_showban(ci, z_banstrings[bant], colorname(target), time, reason);
 
     uint ip = getclientip(cn);
     switch(bant)
@@ -351,6 +351,80 @@ void z_servcmd_ban(int argc, char **argv, int sender)
 SCOMMANDA(ban, PRIV_AUTH, z_servcmd_ban, 3);
 SCOMMANDA(specban, PRIV_AUTH, z_servcmd_ban, 3);
 SCOMMANDA(muteban, PRIV_AUTH, z_servcmd_ban, 3);
+
+void z_servcmd_ipban(int argc, char **argv, int sender)
+{
+    if(argc <= 1)
+    {
+        sendf(sender, 1, "ris", N_SERVMSG, "please specify IP address");
+        return;
+    }
+    ipmask im;
+    im.parse(argv[1]);
+    if(im.mask != 0xFFffFFff)
+    {
+        sendf(sender, 1, "ris", N_SERVMSG, "invalid IP address");
+        return;
+    }
+
+    int bant = -1;
+    loopi(sizeof(z_banstrings)/sizeof(z_banstrings[0]))
+    {
+        if(!strcasecmp(argv[0], z_banstrings[i])) { bant = i; break; }
+    }
+    if(bant < 0 || bant > 2) abort();
+
+    int time;
+    if(argc > 2)
+    {
+        time = z_readbantime(argv[2]);
+        if(time <= 0)
+        {
+            sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("incorrect ban length: %s", argv[2]));
+            return;
+        }
+    }
+    else time = 4*60*60000;
+
+    const char *reason = argc > 3 ? argv[3] : NULL;
+
+    switch(bant)
+    {
+        case 0:
+        {
+            addban(im.ip, time, BAN_KICK, reason);
+            clientinfo *ci = (clientinfo *)getclientinfo(sender);
+            kickclients(im.ip, ci, ci ? ci->privilege : PRIV_NONE);
+            break;
+        }
+
+        case 1:
+            addban(im.ip, time, BAN_SPECTATE, reason);
+            loopv(clients)
+            {
+                clientinfo &c = *clients[i];
+                if(c.local || c.state.aitype != AI_NONE) continue;
+                if(im.ip == getclientip(c.clientnum))
+                {
+                    if(c.state.state != CS_SPECTATOR && c.privilege < PRIV_MASTER && c.clientnum != sender) forcespectator(&c);
+                }
+            }
+            break;
+
+        case 2:
+            addban(im.ip, time, BAN_MUTE, reason);
+            loopv(clients)
+            {
+                clientinfo &c = *clients[i];
+                if(c.local || c.state.aitype != AI_NONE) continue;
+                if(im.ip == getclientip(c.clientnum) && c.xi.chatmute < 1) c.xi.chatmute = 2;
+            }
+            break;
+    }
+}
+SCOMMANDA(banip, PRIV_ADMIN, z_servcmd_ipban, 3);
+SCOMMANDA(specbanip, PRIV_ADMIN, z_servcmd_ipban, 3);
+SCOMMANDA(mutebanip, PRIV_ADMIN, z_servcmd_ipban, 3);
 
 void z_servcmd_unban(int argc, char **argv, int sender)
 {

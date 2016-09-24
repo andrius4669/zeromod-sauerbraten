@@ -209,7 +209,7 @@ static inline const char *z_pickawardstemplate()
 template<typename T> static bool z_awards_best_stat(vector<clientinfo *> &best, T &bests, T (* func)(clientinfo &))
 {
     best.setsize(0);
-    loopv(clients) if(!clients[i]->spy)
+    loopv(clients) if(!clients[i]->spy && (clients[i]->state.aitype == AI_NONE || clients[i]->state.state != CS_SPECTATOR))
     {
         if(best.empty())
         {
