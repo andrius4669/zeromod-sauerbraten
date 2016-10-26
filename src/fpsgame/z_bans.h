@@ -142,7 +142,7 @@ bool z_applyspecban(clientinfo *ci, bool connecting = false, bool quiet = false)
         int mode;
         if(!getmasterbaninfo(i, ident, mode, wlauth, banmsg) || mode != 2) continue;
         if(wlauth && ci->xi.ident.isset() && !strcmp(ci->xi.ident.desc, wlauth)) continue;
-        if((p = gbans[i].find(hip)) && p->check(hip))
+        if((p = gbans[i].check(hip)))
         {
             if(!quiet)
             {

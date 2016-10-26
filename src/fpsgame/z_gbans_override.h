@@ -14,9 +14,9 @@
 #endif
 
 
-vector< z_avltree<gbaninfo> > gbans;
-z_avltree<gbaninfo> ipbans;
-vector<pbaninfo> sbans;
+vector<rangebanstorage> gbans; // bans set by masterservers
+rangebanstorage ipbans;        // bans supplied from config
+vector<pbaninfo> sbans;        // bans settable from server
 
 static void cleargbans(int m = -1)
 {
@@ -66,7 +66,7 @@ static bool checkbans(uint ip, clientinfo *ci, bool connect = false)
     uint hip = ENET_NET_TO_HOST_32(ip);
     gbaninfo *p;
 
-    if((p = ipbans.find(hip)) && p->check(hip)) return true;
+    if(ipbans.check(hip)) return true;
 
     loopv(sbans) if(sbans[i].check(ip))
     {
@@ -93,7 +93,7 @@ static bool checkbans(uint ip, clientinfo *ci, bool connect = false)
         int mode;
         if(!getmasterbaninfo(i, ident, mode, wlauth, banmsg)) continue;
         if(mode != 1 && mode != -1 && !ident) continue;   // do not perform lookup at all
-        if((p = gbans[i].find(hip)) && p->check(hip))
+        if((p = gbans[i].check(hip)))
         {
             if(ident && !ci->xi.geoip.network) ci->xi.geoip.network = newstring(ident); // gban used to identify network
             if(mode == -1) return false;

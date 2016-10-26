@@ -85,6 +85,41 @@ struct gbaninfo
     bool check(uint ip) const { return (ip | (first ^ last)) == last; }
 };
 
+struct rangebanstorage
+{
+    z_avltree<gbaninfo> bantree;
+    vector<gbaninfo> banlist;
+
+    // ip is in host byte order
+    gbaninfo *check(uint ip)
+    {
+        gbaninfo *p;
+        if((p = bantree.find(ip)) && p->check(ip)) return p;
+        loopv(banlist) if(banlist[i].check(ip)) return &banlist[i];
+        return NULL;
+    }
+
+    bool add(const gbaninfo &val, gbaninfo **result = NULL)
+    {
+        // get mask. host bits ones, network bits zeros
+        uint mask = val.first ^ val.last;
+        // check if it has any gaps
+        if(mask & (mask + 1))
+        {
+            // if it does don't use tree
+            banlist.add(val);
+            return true;
+        }
+        else return bantree.add(val, result);
+    }
+
+    void clear()
+    {
+        bantree.clear();
+        banlist.shrink(0);
+    }
+};
+
 // basic pban struct with comments
 struct pbaninfo: ipmask
 {
@@ -94,10 +129,9 @@ struct pbaninfo: ipmask
     ~pbaninfo() { delete[] comment; }
 };
 
-extern vector< z_avltree<gbaninfo> > gbans;
-extern z_avltree<gbaninfo> ipbans;
+extern vector<rangebanstorage> gbans;
+extern rangebanstorage ipbans;
 extern vector<pbaninfo> sbans;
-
 
 typedef void (* z_sleepfunc)(void *);
 typedef void (* z_freevalfunc)(void *);
