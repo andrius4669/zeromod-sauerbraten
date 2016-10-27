@@ -49,7 +49,7 @@ struct gbaninfo
         char *start = buf;
         union { uchar b[sizeof(enet_uint32)]; enet_uint32 i; } ipconv, maskconv;
         ipconv.i = ENET_HOST_TO_NET_32(first);
-        maskconv.i = ENET_HOST_TO_NET_32(~(first ^ last));
+        maskconv.i = ENET_HOST_TO_NET_32(first ^ ~last);
         int lastdigit = -1;
         loopi(4) if(maskconv.b[i])
         {
@@ -83,6 +83,11 @@ struct gbaninfo
 
     // host byte order
     bool check(uint ip) const { return (ip | (first ^ last)) == last; }
+
+    bool includes(const gbaninfo &b) const
+    {
+        return ((first ^ last) | (b.first ^ b.last)) == (first ^ last);
+    }
 };
 
 struct rangebanstorage
