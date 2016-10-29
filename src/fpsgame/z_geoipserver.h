@@ -340,12 +340,13 @@ ICOMMAND(s_geoip_resolveclients, "", (),
     loopv(clients) if(clients[i]->state.aitype == AI_NONE) z_geoip_resolveclient(clients[i]->xi.geoip, getclientip(clients[i]->clientnum));
 });
 
-ICOMMAND(s_geoip_client, "ib", (int *cn, int *a),
+ICOMMAND(s_geoip_client, "ii", (int *cn, int *a),
 {
+    if(*a < 0 && !geoip_log) { result(""); return; }
     clientinfo *ci = (clientinfo *)getclientinfo(*cn);
     if(!ci || !ci->connected) { result(""); return; }
     vector<char> buf;
-    z_geoip_print(buf, ci, *a > 0);
+    z_geoip_print(buf, ci, *a >= 0 ? *a > 0 : geoip_log > 1);
     if(buf.empty()) { result(""); return; }
     buf.add('\0');
     result(buf.getbuf());

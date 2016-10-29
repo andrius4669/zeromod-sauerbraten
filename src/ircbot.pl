@@ -138,6 +138,7 @@ sub ircuser_has_op {
 }
 
 sub do_ircuser_command;
+sub irc_respond;
 
 sub process_ircuser_command {
 	my ($chan, $nick, $msg) = @_;
@@ -151,12 +152,7 @@ sub process_ircuser_command {
 
 	my $res = do_ircuser_command($chan, $nick, $cmd, $args);
 	if(defined($res)) {
-		if(!defined($chan)) {
-			irc_send("NOTICE $nick :$res\r\n");
-		}
-		else {
-			irc_send("NOTICE $chan :$nick: $res\r\n");
-		}
+		irc_respond($chan, $nick, $res);
 	}
 }
 
@@ -525,7 +521,11 @@ sub ren_sauer_talkbot {
 
 sub say_sauer_talkbot {
 	my ($nick, $msg) = (sauer_esc_str($_[0]), sauer_esc_str($_[1]));
-	print "_tbts = (listtalkbots $nick); if (> (strlen \$_tbts) 0) [s_talkbot_say (at \$_tbts 0) $msg] [];\n"
+	print "_tbts = (listtalkbots $nick); if (> (strlen \$_tbts) 0) [s_talkbot_say (at \$_tbts 0) $msg] [];\n";
+}
+
+sub sauer_clientlist {
+	print 'looplist cn (s_listclients 0) [echo (concatword "irc_list: " (s_getclientname $cn) " (" $cn ") (" (s_getclienthostname $cn) ")"); local gi; gi = (s_geoip_client $cn -1); if (!=s $gi "") [echo (concatword "geoip: client " $cn " connected from " $gi)] []]';
 }
 
 sub notify_irc_join {
@@ -684,7 +684,6 @@ sub trigger_irc_quit {
 	}
 }
 
-my $sauer_numclients;
 my @sauer_ips = ();
 my @sauer_names = ();
 
@@ -705,6 +704,16 @@ sub irc_bcast_notice {
 }
 
 my $ircuser_msg_privfail = 'you are not privileged enough for this command';
+
+sub irc_respond {
+	my ($chan, $nick, $msg) = @_;
+	if(!defined($chan)) {
+		irc_send("NOTICE $nick :$msg\r\n");
+	}
+	else {
+		irc_send("NOTICE $chan :$nick: $msg\r\n");
+	}
+}
 
 sub do_ircuser_command {
 	my ($chan, $nick, $cmd, $args) = @_;
@@ -753,12 +762,29 @@ sub do_ircuser_command {
 		}
 		else { return($ircuser_msg_privfail); }
 	}
+	elsif($cmd eq 'list' or $cmd eq 'ls') {
+		#my @sauer_ips = ();
+		#my @sauer_names = ();
+		my $numclients = @sauer_names;
+		if($numclients <= 0) {
+			return "no clients in server";
+		}
+		irc_respond($chan, $nick, "clients in server:");
+		foreach my $cn (0 .. $#sauer_names) {
+			my $m = "\cB$sauer_names[$cn]\cO \cC06($cn)\cO";
+			$m .= " [\cC02$sauer_ips[$cn]\cO]" if defined($sauer_ips[$cn]) and (length($sauer_ips[$cn]) > 0);
+			irc_respond($chan, $nick, $m);
+		}
+	}
+	elsif($cmd eq 'help') {
+		return "avaiable commands: wall/announce, kick/k, kickban/kb, list/ls";
+	}
 	else { return("unknown command: $cmd"); }
 	return undef;
 }
 
 sub process_stdin {
-	if($_[0] =~ /^([a-zA-Z0-9]+): (.+)$/) {
+	if($_[0] =~ /^([a-zA-Z0-9_]+): (.+)$/) {
 		my ($type, $msg) = ($1, $2);
 		if($type eq 'chat') {
 			if($msg =~ /^([^ ]+) (\([0-9]+\)|\[[0-9]+:[0-9]+\]): (.*)$/) {
@@ -785,6 +811,18 @@ sub process_stdin {
 				my $m = "\cC03join:\cO \cB$name\cO \cC06($cn)\cO";
 				$m .= " [\cC02$sauer_ips[$cn]\cO]" if defined($sauer_ips[$cn]) and (length($sauer_ips[$cn]) > 0);
 				irc_bcast_msg($m);
+			}
+		}
+		elsif($type eq 'irc_list') {
+			if($msg =~ /^([^ ]+) \(([0-9]+)\) \(([^)]*)\)$/) {
+				my ($name, $cn, $ip) = ($1, $2, $3);
+				if($cfg{showsauerips}) {
+					$sauer_ips[$cn] = $ip;
+				}
+				else {
+					$sauer_ips[$cn] = '';
+				}
+				$sauer_names[$cn] = $name;
 			}
 		}
 		elsif($type eq 'geoip') {
@@ -901,6 +939,8 @@ irc_reset;
 
 my $stdinbuf = '';
 
+my $asked_list = 0;
+
 my $reconnectwait = 0;
 MAINLOOP: for(;;) {
 	# execute trigger
@@ -1003,6 +1043,11 @@ MAINLOOP: for(;;) {
 		if($registered and !$autojoined and !$quitting) {
 			irc_joinchan @{$cfg{channels}};
 			$autojoined = 1;
+			
+			if($asked_list == 0) {
+				$asked_list = 1;
+				sauer_clientlist();
+			}
 		}
 	}
 }
