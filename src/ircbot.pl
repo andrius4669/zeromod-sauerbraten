@@ -525,7 +525,7 @@ sub say_sauer_talkbot {
 }
 
 sub sauer_clientlist {
-	print "looplist cn (s_listclients 0) [echo (concatword \"irc_list: \" (s_getclientname \$cn) \" (\" \$cn \") (\" (s_getclienthostname \$cn) \")\"); local gi; gi = (s_geoip_client \$cn -1); if (!=s \$gi \"\") [echo (concatword \"geoip: client \" \$cn \" connected from \" \$gi)] []]\n";
+	print "looplist cn (s_listclients 0) [echo (concatword \"irc_list: \" (s_getclientname \$cn) \" (\" \$cn \") (\" (s_getclienthostname \$cn) \")\"); local gi; gi = (s_geoip_client \$cn -1); if (!=s \$gi \"\") [echo (concatword \"geoip: client \" \$cn \" connected from \" \$gi)] []];\n";
 }
 
 sub notify_irc_join {
