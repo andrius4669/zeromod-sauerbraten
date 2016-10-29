@@ -763,17 +763,17 @@ sub do_ircuser_command {
 		else { return($ircuser_msg_privfail); }
 	}
 	elsif($cmd eq 'list' or $cmd eq 'ls') {
-		#my @sauer_ips = ();
-		#my @sauer_names = ();
 		my $numclients = @sauer_names;
 		if($numclients <= 0) {
 			return "no clients in server";
 		}
 		irc_respond($chan, $nick, "clients in server:");
 		foreach my $cn (0 .. $#sauer_names) {
-			my $m = "\cB$sauer_names[$cn]\cO \cC06($cn)\cO";
-			$m .= " [\cC02$sauer_ips[$cn]\cO]" if defined($sauer_ips[$cn]) and (length($sauer_ips[$cn]) > 0);
-			irc_respond($chan, $nick, $m);
+			if(defined($sauer_names[$cn]) and (length($sauer_names[$cn]) > 0)) {
+				my $m = "\cB$sauer_names[$cn]\cO \cC06($cn)\cO";
+				$m .= " [\cC02$sauer_ips[$cn]\cO]" if defined($sauer_ips[$cn]) and (length($sauer_ips[$cn]) > 0);
+				irc_respond($chan, $nick, $m);
+			}
 		}
 	}
 	elsif($cmd eq 'help') {
