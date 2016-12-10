@@ -8,7 +8,7 @@ use POSIX qw(EINTR);
 
 # quick and dirty way to read config file
 my %cfg;
-unless(%cfg = do "ircconfig.pl") {
+unless(%cfg = eval `cat ircconfig.pl`) {
 	die "couldn't parse ircconfig.pl: $@\n";
 }
 # some sanity checks
