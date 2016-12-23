@@ -321,6 +321,8 @@ const char *disconnectreason(int reason)
         case DISC_TIMEOUT: return "connection timed out";
         case DISC_OVERFLOW: return "overflow";
         case DISC_PASSWORD: return "invalid password";
+        case DISC_ENET_TIMEOUT: return "connection expired";
+        case DISC_ENET_ERROR: return "connection error";
         default: return NULL;
     }
 }
@@ -723,7 +725,11 @@ void serverslice(bool dedicated, uint timeout)   // main server update, called f
             {
                 client *c = (client *)event.peer->data;
                 if(!c) break;
-                server::clientdisconnect(c->num);
+                int errnum = -(int)event.data;
+                if(errnum > 0 && errnum < DISC_NUM2 - DISC_NUM)
+                    server::clientdisconnect(c->num, true, errnum + DISC_NUM);
+                else
+                    server::clientdisconnect(c->num);
                 delclient(c);
                 break;
             }

@@ -249,7 +249,12 @@ void gets2c()           // get updates from the server
             break;
 
         case ENET_EVENT_TYPE_DISCONNECT:
-            if(event.data>=DISC_NUM) event.data = DISC_NONE;
+            if(event.data>=DISC_NUM)
+            {
+                int altnum = -(int)event.data;
+                if (altnum > 0 && altnum < DISC_NUM2 - DISC_NUM) event.data = altnum + DISC_NUM;
+                else event.data = DISC_NONE;
+            }
             if(event.peer==connpeer)
             {
                 conoutf("\f3could not connect to server");
