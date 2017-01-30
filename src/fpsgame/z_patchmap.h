@@ -65,16 +65,16 @@ static void z_patchvar(const char *name, const tagval &v)
     }
 }
 
-VAR(s_patchreliable, 0, 1, 1); // use reliable packets or unreliable ones?
-static void z_sendpatchpacket(clientinfo *ci = NULL)
+VAR(s_patchreliable, -1, 1, 1); // use reliable packets or unreliable ones?
+static void z_sendpatchpacket(clientinfo *ci, bool reliable)
 {
     if(z_patchpacket.length() <= 0) return;
     if(!ci)
     {
-        loopv(clients) if(clients[i]->state.aitype==AI_NONE) z_sendpatchpacket(clients[i]);
+        loopv(clients) if(clients[i]->state.aitype==AI_NONE) z_sendpatchpacket(clients[i], reliable);
         return;
     }
-    packetbuf p(MAXTRANS, s_patchreliable ? ENET_PACKET_FLAG_RELIABLE : 0);
+    packetbuf p(MAXTRANS, reliable ? ENET_PACKET_FLAG_RELIABLE : 0);
     putint(p, N_CLIENT);
     putint(p, ci->clientnum);
     putuint(p, z_patchpacket.length());
@@ -98,22 +98,22 @@ static void z_addentpatches(int i = 0)
             z_patchent(z_entpatches[i].i, z_entpatches[i].e);
 }
 
-void z_sendallpatches(clientinfo *ci)
+void z_sendallpatches(clientinfo *ci, bool reliable)
 {
     z_initpatchpacket();
     z_addvarpatches();
     z_addentpatches();
-    z_sendpatchpacket(ci);
+    z_sendpatchpacket(ci, reliable);
 }
 
-void s_sendallpatches() { z_sendallpatches(NULL); }
+void s_sendallpatches() { z_sendallpatches(NULL, s_patchreliable > 0); }
 COMMAND(s_sendallpatches, ""); // sends out all var and ent patches
 
 void s_sendentpatches(int *n)
 {
     z_initpatchpacket();
     z_addentpatches(*n);
-    z_sendpatchpacket();
+    z_sendpatchpacket(NULL, s_patchreliable > 0);
 }
 COMMAND(s_sendentpatches, "i"); // sends out last x ent patches. if x is unspecified, send out all ent patches
 
@@ -121,7 +121,7 @@ void s_sendvarpatches(int *n)
 {
     z_initpatchpacket();
     z_addvarpatches(*n);
-    z_sendpatchpacket();
+    z_sendpatchpacket(NULL, s_patchreliable > 0);
 }
 COMMAND(s_sendvarpatches, "i"); // sends out last x var patches. if x is unspecified, send out all var patches
 
@@ -145,7 +145,7 @@ static void z_clearentpatches(int n = 0)
             z_patchent(ep.i, ments.inrange(ep.i) ? ments[ep.i] : emptyent);
         z_entpatches.drop();
     }
-    z_sendpatchpacket();
+    z_sendpatchpacket(NULL, s_patchreliable > 0);
 }
 
 static void z_clearvarpatches(int n = 0)
@@ -170,7 +170,7 @@ COMMAND(s_clearvarpatches, "i"); // clears last x var patches
 VAR(s_autosendpatch, 0, 1, 1); // whether to automatically send patches on s_patchent/s_patchvar* or not
 VAR(s_patchadd, 0, 1, 1); // whether to add patch to list or not
 
-void s_patchent(char *name, int *id, float *x, float *y, float *z, int *type, int *a1,int *a2, int *a3, int *a4, int *a5)
+void s_patchent(char *name, int *id, float *x, float *y, float *z, int *type, int *a1, int *a2, int *a3, int *a4, int *a5)
 {
     z_entpatch &ep = z_entpatches.add();
     copystring(ep.mapname, name);
@@ -190,7 +190,7 @@ void s_patchent(char *name, int *id, float *x, float *y, float *z, int *type, in
     {
         z_initpatchpacket();
         z_patchent(ep.i, ep.e);
-        z_sendpatchpacket();
+        z_sendpatchpacket(NULL, s_patchreliable > 0);
     }
 
     if(!s_patchadd) z_entpatches.drop();
@@ -203,7 +203,7 @@ static void z_checkvarpatch(const z_varpatch &vp)
     {
         z_initpatchpacket();
         z_patchvar(vp.varname, vp.v);
-        z_sendpatchpacket();
+        z_sendpatchpacket(NULL, s_patchreliable > 0);
     }
 }
 

@@ -21,6 +21,9 @@
 
 enum { Z_RC_NONE = 0, Z_RC_EDITMODE, Z_RC_EDITING };
 
+#define RACE_DEFAULT_RADIUS     32
+#define RACE_MAXPLACES          256
+
 bool z_racemode = false;
 VARF(racemode_enabled, 0, 0, 1,
 {
@@ -60,10 +63,10 @@ VAR(racemode_startmillis, 0, 5000, INT_MAX);
 VAR(racemode_gamelimit, 0, 0, INT_MAX);
 VAR(racemode_winnerwait, 0, 30000, INT_MAX);
 VAR(racemode_finishmillis, 0, 5000, INT_MAX);
-VAR(racemode_maxents, 0, 2000, MAXENTS);
+VAR(racemode_maxents, 0, 1000, MAXENTS);
+VAR(racemode_minplaces, 1, 1, RACE_MAXPLACES);
 
-#define RACE_DEFAULT_RADIUS     32
-#define RACE_MAXPLACES          20
+
 
 struct z_raceendinfo
 {
@@ -88,7 +91,7 @@ ICOMMAND(rend, "sfffii", (char *map, float *x, float *y, float *z, int *r, int *
     e.rend.o.y = *y;
     e.rend.o.z = *z;
     e.rend.radius = *r > 0 ? *r : RACE_DEFAULT_RADIUS;
-    e.rend.place = clamp(*p, 1, RACE_MAXPLACES) - 1;    /* in command specified place starts from 1, in struct it starts from 0 */
+    e.rend.place = clamp(*p, racemode_minplaces, RACE_MAXPLACES) - 1;   /* in command specified place starts from 1, in struct it starts from 0 */
 });
 
 VARF(racemode_record, 0, 0, 1,
@@ -214,7 +217,7 @@ struct raceservmode: servmode
             z_raceendinfo &r = raceends.add();
             r.o = e.o;
             r.radius = e.attr3 > 0 ? e.attr3 : RACE_DEFAULT_RADIUS;
-            r.place = min(-e.attr2, RACE_MAXPLACES) - 1;
+            r.place = clamp(-e.attr2, racemode_minplaces, RACE_MAXPLACES) - 1;
             while(race_winners.length() <= r.place) race_winners.add();
             if(r.place < minraceend) minraceend = r.place;
             if(racemode_maxents && raceends.length()>=racemode_maxents)

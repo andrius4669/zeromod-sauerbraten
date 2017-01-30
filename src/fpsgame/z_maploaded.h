@@ -15,7 +15,7 @@ static void z_maploaded(clientinfo *ci, bool val = true)
     {
         ci->xi.maploaded = totalmillis ? totalmillis : 1;
         if(mapload_debug) sendservmsgf("%s has loaded map", colorname(ci));
-        z_sendallpatches(ci);
+        z_sendallpatches(ci, s_patchreliable >= 0);
     }
     else if(!val) ci->xi.maploaded = 0;
 
