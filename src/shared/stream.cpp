@@ -1213,8 +1213,9 @@ char *loadfile(const char *fn, size_t *size, bool utf8)
 {
     stream *f = openfile(fn, "rb");
     if(!f) return NULL;
-    size_t len = f->size();
-    if(len <= 0) { delete f; return NULL; }
+    stream::offset fsize = f->size();
+    if(fsize <= 0) { delete f; return NULL; }
+    size_t len = fsize;
     char *buf = new char[len+1];
     if(!buf) { delete f; return NULL; }
     size_t offset = 0;
