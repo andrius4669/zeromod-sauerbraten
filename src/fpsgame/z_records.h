@@ -100,7 +100,7 @@ static void z_newrecord(clientinfo *ci, int time)
 {
     // check if we should register this
     if(ci->state.aitype != AI_NONE) return; // bot
-    if(!record_unnamed && (!ci->name[0] || !strcmp(ci->name, "unnamed"))) return;
+    if(!ci->name[0] || (!record_unnamed && !strcmp(ci->name, "unnamed"))) return;
     if(time <= record_min) return;
     if(record_max && time >= record_max) return;
     // find existing record
