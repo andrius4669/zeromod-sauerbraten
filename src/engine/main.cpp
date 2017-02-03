@@ -1106,24 +1106,22 @@ int main(int argc, char **argv)
     char *load = NULL, *initscript = NULL;
 
     initing = INIT_RESET;
-    for(int i = 1; i<argc; i++)
+    // set home dir first
+    for(int i = 1; i<argc; i++) if(argv[i][0]=='-' && argv[i][1] == 'q') { sethomedir(&argv[i][2]); break; }
+    // set log after home dir, but before anything else
+    for(int i = 1; i<argc; i++) if(argv[i][0]=='-' && argv[i][1] == 'g')
     {
-        if(argv[i][0]=='-') switch(argv[i][1])
-        {
-            case 'q': 
-			{
-				const char *dir = sethomedir(&argv[i][2]);
-				if(dir) logoutf("Using home directory: %s", dir);
-				break;
-			}
-        }
+        const char *file = argv[i][2] ? &argv[i][2] : "log.txt";
+        setlogfile(file);
+        logoutf("Setting log file: %s", file);
+        break;
     }
     execfile("init.cfg", false);
     for(int i = 1; i<argc; i++)
     {
         if(argv[i][0]=='-') switch(argv[i][1])
         {
-            case 'q': /* parsed first */ break;
+            case 'q': if(homedir[0]) logoutf("Using home directory: %s", homedir); break;
             case 'r': /* compat, ignore */ break;
             case 'k':
             {
@@ -1131,7 +1129,7 @@ int main(int argc, char **argv)
                 if(dir) logoutf("Adding package directory: %s", dir);
                 break;
             }
-            case 'g': logoutf("Setting log file: %s", &argv[i][2]); setlogfile(&argv[i][2]); break;
+            case 'g': break;
             case 'd': dedicated = atoi(&argv[i][2]); if(dedicated<=0) dedicated = 2; break;
             case 'w': scr_w = clamp(atoi(&argv[i][2]), SCR_MINW, SCR_MAXW); if(!findarg(argc, argv, "-h")) scr_h = -1; break;
             case 'h': scr_h = clamp(atoi(&argv[i][2]), SCR_MINH, SCR_MAXH); if(!findarg(argc, argv, "-w")) scr_w = -1; break;
