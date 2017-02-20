@@ -1880,7 +1880,7 @@ void gl_drawframe()
     {
         float blend = abovemat==MAT_AIR ? fogblend : 1.0f;
         fovy += blend*sinf(lastmillis/1000.0)*2.0f;
-        aspect += blend*sinf(lastmillis/1000.0+PI)*0.1f;
+        aspect += blend*sinf(lastmillis/1000.0+M_PI)*0.1f;
     }
 
     farplane = worldsize*2;
