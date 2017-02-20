@@ -465,6 +465,7 @@ extern int findauthmaster(const char *desc, int old = -1);
 extern const char *getmasterauth(int m);
 extern void masterauthpriv_set(int m, int priv);
 extern int masterauthpriv_get(int m);
+extern bool allowmasterauth(int m, int priv);
 extern bool getmasterbaninfo(int m, const char *&ident, int &disc, const char *&wlauth, const char *&banmsg);
 extern bool isdedicatedserver();
 

@@ -54,6 +54,11 @@ void authsucceeded(int m, uint id, int priv = PRIV_AUTH)
 {
     clientinfo *ci = findauth(m, id);
     if(!ci) return;
+    if(!allowmasterauth(m, priv))
+    {
+        authfailed(ci);
+        return;
+    }
     ci->cleanauth(ci->connectauth!=0);
     bool connecting = false;
     if(ci->connectauth)

@@ -9,32 +9,29 @@ struct msinfo
 {
     string mastername;
     int masterport;
-    string masterauth;
     ENetSocket mastersock;
-    ENetAddress masteraddress;
     int lastupdatemaster, lastconnectmaster, masterconnecting, masterconnected;
     vector<char> masterout, masterin;
     int masteroutpos, masterinpos;
     bool allowupdatemaster;
     int masternum;
+    string masterauth;
     int masterauthpriv;
     bool masterauthpriv_allow;
     char *networkident;
     char *whitelistauth;
     char *banmessage;
-    int maxauthpriv;
+    int minauthpriv, maxauthpriv;
     int banmode;
 
     msinfo(): masterport(server::masterport()), mastersock(ENET_SOCKET_NULL),
         lastupdatemaster(0), lastconnectmaster(0), masterconnecting(0), masterconnected(0),
         masteroutpos(0), masterinpos(0), allowupdatemaster(true), masternum(-1),
         masterauthpriv(-1), masterauthpriv_allow(false), networkident(NULL),
-        whitelistauth(NULL), banmessage(NULL), maxauthpriv(3), banmode(1)
+        whitelistauth(NULL), banmessage(NULL), minauthpriv(0), maxauthpriv(3), banmode(1)
     {
         copystring(mastername, server::defaultmaster());
         masterauth[0] = '\0';
-        masteraddress.host = ENET_HOST_ANY;
-        masteraddress.port = ENET_PORT_ANY;
     }
     ~msinfo() { disconnectmaster(); delete[] networkident; delete[] whitelistauth; delete[] banmessage; }
 
@@ -51,22 +48,19 @@ struct msinfo
         masterin.setsize(0);
         masteroutpos = masterinpos = 0;
 
-        masteraddress.host = ENET_HOST_ANY;
-        masteraddress.port = ENET_PORT_ANY;
-
         lastupdatemaster = masterconnecting = masterconnected = 0;
         masterauthpriv = -1;
     }
 
     ENetSocket connectmaster(bool wait)
     {
+        // if disabled bail out
         if(!mastername[0]) return ENET_SOCKET_NULL;
-        if(masteraddress.host == ENET_HOST_ANY)
-        {
-            if(isdedicatedserver()) logoutf("looking up %s...", mastername);
-            masteraddress.port = masterport;
-            if(!resolverwait(mastername, &masteraddress)) return ENET_SOCKET_NULL;
-        }
+        // resolve everytime. we dont want to use old IP incase it changes after masterserver being unreachable for a while
+        ENetAddress masteraddress = { ENET_HOST_ANY, (enet_uint16)masterport };
+        if(isdedicatedserver()) logoutf("looking up %s...", mastername);
+        if(!resolverwait(mastername, &masteraddress)) return ENET_SOCKET_NULL;
+        // connect to it
         ENetSocket sock = enet_socket_create(ENET_SOCKET_TYPE_STREAM);
         if(sock == ENET_SOCKET_NULL)
         {
@@ -220,6 +214,7 @@ VARFN(updatemaster, allowupdatemaster, 0, 1, 1,
     if(!mss.inrange(currmss)) addms();
     mss[currmss].allowupdatemaster = allowupdatemaster;
 });
+
 SVARF(mastername, server::defaultmaster(),
 {
     if(!mss.inrange(currmss)) addms();
@@ -227,6 +222,7 @@ SVARF(mastername, server::defaultmaster(),
     mss[currmss].lastconnectmaster = 0;
     copystring(mss[currmss].mastername, mastername);
 });
+
 VARF(masterport, 1, server::masterport(), 0xFFFF,
 {
     if(!mss.inrange(currmss)) addms();
@@ -234,6 +230,7 @@ VARF(masterport, 1, server::masterport(), 0xFFFF,
     mss[currmss].lastconnectmaster = 0;
     mss[currmss].masterport = masterport;
 });
+
 SVARF(masterauth, "",
 {
     if(!mss.inrange(currmss)) addms();
@@ -291,6 +288,12 @@ ICOMMAND(masterauthpriv, "i", (int *i),
     mss[currmss].masterauthpriv_allow = *i!=0;
 });
 
+ICOMMAND(masterminauthpriv, "i", (int *i),
+{
+    if(!mss.inrange(currmss)) addms();
+    mss[currmss].minauthpriv = clamp(*i, 0, 3);
+});
+
 ICOMMAND(mastermaxauthpriv, "i", (int *i),
 {
     if(!mss.inrange(currmss)) addms();
@@ -306,10 +309,15 @@ void masterauthpriv_set(int m, int priv)
 int masterauthpriv_get(int m)
 {
     if(!mss.inrange(m)) return 2;
-    int t = mss[m].masterauthpriv;
+    int authpriv = mss[m].masterauthpriv;
     mss[m].masterauthpriv = -1;
-    if(t < 0 && mss[m].maxauthpriv < 2) return mss[m].maxauthpriv;
-    return t < 0 ? 2 : t;
+    return authpriv >= 0 ? authpriv : min(mss[m].maxauthpriv, 2);
+}
+
+bool allowmasterauth(int m, int priv)
+{
+    if(!mss.inrange(m)) return false;
+    return priv >= mss[m].minauthpriv && priv <= mss[m].maxauthpriv;
 }
 
 ICOMMAND(masterbanwarn, "s", (char *s),
