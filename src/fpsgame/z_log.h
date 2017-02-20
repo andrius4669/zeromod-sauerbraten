@@ -301,3 +301,13 @@ static void z_discmsg(clientinfo *ci, int n, const char *msg, bool forced)
         }
     }
 }
+
+static void z_log_spectate(clientinfo *actor, clientinfo *wi, bool val)
+{
+    logoutf("spectator: %s (%d) %s %s (%d)", actor->name, actor->clientnum, val ? "spectated" : "unspectated", wi->name, wi->clientnum);
+}
+
+static void z_log_setteam(clientinfo *actor, clientinfo *wi, const char *newteam)
+{
+    logoutf("setteam: %s (%d) forced %s (%d) to team %s", actor->name, actor->clientnum, wi->name, wi->clientnum, newteam);
+}

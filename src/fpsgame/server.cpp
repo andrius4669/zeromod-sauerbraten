@@ -3658,6 +3658,8 @@ namespace server
                 if(!spinfo || !spinfo->connected || (spinfo->state.state==CS_SPECTATOR ? val : !val)) break;
                 if(spinfo->spy) break;
 
+                if (spectator != sender) z_log_spectate(ci, spinfo, val);
+
                 if(spinfo->state.state!=CS_SPECTATOR && val) forcespectator(spinfo);
                 else if(spinfo->state.state==CS_SPECTATOR && !val) unspectate(spinfo);
 
@@ -3676,6 +3678,7 @@ namespace server
                 if(wi->spy) break;
                 if((!smode || smode->canchangeteam(wi, wi->team, text)) && addteaminfo(text))
                 {
+                    z_log_setteam(ci, wi, text);
                     if(wi->state.state==CS_ALIVE) suicide(wi);
                     copystring(wi->team, text, MAXTEAMLEN+1);
                 }
