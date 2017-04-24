@@ -301,9 +301,9 @@ struct raceservmode: servmode
 
     static bool clientready(clientinfo *ci)
     {
-        if(z_autosendmap == 2) return ci->mapcrc && !ci->getmap && ci->xi.maploaded && !ci->warned;
-        if(z_autosendmap == 1) return !ci->getmap && ci->xi.maploaded;
-        return ci->mapcrc && ci->xi.maploaded;
+        if(z_autosendmap == 2) return ci->mapcrc && !ci->getmap && ci->xi.maploaded && totalmillis-ci->xi.maploaded > 1000 && !ci->warned;
+        if(z_autosendmap == 1) return !ci->getmap && ci->xi.maploaded && totalmillis-ci->xi.maploaded > 1000;
+        return ci->mapcrc && ci->xi.maploaded && totalmillis-ci->xi.maploaded > 1000;
     }
 
     void moved(clientinfo *ci, const vec &oldpos, bool oldclip, const vec &newpos, bool newclip)
@@ -484,18 +484,11 @@ struct raceservmode: servmode
                 loopv(clients) if(clients[i]->state.aitype==AI_NONE && (racemode_sendspectators || clients[i]->state.state!=CS_SPECTATOR))
                 {
                     z_sendmap(clients[i], NULL, NULL, true, false);
-                    clients[i]->xi.mapsent = true;
+                    clients[i]->xi.mapsent = totalmillis ? totalmillis : 1;
                 }
                 return;
             case 2:
                 sendservmsg("[waiting for clients to load map]");
-#if 0   // we shouldn't need this anymore
-                if(racemode_sendspectators) loopv(clients) if(clients[i]->state.aitype==AI_NONE && clients[i]->state.state==CS_SPECTATOR)
-                {
-                    z_sendmap(clients[i], NULL, NULL, true, false);
-                    clients[i]->xi.mapsent = true;
-                }
-#endif  // if 0
                 return;
         }
     }

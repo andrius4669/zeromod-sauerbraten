@@ -2649,7 +2649,7 @@ namespace server
             formatstring(msg, "%s has modified map \"%s\"", colorname(ci), smapname);
             if(!m_edit || req >= 0) sendf(req, 1, "ris", N_SERVMSG, msg);
             if(req < 0) ci->warned = true;
-            if(req < 0 && m_edit && !ci->xi.mapsent) { z_sendmap(ci, NULL, NULL, true); ci->xi.mapsent = true; }
+            if(req < 0 && m_edit && !ci->xi.mapsent) z_sendmap(ci, NULL, NULL, true);
         }
         if(crcs.length() >= 2) loopv(crcs)
         {
@@ -2661,7 +2661,7 @@ namespace server
                 formatstring(msg, "%s has modified map \"%s\"", colorname(ci), smapname);
                 if(!m_edit || req >= 0) sendf(req, 1, "ris", N_SERVMSG, msg);
                 if(req < 0) ci->warned = true;
-                if(req < 0 && m_edit && !ci->xi.mapsent) { z_sendmap(ci, NULL, NULL, true); ci->xi.mapsent = true; }
+                if(req < 0 && m_edit && !ci->xi.mapsent) z_sendmap(ci, NULL, NULL, true);
             }
         }
         if(m_edit) return;
@@ -3209,7 +3209,7 @@ namespace server
                         cp->position.setsize(0);
                         while(curmsg<p.length()) cp->position.add(p.buf[curmsg++]);
                     }
-                    if(!ci->xi.maploaded && cp->state.state==CS_ALIVE) z_maploaded(ci);
+                    if(!ci->xi.maploaded && cp->state.state==CS_ALIVE && (!cp->xi.mapsent || totalmillis-cp->xi.mapsent > 1000)) z_maploaded(ci);
                     if(smode && cp->state.state==CS_ALIVE && !z_shouldhidepos(cp)) smode->moved(cp, cp->state.o, cp->gameclip, pos, (flags&0x80)!=0);
                     cp->state.o = pos;
                     cp->gameclip = (flags&0x80)!=0;
@@ -3744,6 +3744,7 @@ namespace server
                     if((ci->getmap = sendfile(sender, 2, mapdata, "ri", N_SENDMAP)))
                         ci->getmap->freeCallback = freegetmap;
                     ci->needclipboard = totalmillis ? totalmillis : 1;
+                    ci->xi.mapsent = ci->needclipboard;
                 }
                 break;
 

@@ -25,7 +25,7 @@ bool z_sendmap(clientinfo *ci, clientinfo *sender = NULL, stream *map = NULL, bo
             getmap->freeCallback = freegetmap;
             ci->getmap = getmap;
         }
-        ci->needclipboard = totalmillis ? totalmillis : 1;
+        ci->xi.mapsent = ci->needclipboard = totalmillis ? totalmillis : 1;
         return true;
     }
     return false;
