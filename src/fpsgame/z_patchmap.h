@@ -104,6 +104,11 @@ void z_sendallpatches(clientinfo *ci, bool reliable)
     z_addvarpatches();
     z_addentpatches();
     z_sendpatchpacket(ci, reliable);
+    // workaround for weird bug when entities doesn't show up for some reason
+    // have no idea why it works but it does
+    z_initpatchpacket();
+    z_addentpatches();
+    z_sendpatchpacket(ci, reliable);
 }
 
 void s_sendallpatches() { z_sendallpatches(NULL, s_patchreliable > 0); }
