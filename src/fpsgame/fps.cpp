@@ -677,10 +677,12 @@ namespace game
     static string cname[3];
     static int cidx = 0;
 
-    const char *colorname(fpsent *d, const char *name, const char *prefix, const char *suffix, const char *alt)
+    VARP(showverboseclientnum, 0, 0, 1);
+    const char *colorname(fpsent *d, const char *name, const char *prefix, const char *suffix, const char *alt, int verbose)
     {
         if(!name) name = alt && d == player1 ? alt : d->name; 
-        bool dup = !name[0] || duplicatename(d, name, alt) || d->aitype != AI_NONE;
+        if(verbose < 0) verbose = 0; else if(!verbose) verbose = showverboseclientnum;
+        bool dup = verbose || !name[0] || duplicatename(d, name, alt) || d->aitype != AI_NONE;
         if(dup || prefix[0] || suffix[0])
         {
             cidx = (cidx+1)%3;

@@ -246,7 +246,7 @@ namespace game
                     status = o->privilege>=PRIV_ADMIN ? 0xFF8000 : 0x40FF80;
                     if(o->state==CS_DEAD) status = (status>>1)&0x7F7F7F;
                 }
-                g.textf("%s ", status, NULL, colorname(o));
+                g.textf("%s ", status, NULL, colorname(o, NULL, "", "", NULL, -1));
             });
             g.poplist();
 
@@ -321,7 +321,7 @@ namespace game
                         g.pushlist();
                         g.background(0x808080, 3);
                     }
-                    g.text(colorname(o), status, "spectator");
+                    g.text(colorname(o, NULL, "", "", NULL, -1), status, "spectator");
                     if(o==player1 && highlightscore) g.poplist();
                 }
                 g.poplist();
@@ -352,7 +352,7 @@ namespace game
                         g.pushlist();
                         g.background(0x808080);
                     }
-                    g.text(colorname(o), status);
+                    g.text(colorname(o, NULL, "", "", NULL, -1), status);
                     if(o==player1 && highlightscore) g.poplist();
                     if(i+1<spectators.length() && (i+1)%3) g.space(1);
                     else g.poplist();
