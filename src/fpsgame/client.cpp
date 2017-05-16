@@ -645,6 +645,9 @@ namespace game
             }
             case EDIT_MAT:
             case EDIT_FACE:
+#ifdef OLDPROTO
+            case EDIT_TEX:
+#endif
             {
                 addmsg(N_EDITF + op, "ri9i6",
                    sel.o.x, sel.o.y, sel.o.z, sel.s.x, sel.s.y, sel.s.z, sel.grid, sel.orient,
@@ -652,6 +655,7 @@ namespace game
                    arg1, arg2);
                 break;
             }
+#ifndef OLDPROTO
             case EDIT_TEX:
             {
                 int tex1 = shouldpacktex(arg1);
@@ -667,19 +671,26 @@ namespace game
                 }
                 break;
             }
+#endif
             case EDIT_REPLACE:
             {
+#ifndef OLDPROTO
                 int tex1 = shouldpacktex(arg1), tex2 = shouldpacktex(arg2);
+#else
+                int tex1 = 0, tex2 = 0;
+#endif
                 if(addmsg(N_EDITF + op, "ri9i7",
                     sel.o.x, sel.o.y, sel.o.z, sel.s.x, sel.s.y, sel.s.z, sel.grid, sel.orient,
                     sel.cx, sel.cxs, sel.cy, sel.cys, sel.corner,
                     tex1 ? tex1 : arg1, tex2 ? tex2 : arg2, arg3))
                 {
+#ifndef OLDPROTO
                     messages.pad(2);
                     int offset = messages.length();
                     if(tex1) packvslot(messages, arg1);
                     if(tex2) packvslot(messages, arg2);
                     *(ushort *)&messages[offset-2] = lilswap(ushort(messages.length() - offset));
+#endif
                 }
                 break;
             }
@@ -688,6 +699,7 @@ namespace game
                 addmsg(N_EDITF + op, "r");
                 break;
             }
+#ifndef OLDPROTO
             case EDIT_VSLOT:
             {
                 if(addmsg(N_EDITF + op, "ri9i6",
@@ -714,6 +726,7 @@ namespace game
                 }
                 break;
             }
+#endif
         }
     }
 
@@ -1610,6 +1623,7 @@ namespace game
                 if(d) unpackeditinfo(d->edit, q.buf, q.maxlen, unpacklen);
                 break;
             }
+#ifndef OLDPROTO
             case N_UNDO:
             case N_REDO:
             {
@@ -1619,6 +1633,7 @@ namespace game
                 if(d) unpackundo(q.buf, q.maxlen, unpacklen);
                 break;
             }
+#endif
 
             case N_EDITF:              // coop editing messages
             case N_EDITT:
@@ -1629,7 +1644,9 @@ namespace game
             case N_ROTATE:
             case N_REPLACE:
             case N_DELCUBE:
+#ifndef OLDPROTO
             case N_EDITVSLOT:
+#endif
             {
                 if(!d) return;
                 selinfo sel;
@@ -1645,11 +1662,15 @@ namespace game
                     {
                         int tex = getint(p),
                             allfaces = getint(p);
+#ifndef OLDPROTO
                         if(p.remaining() < 2) return;
                         int extra = lilswap(*(const ushort *)p.pad(2));
                         if(p.remaining() < extra) return;
                         ucharbuf ebuf = p.subbuf(extra);
                         if(sel.validate()) mpedittex(tex, allfaces, sel, ebuf);
+#else
+                        if(sel.validate()) mpedittex(tex, allfaces, sel, false);
+#endif
                         break;
                     }
                     case N_EDITM: { int mat = getint(p), filter = getint(p); if(sel.validate()) mpeditmat(mat, filter, sel, false); break; }
@@ -1662,14 +1683,19 @@ namespace game
                         int oldtex = getint(p),
                             newtex = getint(p),
                             insel = getint(p);
+#ifndef OLDPROTO
                         if(p.remaining() < 2) return;
                         int extra = lilswap(*(const ushort *)p.pad(2));
                         if(p.remaining() < extra) return;
                         ucharbuf ebuf = p.subbuf(extra);
                         if(sel.validate()) mpreplacetex(oldtex, newtex, insel>0, sel, ebuf);
+#else
+                        if(sel.validate()) mpreplacetex(oldtex, newtex, insel>0, sel, false);
+#endif
                         break;
                     }
                     case N_DELCUBE: if(sel.validate()) mpdelcube(sel, false); break;
+#ifndef OLDPROTO
                     case N_EDITVSLOT:
                     {
                         int delta = getint(p),
@@ -1681,6 +1707,7 @@ namespace game
                         if(sel.validate()) mpeditvslot(delta, allfaces, sel, ebuf);
                         break;
                     }
+#endif
                 }
                 break;
             }
