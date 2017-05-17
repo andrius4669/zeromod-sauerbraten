@@ -787,7 +787,16 @@ sub do_ircuser_command {
 }
 
 sub process_stdin {
-	if($_[0] =~ /^([a-zA-Z0-9_]+): (.+)$/) {
+	my $line = $_[0];
+	if($skipstdin > 0) {
+		if($line =~ /^[^ ]+ (.*)$/) {
+			$line = $1;
+		}
+		else {
+			return;
+		}
+	}
+	if($line =~ /^([a-zA-Z0-9_]+): (.+)$/) {
 		my ($type, $msg) = ($1, $2);
 		if($type eq 'chat') {
 			if($msg =~ /^([^ ]+) (\([0-9]+\)|\[[0-9]+:[0-9]+\]): (.*)$/) {
@@ -943,6 +952,9 @@ irc_reset;
 my $stdinbuf = '';
 
 my $asked_list = 0;
+my $skipstdin = 0;
+
+$skipstdin = $cfg{skipstdin} if defined($cfg{skipstdin});
 
 my $reconnectwait = 0;
 MAINLOOP: for(;;) {

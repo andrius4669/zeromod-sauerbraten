@@ -38,4 +38,6 @@
 	"ircopprivs" => ['@', '%', '&'],
 	# how bot shall repond to CTCP VERSION? if undefined, bot won't answer
 	"ctcp_version" => undef,
+	# should bot skip first word of every stdin line?
+	"skipstdin" => 0,
 )
