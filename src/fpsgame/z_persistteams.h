@@ -104,7 +104,7 @@ static void autoteam()
         }
     }
 
-    // default/fallback shuffler for clients we didn't touched above
+    // default/fallback shuffler for clients we didn't touch above
     for(int round = 0; remaining>=0; round++)
     {
         int first = round&1, second = (round+1)&1, selected = 0;
