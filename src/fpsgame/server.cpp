@@ -1048,6 +1048,7 @@ namespace server
 
     #include "z_persistteams.h"
 
+#if 0
     void autoteam()
     {
         static const char * const teamnames[2] = {"good", "evil"};
@@ -1084,6 +1085,7 @@ namespace server
             }
         }
     }
+#endif
 
     struct teamrank
     {
@@ -2122,7 +2124,7 @@ namespace server
         else if(m_edit && z_racemode && smapname[0]) smode = &racemode;
         else smode = NULL;
 
-        if(m_teammode && !(smode && smode->autoteam()) && !z_autoteam()) autoteam();
+        if(m_teammode && !(smode && smode->autoteam())) autoteam();
 
         if(m_timed && smapname[0]) sendf(-1, 1, "ri2", N_TIMEUP, gamemillis < gamelimit && !interm ? max((gamelimit - gamemillis)/1000, 1) : 0);
         loopv(clients)

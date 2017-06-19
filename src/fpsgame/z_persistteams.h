@@ -17,7 +17,7 @@ void z_servcmd_persistteams(int argc, char **argv, int sender)
 {
     if(argc < 2)
     {
-        sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("persistent teams are %s",
+        sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("persistent teams are currently %s",
                 z_persistteams == 1 ? "enabled" : z_persistteams == 2 ? "enabled for custom teams" : "disabled"));
         return;
     }
@@ -33,71 +33,66 @@ static int z_checkstandardteam(const char *team, const char * const *teamnames)
     return 0;
 }
 
-bool z_autoteam()
+static void autoteam()
 {
     static const char * const teamnames[2] = {"good", "evil"};
     vector<clientinfo *> team[2];
     float teamrank[2] = {0, 0};
     int remaining = clients.length();
-    if(z_persistteams == 0) return false;
+
     if(z_persistteams == 1)
     {
-        string sttnames_[2];
-        *sttnames_[0] = *sttnames_[1] = '\0';
-        char * const sttnames[2] = { sttnames_[0], sttnames_[1] };
-        loopv(clients) if(clients[i]->team[0])
+        if(m_ctf)
         {
-            clientinfo *ci = clients[i];
-            if(m_ctf && !sttnames[0]) copystring(sttnames[0], ci->team, MAXTEAMLEN+1);
-            int standard = z_checkstandardteam(ci->team, m_ctf ? sttnames : teamnames);
-            if(m_ctf && !standard && !sttnames[1]) { copystring(sttnames[1], ci->team, MAXTEAMLEN+1); standard = 2; }
-            if(m_ctf && !standard) continue;
-            float rank = ci->state.state!=CS_SPECTATOR ? ci->state.effectiveness/max(ci->state.timeplayed, 1) : -1;
-            if(smode && smode->hidefrags()) rank = 1;
-            ci->state.timeplayed = -1;
-            if(standard)
+            // need some special magic with ctf mode, as it doesn't allow custom teams
+            string sttnamebufs[2] = { {0}, {0} };
+            char * const sttnames[2] = { sttnamebufs[0], sttnamebufs[1] };
+            for(int i = 0; i < remaining && !*sttnames[0] && !*sttnames[1]; ++i) if(clients[i]->team[0])
             {
-                team[standard-1].add(ci);
-                if(rank>0) teamrank[standard-1] += rank;
+                int s = z_checkstandardteam(clients[i]->team, teamnames);
+                if(s > 0 && !*sttnames[s-1]) copystring(sttnames[s-1], teamnames[s-1], MAXTEAMLEN+1);
             }
-            else addteaminfo(ci->team);
-            remaining--;
-        }
-        for(int round = 0; remaining>=0; round++)
-        {
-            int first = round&1, second = (round+1)&1, selected = 0;
-            while(teamrank[first] <= teamrank[second])
+            loopv(clients) if(clients[i]->team[0])
             {
-                float rank;
-                clientinfo *ci = choosebestclient(rank);
-                if(!ci) break;
+                clientinfo *ci = clients[i];
+                int s = z_checkstandardteam(ci->team, sttnames);
+                if(!s)
+                {
+                    if(!*sttnames[0]) { copystring(sttnames[0], ci->team, MAXTEAMLEN+1); s = 1; }
+                    else if(!*sttnames[1]) { copystring(sttnames[1], ci->team, MAXTEAMLEN+1); s = 2; }
+                    else continue;
+                }
+                float rank = ci->state.state!=CS_SPECTATOR ? ci->state.effectiveness/max(ci->state.timeplayed, 1) : -1;
                 if(smode && smode->hidefrags()) rank = 1;
-                else if(selected && rank<=0) break;
                 ci->state.timeplayed = -1;
-                team[first].add(ci);
-                if(rank>0) teamrank[first] += rank;
-                selected++;
-                if(rank<=0) break;
+                team[s-1].add(ci);
+                if(rank > 0) teamrank[s-1] += rank;
+                remaining--;
             }
-            if(!selected) break;
-            remaining -= selected;
         }
-        loopi(sizeof(team)/sizeof(team[0]))
+        else
         {
-            addteaminfo(teamnames[i]);
-            loopvj(team[i])
+            loopv(clients) if(clients[i]->team[0])
             {
-                clientinfo *ci = team[i][j];
-                if(!strcmp(ci->team, teamnames[i])) continue;
-                copystring(ci->team, teamnames[i], MAXTEAMLEN+1);
-                sendf(-1, 1, "riisi", N_SETTEAM, ci->clientnum, teamnames[i], -1);
+                clientinfo *ci = clients[i];
+                int s = z_checkstandardteam(ci->team, teamnames);
+                float rank = ci->state.state!=CS_SPECTATOR ? ci->state.effectiveness/max(ci->state.timeplayed, 1) : -1;
+                if(smode && smode->hidefrags()) rank = 1;
+                ci->state.timeplayed = -1;
+                if(s > 0)
+                {
+                    team[s-1].add(ci);
+                    if(rank > 0) teamrank[s-1] += rank;
+                }
+                else addteaminfo(ci->team);
+                remaining--;
             }
         }
-        return true;
     }
-    if(z_persistteams == 2)
+
+    // makes no sense in ctf mode, as custom teams are not allowed
+    if(z_persistteams == 2 && !m_ctf)
     {
-        if(m_ctf) return false;
         loopv(clients) if(clients[i]->team[0])
         {
             clientinfo *ci = clients[i];
@@ -107,37 +102,38 @@ bool z_autoteam()
             ci->state.timeplayed = -1;
             remaining--;
         }
-        for(int round = 0; remaining>=0; round++)
-        {
-            int first = round&1, second = (round+1)&1, selected = 0;
-            while(teamrank[first] <= teamrank[second])
-            {
-                float rank;
-                clientinfo *ci = choosebestclient(rank);
-                if(!ci) break;
-                if(smode && smode->hidefrags()) rank = 1;
-                else if(selected && rank<=0) break;
-                ci->state.timeplayed = -1;
-                team[first].add(ci);
-                if(rank>0) teamrank[first] += rank;
-                selected++;
-                if(rank<=0) break;
-            }
-            if(!selected) break;
-            remaining -= selected;
-        }
-        loopi(sizeof(team)/sizeof(team[0]))
-        {
-            addteaminfo(teamnames[i]);
-            loopvj(team[i])
-            {
-                clientinfo *ci = team[i][j];
-                if(!strcmp(ci->team, teamnames[i])) continue;
-                copystring(ci->team, teamnames[i], MAXTEAMLEN+1);
-                sendf(-1, 1, "riisi", N_SETTEAM, ci->clientnum, teamnames[i], -1);
-            }
-        }
-        return true;
     }
-    return false;
+
+    // default/fallback shuffler for clients we didn't touched above
+    for(int round = 0; remaining>=0; round++)
+    {
+        int first = round&1, second = (round+1)&1, selected = 0;
+        while(teamrank[first] <= teamrank[second])
+        {
+            float rank;
+            clientinfo *ci = choosebestclient(rank);
+            if(!ci) break;
+            if(smode && smode->hidefrags()) rank = 1;
+            else if(selected && rank<=0) break;
+            ci->state.timeplayed = -1;
+            team[first].add(ci);
+            if(rank>0) teamrank[first] += rank;
+            selected++;
+            if(rank<=0) break;
+        }
+        if(!selected) break;
+        remaining -= selected;
+    }
+
+    loopi(sizeof(team)/sizeof(team[0]))
+    {
+        addteaminfo(teamnames[i]);
+        loopvj(team[i])
+        {
+            clientinfo *ci = team[i][j];
+            if(!strcmp(ci->team, teamnames[i])) continue;
+            copystring(ci->team, teamnames[i], MAXTEAMLEN+1);
+            sendf(-1, 1, "riisi", N_SETTEAM, ci->clientnum, teamnames[i], -1);
+        }
+    }
 }
