@@ -295,7 +295,7 @@ float raycube(const vec &o, const vec &ray, float radius, int mode, int size, ex
             return min(dent, dist);
         }
 
-        ivec lo(x&(~0<<lshift), y&(~0<<lshift), z&(~0<<lshift));
+        ivec lo(x&(~0U<<lshift), y&(~0U<<lshift), z&(~0U<<lshift));
 
         if(!isempty(c))
         {
@@ -325,7 +325,7 @@ float shadowray(const vec &o, const vec &ray, float radius, int mode, extentity 
         DOWNOCTREE(shadowent, );
 
         cube &c = *lc;
-        ivec lo(x&(~0<<lshift), y&(~0<<lshift), z&(~0<<lshift));
+        ivec lo(x&(~0U<<lshift), y&(~0U<<lshift), z&(~0U<<lshift));
 
         if(!isempty(c) && !(c.material&MAT_ALPHA))
         {
@@ -380,7 +380,7 @@ float shadowray(ShadowRayCache *cache, const vec &o, const vec &ray, float radiu
         DOWNOCTREE(shadowent, );
 
         cube &c = *lc;
-        ivec lo(x&(~0<<lshift), y&(~0<<lshift), z&(~0<<lshift));
+        ivec lo(x&(~0U<<lshift), y&(~0U<<lshift), z&(~0U<<lshift));
 
         if(!isempty(c) && !(c.material&MAT_ALPHA))
         {
