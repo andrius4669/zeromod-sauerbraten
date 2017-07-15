@@ -28,6 +28,8 @@ my $autojoined;
 my %joinedchans;
 my $myircnick;
 
+my $skipstdin = 0;
+
 # whether nick is ignored. arguments: [nick]
 sub is_ignored_nick {
 	return 1 if defined($cfg{ignored_nicks}) and exists($cfg{ignored_nicks}->{$_[0]});
@@ -952,7 +954,6 @@ irc_reset;
 my $stdinbuf = '';
 
 my $asked_list = 0;
-my $skipstdin = 0;
 
 $skipstdin = $cfg{skipstdin} if defined($cfg{skipstdin});
 
