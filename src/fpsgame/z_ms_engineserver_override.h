@@ -71,6 +71,7 @@ struct msinfo
         if(wait || serveraddress.host == ENET_HOST_ANY || !enet_socket_bind(sock, &serveraddress))
         {
             enet_socket_set_option(sock, ENET_SOCKOPT_NONBLOCK, 1);
+            enet_socket_set_option(sock, ENET_SOCKOPT_KEEPALIVE, 1);
             if(wait)
             {
                 if(!connectwithtimeout(sock, mastername, masteraddress)) return sock;
