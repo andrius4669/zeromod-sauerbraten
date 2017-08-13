@@ -11,6 +11,7 @@ struct msinfo
     int masterport;
     ENetSocket mastersock;
     int lastupdatemaster, lastconnectmaster, masterconnecting, masterconnected;
+    // NOTE: masterconnected is also reused for tracking last registration input from masterserver, after it's been connected
     vector<char> masterout, masterin;
     int masteroutpos, masterinpos;
     bool allowupdatemaster;
@@ -117,9 +118,15 @@ struct msinfo
             while(args < end && iscubespace(*args)) args++;
 
             if(!strncmp(input, "failreg", cmdlen))
+            {
+                masterconnected = totalmillis ? totalmillis : 1;
                 conoutf(CON_ERROR, "master server (%s) registration failed: %s", mastername, args);
+            }
             else if(!strncmp(input, "succreg", cmdlen))
+            {
+                masterconnected = totalmillis ? totalmillis : 1;
                 conoutf("master server (%s) registration succeeded", mastername);
+            }
             else server::processmasterinput(masternum, input, cmdlen, args);
 
             masterinpos = end - masterin.getbuf();
@@ -130,6 +137,11 @@ struct msinfo
         if(masterinpos >= masterin.length())
         {
             masterin.setsize(0);
+            masterinpos = 0;
+        }
+        else if(masterinpos >= 1024)
+        {
+            masterin.remove(0, masterinpos);
             masterinpos = 0;
         }
     }
@@ -153,6 +165,11 @@ struct msinfo
             if(masteroutpos >= masterout.length())
             {
                 masterout.setsize(0);
+                masteroutpos = 0;
+            }
+            else if(masteroutpos >= 1024) // keep things tidy
+            {
+                masterout.remove(0, masteroutpos);
                 masteroutpos = 0;
             }
         }
@@ -180,6 +197,7 @@ struct msinfo
     {
         extern int serverport;
         if(!masterconnected && lastconnectmaster && totalmillis-lastconnectmaster <= 5*60*1000) return;
+        if(masterconnected && lastupdatemaster && lastupdatemaster-masterconnected > 0 && totalmillis-lastupdatemaster >= 5*60*1000) disconnectmaster();
         if(mastername[0] && allowupdatemaster)
         {
             requestmasterf("regserv %d\n", serverport);
