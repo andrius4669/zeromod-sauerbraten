@@ -103,12 +103,13 @@ void z_servcmd_pm(int argc, char **argv, int sender)
         return;
     }
 
-    if(!z_parseclient_verify(argv[1], cn, false, false, true))
+    ci = z_parseclient_return(argv[1], false, true);
+    if(!ci)
     {
         z_servcmd_unknownclient(argv[1], sender);
         return;
     }
-    ci = getinfo(cn);
+    cn = ci->clientnum;
 
     bool foundallows = ci->xi.allows.find((uchar)sender) >= 0;
     if(!foundallows && ci->spy && sci->privilege < PRIV_ADMIN)

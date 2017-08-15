@@ -32,6 +32,15 @@ bool z_parseclient_verify(const char *str, int &cn, bool allowall, bool allowbot
     return ci && ci->connected && (allowspy || !ci->spy);
 }
 
+clientinfo *z_parseclient_return(const char *str, bool allowbot, bool allowspy)
+{
+    int cn;
+    if(!z_parseclient(str, cn)) return NULL;
+    if(cn < 0) return NULL;
+    clientinfo *ci = allowbot ? getinfo(cn) : (clientinfo *)getclientinfo(cn);
+    return (ci && ci->connected && (allowspy || !ci->spy)) ? ci : NULL;
+}
+
 SVAR(servcmd_chars, "");
 
 bool z_servcmd_check(char *&text)

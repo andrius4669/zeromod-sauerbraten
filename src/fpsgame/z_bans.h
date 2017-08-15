@@ -244,7 +244,7 @@ static const char * const z_banstrings[] = { "ban", "specban", "muteban" };
 
 void z_servcmd_ban(int argc, char **argv, int sender)
 {
-    extern const char *colorname(clientinfo *ci, const char *name = NULL);
+    //extern const char *colorname(clientinfo *ci, const char *name = NULL);
     clientinfo *target, *ci = (clientinfo *)getclientinfo(sender);
     int bant, cn, time;
     if(argc <= 1) { z_servcmd_pleasespecifyclient(sender); return; }
@@ -351,6 +351,35 @@ void z_servcmd_ban(int argc, char **argv, int sender)
 SCOMMANDA(ban, PRIV_AUTH, z_servcmd_ban, 3);
 SCOMMANDA(specban, PRIV_AUTH, z_servcmd_ban, 3);
 SCOMMANDA(muteban, PRIV_AUTH, z_servcmd_ban, 3);
+
+void z_servcmd_kick(int argc, char **argv, int sender)
+{
+    clientinfo *target, *ci = (clientinfo *)getclientinfo(sender);
+    int cn;
+    if(argc <= 1) { z_servcmd_pleasespecifyclient(sender); return; }
+
+    target = z_parseclient_return(argv[1]);
+    if(!target)
+    {
+        z_servcmd_unknownclient(argv[1], sender);
+        return;
+    }
+    cn = target->clientnum;
+
+    if(target->local || cn == sender || (!ci->local && (target->privilege >= PRIV_ADMIN || target->privilege > ci->privilege)))
+    {
+        sendf(sender, 1, "ris", N_SERVMSG, "cannot kick specified client");
+        return;
+    }
+
+    const char *reason = argc > 2 ? argv[2] : NULL;
+    z_showkick(colorname(ci), ci, target, reason);
+    z_log_kick(ci, NULL, NULL, ci->privilege, target, reason);
+    disconnect_client(cn, DISC_KICK);
+    z_log_kickdone();
+}
+SCOMMANDA(kick, PRIV_AUTH, z_servcmd_kick, 2);
+SCOMMANDAH(disc, PRIV_AUTH, z_servcmd_kick, 2);
 
 void z_servcmd_ipban(int argc, char **argv, int sender)
 {

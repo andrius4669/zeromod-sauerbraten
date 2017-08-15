@@ -181,11 +181,13 @@ extern int findmaprotation(int mode, const char *map);
 // z_log
 extern void z_log_kick(clientinfo *actor, const char *aname, const char *adesc, int priv, clientinfo *victim, const char *reason);
 extern void z_log_kickdone();
+extern void z_showkick(const char *kicker, clientinfo *actor, clientinfo *vinfo, const char *reason);
 extern void z_showban(clientinfo *actor, const char *banstr, const char *victim, int bantime, const char *reason);
 
 
 extern bool z_parseclient(const char *str, int &cn);
 extern bool z_parseclient_verify(const char *str, int &cn, bool allowall, bool allowbot = false, bool allowspy = false);
+extern clientinfo *z_parseclient_return(const char *str, bool allowbot = false, bool allowspy = false);
 
 
 extern bool z_autoeditmute;

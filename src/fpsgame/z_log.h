@@ -54,7 +54,7 @@ SVAR(kick_style_normal_reason, "%k kicked %v because: %r");
 SVAR(kick_style_spy,           "%v was kicked");
 SVAR(kick_style_spy_reason,    "%v was kicked because: %r");
 
-static inline void z_showkick(const char *kicker, clientinfo *actor, clientinfo *vinfo, const char *reason)
+void z_showkick(const char *kicker, clientinfo *actor, clientinfo *vinfo, const char *reason)
 {
     string kickstr;
 
