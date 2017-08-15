@@ -75,7 +75,11 @@ void z_servcmd_ignore(int argc, char **argv, int sender)
             z_servcmd_unknownclient(argv[i+1], sender);
             continue;
         }
-        if(val) sci->xi.ignores.addunique((uchar)cn);
+        if(val)
+        {
+            sci->xi.ignores.addunique((uchar)cn);
+            sci->xi.allows.removeobj((uchar)cn);
+        }
         else sci->xi.ignores.removeobj((uchar)cn);
         sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("%s server messages from %s", val ? "ignoring" : "unignoring", colorname(getinfo(cn))));
     }
@@ -89,28 +93,49 @@ void z_servcmd_pm(int argc, char **argv, int sender)
     if(argc <= 1) { z_servcmd_pleasespecifyclient(sender); return; }
     if(argc <= 2) { z_servcmd_pleasespecifymessage(sender); return; }
     int cn;
+    clientinfo *sci, *ci;
+
+    sci = getinfo(sender);
+    if(!sci) return;
+    if(z_checkchatmute(sci))
+    {
+        sendf(sender, 1, "ris", N_SERVMSG, "your pms are muted");
+        return;
+    }
+
     if(!z_parseclient_verify(argv[1], cn, false, false, true))
     {
         z_servcmd_unknownclient(argv[1], sender);
         return;
     }
-    clientinfo *ci = getinfo(cn);
-    clientinfo *sci = getinfo(sender);
-    if(!ci || !sci) return;
+    ci = getinfo(cn);
 
-    if(z_checkchatmute(sci)) { sendf(sender, 1, "ris", N_SERVMSG, "your pms are muted"); return; }
-
-    if(ci->xi.ignores.find((uchar)sender) < 0)
+    bool foundallows = ci->xi.allows.find((uchar)sender) >= 0;
+    if(!foundallows && ci->spy && sci->privilege < PRIV_ADMIN)
     {
-        sendf(cn, 1, "ris", N_SERVMSG, tempformatstring("\f6pm: \f7%s \f5(%d)\f7: \f0%s", sci->name, sci->clientnum, argv[2]));
+        z_servcmd_unknownclient(argv[1], sender);
+        return;
     }
 
-    if(servcmd_pm_comfirmation)
+    sci->xi.allows.addunique((uchar)cn);
+
+    if(ci->xi.ignores.find((uchar)sender) >= 0)
+    {
+        sendf(sender, 1, "ris", N_SERVMSG, "your pms are ignored");
+        return;
+    }
+
+    if(!foundallows) ci->xi.allows.add((uchar)sender);
+
+    sendf(cn, 1, "ris", N_SERVMSG, tempformatstring("\f6pm: \f7%s \f5(%d)\f7: \f0%s", sci->name, sci->clientnum, argv[2]));
+
+    if(servcmd_pm_comfirmation && strcasecmp(argv[0], "qpm") != 0)
     {
         sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("your pm was successfully sent to %s \f5(%d)", ci->name, ci->clientnum));
     }
 }
 SCOMMANDA(pm, PRIV_NONE, z_servcmd_pm, 2);
+SCOMMANDA(qpm, PRIV_NONE, z_servcmd_pm, 2);
 
 void z_servcmd_interm(int argc, char **argv, int sender)
 {

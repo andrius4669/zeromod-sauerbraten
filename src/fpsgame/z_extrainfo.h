@@ -129,6 +129,7 @@ struct z_extrainfo
     bool ghost;
     uint tele_overflow, jump_overflow;
     vector<uchar> ignores;
+    vector<uchar> allows;
     int mapsent;    // used for autosendmap 2 not to resend map again
 
     z_extrainfo(): disc_reason(NULL), wlauth(NULL) {}
@@ -159,6 +160,7 @@ struct z_extrainfo
         authident = false;
         ghost = false;
         ignores.setsize(0);
+        allows.setsize(0);
     }
 
     void clearws()

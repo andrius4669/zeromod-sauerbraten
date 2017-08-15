@@ -2757,7 +2757,11 @@ namespace server
             clients.removeobj(ci);
             aiman::removeai(ci);
             if(!numclients(-1, false, true) && !numspies(-1, false, true)) noclients(); // bans clear when server empties
-            loopv(clients) clients[i]->xi.ignores.removeobj((uchar)n);
+            loopv(clients)
+            {
+                clients[i]->xi.ignores.removeobj((uchar)n);
+                clients[i]->xi.allows.removeobj((uchar)n);
+            }
             if(ci->local) checkpausegame();
             logoutf("disconnect: %s (%d) left", ci->name, ci->clientnum);
         }
