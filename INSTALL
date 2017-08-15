@@ -3,9 +3,11 @@ to compile this mod on unix-like systems you may need to install additional pack
 this mod requires zlib library and headers, and optionally geoip library and headers (for geoip support)
 on debian-like systems you may use:
 sudo apt-get install zlib1g-dev libgeoip-dev build-essential
-to compile this mod on unix-like systems, use:
-make -C src install_server
-modifying default server-init.cfg is not recomended, copy it to separate folder where you want to run server from, and edit it there.
+to compile this mod on unix-like systems, use: `make -C src install_server`
+or, if you want to build client too: `make -C src install`
+for cleanup, use: `make -C src clean; make -C src/enet clean`
+please be aware, that on enet changes build system will not detect difference and thus needs to be cleaned manually.
+modifying default server-init.cfg is not recomended, as it may introduce conflicts on later repository updates. copy it to separate folder where you want to run server from, and edit it there.
 install_server installs server binary into bin_unix/ directory, feel free to copy this binary whether you need.
 you can get list of server-init.cfg options by changing to src directory and typing:
 grep -E '(^COMMAND|^ICOMMAND|^VAR|^SVAR)' engine/server.cpp fpsgame/server.cpp fpsgame/aiman.h fpsgame/ctf.h fpsgame/z_*
