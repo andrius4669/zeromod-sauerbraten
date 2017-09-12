@@ -244,7 +244,6 @@ static const char * const z_banstrings[] = { "ban", "specban", "muteban" };
 
 void z_servcmd_ban(int argc, char **argv, int sender)
 {
-    //extern const char *colorname(clientinfo *ci, const char *name = NULL);
     clientinfo *target, *ci = (clientinfo *)getclientinfo(sender);
     int bant, cn, time;
     if(argc <= 1) { z_servcmd_pleasespecifyclient(sender); return; }
