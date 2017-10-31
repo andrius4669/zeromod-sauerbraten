@@ -162,7 +162,7 @@ void initsound()
     if(version.major == 2 && version.minor == 0 && version.patch == 6)
     {
         nosound = true;
-        if(sound) conoutf(CON_ERROR, "audio is broken in SDL 2.0.6");
+        conoutf(CON_ERROR, "audio is broken in SDL 2.0.6");
         return;
     }
 
