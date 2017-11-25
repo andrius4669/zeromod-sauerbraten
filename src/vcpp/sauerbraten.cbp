@@ -150,7 +150,6 @@
 		<Unit filename="..\engine\rendertarget.h" />
 		<Unit filename="..\engine\rendertext.cpp" />
 		<Unit filename="..\engine\renderva.cpp" />
-		<Unit filename="..\engine\scale.h" />
 		<Unit filename="..\engine\server.cpp" />
 		<Unit filename="..\engine\serverbrowser.cpp" />
 		<Unit filename="..\engine\shader.cpp" />

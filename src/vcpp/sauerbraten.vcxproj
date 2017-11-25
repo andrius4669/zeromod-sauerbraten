@@ -421,7 +421,6 @@
     <ClInclude Include="..\engine\obj.h" />
     <ClInclude Include="..\engine\ragdoll.h" />
     <ClInclude Include="..\engine\rendertarget.h" />
-    <ClInclude Include="..\engine\scale.h" />
     <ClInclude Include="..\engine\skelmodel.h" />
     <ClInclude Include="..\engine\smd.h" />
     <ClInclude Include="..\engine\textedit.h" />

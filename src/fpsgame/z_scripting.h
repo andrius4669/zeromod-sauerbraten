@@ -184,3 +184,80 @@ ICOMMAND(s_setteam, "isi", (int *cn, char *newteam, int *mode),
     aiman::changeteam(ci);
     sendf(-1, 1, "riisi", N_SETTEAM, ci->clientnum, ci->team, *mode);
 });
+
+ICOMMAND(s_getteam, "i", (int *cn),
+{
+    clientinfo *ci = getinfo(*cn);
+    result(ci ? ci->team : "");
+});
+
+ICOMMAND(s_listteam, "sbb", (char *team, int *spec, int *bots),
+{
+    string cn;
+    vector<char> buf;
+
+    loopv(clients) if(!strcmp(clients[i]->team, team))
+    {
+        if(clients[i]->state.state==CS_SPECTATOR && *spec <= 0)
+            continue;
+        if(clients[i]->state.aitype!=AI_NONE &&
+            (*bots <= 0 || clients[i]->state.state==CS_SPECTATOR))
+        {
+            continue;
+        }
+
+        if(buf.length()) buf.add(' ');
+        formatstring(cn, "%d", clients[i]->clientnum);
+        buf.put(cn, strlen(cn));
+    }
+    buf.add('\0');
+    result(buf.getbuf());
+});
+
+ICOMMAND(s_listteams, "bb", (int *spec, int *bots),
+{
+    vector<const char *> teams;
+    vector<char> buf;
+
+    loopv(clients)
+    {
+        const char *team = clients[i]->team;
+        if(!team[0]) continue;
+
+        if(clients[i]->state.state==CS_SPECTATOR && *spec <= 0)
+            continue;
+        if(clients[i]->state.aitype!=AI_NONE &&
+            (*bots <= 0 || clients[i]->state.state==CS_SPECTATOR))
+        {
+            continue;
+        }
+
+        loopvj(teams) if(!strcmp(teams[j], team)) goto nextteam;
+        teams.add(team);
+        if(buf.length()) buf.add(' ');
+        buf.put(team, strlen(team));
+    nextteam:
+        ;
+    }
+    buf.add('\0');
+    result(buf.getbuf());
+});
+
+ICOMMAND(s_countteam, "sb", (char *team, int *spec, int *bots),
+{
+    int count = 0;
+
+    loopv(clients) if(!strcmp(clients[i]->team, team))
+    {
+        if(clients[i]->state.state==CS_SPECTATOR && *spec <= 0)
+            continue;
+        if(clients[i]->state.aitype!=AI_NONE &&
+            (*bots <= 0 || clients[i]->state.state==CS_SPECTATOR))
+        {
+            continue;
+        }
+
+        ++count;
+    }
+    intret(count);
+});

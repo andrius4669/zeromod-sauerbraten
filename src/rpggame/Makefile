@@ -389,7 +389,7 @@ depend:
 ../engine/texture.o: ../shared/glexts.h ../shared/glemu.h ../shared/iengine.h
 ../engine/texture.o: ../shared/igame.h ../engine/world.h ../engine/octa.h
 ../engine/texture.o: ../engine/lightmap.h ../engine/bih.h ../engine/texture.h
-../engine/texture.o: ../engine/model.h ../engine/scale.h
+../engine/texture.o: ../engine/model.h
 ../engine/water.o: ../engine/engine.h ../shared/cube.h ../shared/tools.h
 ../engine/water.o: ../shared/geom.h ../shared/ents.h ../shared/command.h
 ../engine/water.o: ../shared/glexts.h ../shared/glemu.h ../shared/iengine.h

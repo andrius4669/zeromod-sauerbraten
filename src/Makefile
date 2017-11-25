@@ -481,7 +481,7 @@ engine/texture.o: engine/engine.h shared/cube.h shared/tools.h shared/geom.h
 engine/texture.o: shared/ents.h shared/command.h shared/glexts.h
 engine/texture.o: shared/glemu.h shared/iengine.h shared/igame.h
 engine/texture.o: engine/world.h engine/octa.h engine/lightmap.h engine/bih.h
-engine/texture.o: engine/texture.h engine/model.h engine/scale.h
+engine/texture.o: engine/texture.h engine/model.h
 engine/water.o: engine/engine.h shared/cube.h shared/tools.h shared/geom.h
 engine/water.o: shared/ents.h shared/command.h shared/glexts.h shared/glemu.h
 engine/water.o: shared/iengine.h shared/igame.h engine/world.h engine/octa.h

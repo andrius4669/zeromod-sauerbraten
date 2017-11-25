@@ -230,7 +230,6 @@
 		D1ECACF41129213900F58615 /* SDL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL.framework; path = Frameworks/SDL.framework; sourceTree = "<group>"; };
 		D1ECACF51129213900F58615 /* SDL_mixer.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL_mixer.framework; path = Frameworks/SDL_mixer.framework; sourceTree = "<group>"; };
 		D1ECACF61129213900F58615 /* SDL_image.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL_image.framework; path = Frameworks/SDL_image.framework; sourceTree = "<group>"; };
-		D1ECC14A0EB6969300ACE078 /* scale.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = scale.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -408,7 +407,6 @@
 				B9AC7A970D06DB44005506F8 /* octa.h */,
 				D1BAE4260F1F1B170077022C /* ragdoll.h */,
 				D116C0AA0D9F7DB500E8B945 /* rendertarget.h */,
-				D1ECC14A0EB6969300ACE078 /* scale.h */,
 				B91D40240D52600A004EF78A /* skelmodel.h */,
 				D19E776011977E82003753EF /* smd.h */,
 				D16C16910E04812500A522EB /* textedit.h */,

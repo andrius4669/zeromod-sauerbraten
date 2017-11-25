@@ -261,9 +261,6 @@
     <ClInclude Include="..\engine\rendertarget.h">
       <Filter>engine</Filter>
     </ClInclude>
-    <ClInclude Include="..\engine\scale.h">
-      <Filter>engine</Filter>
-    </ClInclude>
     <ClInclude Include="..\engine\skelmodel.h">
       <Filter>engine</Filter>
     </ClInclude>
