@@ -243,7 +243,7 @@ ICOMMAND(s_listteams, "bb", (int *spec, int *bots),
     result(buf.getbuf());
 });
 
-ICOMMAND(s_countteam, "sb", (char *team, int *spec, int *bots),
+ICOMMAND(s_countteam, "sbb", (char *team, int *spec, int *bots),
 {
     int count = 0;
 
