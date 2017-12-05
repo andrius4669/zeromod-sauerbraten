@@ -175,10 +175,8 @@ bool isvalidcube(const cube &c)
     genclipplanes(c, ivec(0, 0, 0), 256, p);
     loopi(8) // test that cube is convex
     {
-        vec v;
-        calcvert(c, ivec(0, 0, 0), 256, v, i);
-        if(!pointincube(p, v))
-            return false;
+        vec v = p.v[i];
+        loopj(p.size) if(p.p[j].dist(v)>1e-3f) return false;
     }
     return true;
 }

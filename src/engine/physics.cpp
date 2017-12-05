@@ -34,23 +34,6 @@ void resetclipplanes()
 
 /////////////////////////  ray - cube collision ///////////////////////////////////////////////
 
-static inline bool pointinbox(const vec &v, const vec &bo, const vec &br)
-{
-    return v.x <= bo.x+br.x &&
-           v.x >= bo.x-br.x &&
-           v.y <= bo.y+br.y &&
-           v.y >= bo.y-br.y &&
-           v.z <= bo.z+br.z &&
-           v.z >= bo.z-br.z;
-}
-
-bool pointincube(const clipplanes &p, const vec &v)
-{
-    if(!pointinbox(v, p.o, p.r)) return false;
-    loopi(p.size) if(p.p[i].dist(v)>1e-3f) return false;
-    return true;
-}
-
 #define INTERSECTPLANES(setentry, exit) \
     float enterdist = -1e16f, exitdist = 1e16f; \
     loopi(p.size) \
