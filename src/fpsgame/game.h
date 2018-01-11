@@ -163,7 +163,7 @@ static struct gamemodeinfo
 #define m_classicsp    (m_check(gamemode, M_CLASSICSP))
 
 // zeromod
-#define m_recordable   (m_mp(gamemode) && (!m_edit || isracemode())) // expect isracemode() to be avaiable in scope this going to be used in
+#define m_recordable   (m_mp(gamemode) && (!m_edit || isracemode())) // expect isracemode() to be available in scope this going to be used in
 #define m_wantents     (!m_edit || z_racemode) // expect z_racemode to be visible. can't use isracemode() because check happens before smode assignment
 
 enum { MM_AUTH = -1, MM_OPEN = 0, MM_VETO, MM_LOCKED, MM_PRIVATE, MM_PASSWORD, MM_START = MM_AUTH };

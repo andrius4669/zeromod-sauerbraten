@@ -277,14 +277,14 @@ struct raceservmode: servmode
             if(clients[i]->state.frags > 0) cl_finished++;
             else cl_unfinished++;
         }
-        uint pl_finished = 0, pl_avaiable = 0;
+        uint pl_finished = 0, pl_available = 0;
         loopv(race_winners)
         {
             if(race_winners[i].cn >= 0) pl_finished++;
-            else pl_avaiable++;
+            else pl_available++;
         }
         if((cl_finished + cl_unfinished) <= 0) return;  // don't end race if everyone leaves
-        if(cl_unfinished <= 0 || pl_avaiable <= 0)
+        if(cl_unfinished <= 0 || pl_available <= 0)
         {
             // enter finished state if there are no places left or everyone already finished race
             state = ST_FINISHED;
@@ -310,26 +310,26 @@ struct raceservmode: servmode
     {
         if(state != ST_STARTED && state != ST_FINISHED) return;
         if(ci->state.flags || !clientready(ci)) return; /* flags are reused for race cheating info */
-        int avaiable_place = -1;
+        int available_place = -1;
         loopv(race_winners)
         {
             int cn = race_winners[i].cn;
             if(cn == ci->clientnum && (!racemode_allowmultiplaces || race_winners[i].lifesequence == ci->state.lifesequence)) break;
             if(cn < 0)
             {
-                avaiable_place = i;
+                available_place = i;
                 break;
             }
         }
-        if(avaiable_place >= 0) loopv(raceends)
+        if(available_place >= 0) loopv(raceends)
         {
             z_raceendinfo &r = raceends[i];
-            if(r.place > avaiable_place && r.place > minraceend) continue;  /* don't skip if place is already minimal */
+            if(r.place > available_place && r.place > minraceend) continue;  /* don't skip if place is already minimal */
             if(!reached_raceend(r, newpos)) continue;
             int racemillis = 0;
             // leave lower places to allow others to win
             // remark: this is still illogical sometimes...
-            for(int j = race_winners.length()-1; j > avaiable_place; j--)
+            for(int j = race_winners.length()-1; j > available_place; j--)
             {
                 if(race_winners[j].cn == ci->clientnum && (!racemode_strict || !racemode_allowmultiplaces || race_winners[j].lifesequence == ci->state.lifesequence))
                 {
@@ -339,17 +339,17 @@ struct raceservmode: servmode
                 }
             }
             if(!racemillis) racemillis = totalmillis - ci->state.lastdeath;      /* lastdeath is reused for spawntime */
-            race_winners[avaiable_place].cn = ci->clientnum;
-            race_winners[avaiable_place].racemillis = racemillis;
-            race_winners[avaiable_place].lifesequence = ci->state.lifesequence;
+            race_winners[available_place].cn = ci->clientnum;
+            race_winners[available_place].racemillis = racemillis;
+            race_winners[available_place].lifesequence = ci->state.lifesequence;
 
             z_formattemplate ft[] =
             {
                 { 'C', "%s", (const void *)colorname(ci) },
                 { 'c', "%s", (const void *)ci->name },
                 { 'n', "%d", (const void *)(long)ci->clientnum },
-                { 'P', "%s", (const void *)placename(avaiable_place) },
-                { 'p', "%d", (const void *)(long)(avaiable_place+1) },
+                { 'P', "%s", (const void *)placename(available_place) },
+                { 'p', "%d", (const void *)(long)(available_place+1) },
                 { 't', "%s", (const void *)formatmillisecs(racemillis) },
                 { 0, NULL, NULL }
             };
@@ -357,7 +357,7 @@ struct raceservmode: servmode
             z_format(buf, sizeof(buf), racemode_style_enterplace, ft);
             if(buf[0]) sendservmsg(buf);
 
-            int plv = race_winners.length() - avaiable_place;
+            int plv = race_winners.length() - available_place;
             if(ci->state.frags < plv) updateclientfragsnum(*ci, plv);
 
             // possibly record it

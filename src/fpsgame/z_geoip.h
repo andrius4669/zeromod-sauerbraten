@@ -176,7 +176,7 @@ static void z_init_geoip()
 
     #ifndef GEOIP_OPENMODE
         #ifndef _WIN32
-            // only avaiable in unix systems
+            // only available in unix systems
             #define GEOIP_OPENMODE GEOIP_MMAP_CACHE
         #else
             #define GEOIP_OPENMODE GEOIP_INDEX_CACHE
@@ -407,7 +407,7 @@ void z_geoip_resolveclient(geoipstate &gs, enet_uint32 ip)
     switch(geoip_country_use_db)
     {
         case 0:
-            /* use country db when avaiable */
+            /* use country db when available */
             if(z_gi && country_id > 0)
             {
                 continent_code = GeoIP_continent_by_id(country_id);

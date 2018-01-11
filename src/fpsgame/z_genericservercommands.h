@@ -37,7 +37,7 @@ static void z_servcmd_commands(int argc, char **argv, int sender)
         else { cbufs[j].add(','); cbufs[j].add(' '); }
         cbufs[j].put(c.name, strlen(c.name));
     }
-    sendf(sender, 1, "ris", N_SERVMSG, "\f2avaiable server commands:");
+    sendf(sender, 1, "ris", N_SERVMSG, "\f2available server commands:");
     loopi(sizeof(cbufs)/sizeof(cbufs[0]))
     {
         if(cbufs[i].empty()) continue;

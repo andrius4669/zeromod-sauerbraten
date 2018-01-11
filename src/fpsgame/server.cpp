@@ -3989,6 +3989,17 @@ namespace server
     int masterport() { return SAUERBRATEN_MASTER_PORT; }
     int numchannels() { return 3; }
 
+    static bool ipinfoallowed(uint ip)
+    {
+        if(!serverpass[0] && m_mp(gamemode) && mastermode < MM_PRIVATE) return true;
+        loopv(clients) if(clients[i]->connected && clients[i]->state.aitype == AI_NONE)
+        {
+            if(getclientip(clients[i]->clientnum) == ip) return true;
+        }
+        loopv(allowedips) if(allowedips[i] == ip) return true;
+        return false;
+    }
+
     #include "extinfo.h"
 
     void serverinforeply(ucharbuf &req, ucharbuf &p)

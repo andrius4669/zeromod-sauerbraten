@@ -782,7 +782,7 @@ sub do_ircuser_command {
 		}
 	}
 	elsif($cmd eq 'help') {
-		return "avaiable commands: wall/announce, kick/k, kickban/kb, list/ls";
+		return "available commands: wall/announce, kick/k, kickban/kb, list/ls";
 	}
 	else { return("unknown command: $cmd"); }
 	return undef;
