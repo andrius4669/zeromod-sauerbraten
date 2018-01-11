@@ -136,8 +136,7 @@
                     if(!z_allowed ||
                         !(ci = getinfo(cn)) ||
                         !ci->connected ||
-                        (ci->state.aitype != AI_NONE && ci->state.state == CS_SPECTATOR) ||
-                        (!extinfo_showspy && ci->spy))
+                        (ci->spy && !extinfo_showspy))
                     {
                         putint(p, EXT_ERROR); //client requested by id was not found
                         sendserverinforeply(p);
