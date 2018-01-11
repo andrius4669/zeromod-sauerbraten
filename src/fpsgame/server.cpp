@@ -516,6 +516,7 @@ namespace server
     int curmaprotation = 0;
 
     VAR(lockmaprotation, 0, 0, 2);
+    VAR(restrictmapvote, 0, 0, 2);
 
     void maprotationreset()
     {
@@ -2241,7 +2242,9 @@ namespace server
             if(idx < 0) return;
             map = maprotations[idx].map;
         }
-        if(lockmaprotation && !ci->local && ci->privilege < (lockmaprotation > 1 ? PRIV_ADMIN : PRIV_MASTER) && findmaprotation(reqmode, map) < 0) 
+        if(!ci->local &&
+            ((restrictmapvote && ci->privilege < (restrictmapvote > 1 ? PRIV_ADMIN : PRIV_MASTER)) ||
+            (lockmaprotation && ci->privilege < (lockmaprotation > 1 ? PRIV_ADMIN : PRIV_MASTER) && findmaprotation(reqmode, map) < 0)))
         {
             sendf(sender, 1, "ris", N_SERVMSG, "This server has locked the map rotation.");
             return;
