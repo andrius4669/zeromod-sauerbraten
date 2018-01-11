@@ -3001,14 +3001,20 @@ namespace server
 
     void receivefile(int sender, uchar *data, int len)
     {
-        if(!m_edit || len <= 0 || len > maxsendmap << 20) return;
+        if(!m_edit || len <= 0) return;
+        if(len > maxsendmap << 20) { sendf(sender, 1, "ris", N_SERVMSG, "map is too big"); return; }
         clientinfo *ci = getinfo(sender);
         if(ci->state.state==CS_SPECTATOR && !ci->privilege && !ci->local) return;
         if(z_iseditmuted(ci)) { sendf(sender, 1, "ris", N_SERVMSG, "your sendmap was muted"); return; }
         if(mapdata) DELETEP(mapdata);
         mapdata = opentempfile("mapdata", "w+b");
         if(!mapdata) { sendf(sender, 1, "ris", N_SERVMSG, "failed to open temporary file for map"); return; }
-        mapdata->write(data, len);
+        if(mapdata->write(data, len) < size_t(len))
+        {
+            DELETEP(mapdata);
+            sendf(sender, 1, "ris", N_SERVMSG, "failed to write to temporary file for map");
+            return;
+        }
         sendservmsgf("[%s sent a map to server, \"/getmap\" to receive it]", colorname(ci));
     }
 
