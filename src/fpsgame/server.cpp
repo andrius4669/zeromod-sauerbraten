@@ -2997,9 +2997,11 @@ namespace server
     #include "z_rename.h"
     #include "z_mutes.h"
 
+    VAR(maxsendmap, 0, 4, 31);
+
     void receivefile(int sender, uchar *data, int len)
     {
-        if(!m_edit || len <= 0 || len > 4*1024*1024) return;
+        if(!m_edit || len <= 0 || len > maxsendmap << 20) return;
         clientinfo *ci = getinfo(sender);
         if(ci->state.state==CS_SPECTATOR && !ci->privilege && !ci->local) return;
         if(z_iseditmuted(ci)) { sendf(sender, 1, "ris", N_SERVMSG, "your sendmap was muted"); return; }
