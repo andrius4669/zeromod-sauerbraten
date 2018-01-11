@@ -152,7 +152,7 @@
                 if(ci) putint(q, ci->clientnum);
                 else if(z_allowed) loopv(clients)
                 {
-                    if((ci->state.aitype == AI_NONE || ci->state.state != CS_SPECTATOR) &&
+                    if((clients[i]->state.aitype == AI_NONE || clients[i]->state.state != CS_SPECTATOR) &&
                         (!clients[i]->spy || extinfo_showspy))
                     {
                         putint(q, clients[i]->clientnum);
@@ -163,7 +163,7 @@
                 if(ci) extinfoplayer(p, ci, z_extended);
                 else if(z_allowed) loopv(clients)
                 {
-                    if((ci->state.aitype == AI_NONE || ci->state.state != CS_SPECTATOR) &&
+                    if((clients[i]->state.aitype == AI_NONE || clients[i]->state.state != CS_SPECTATOR) &&
                         (!clients[i]->spy || extinfo_showspy))
                     {
                         extinfoplayer(p, clients[i], z_extended);
