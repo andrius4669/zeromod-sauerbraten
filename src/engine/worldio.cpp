@@ -2,7 +2,7 @@
 
 #include "engine.h"
 
-void validmapname(char *dst, const char *src, const char *prefix = NULL, const char *alt = "untitled", size_t maxlen = 100)
+void validmapname(char *dst, const char *src, const char *prefix, const char *alt, size_t maxlen)
 {
     if(prefix) while(*prefix) *dst++ = *prefix++;
     const char *start = dst;

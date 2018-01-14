@@ -16,6 +16,26 @@ ICOMMAND(serversavemap, "i", (int *i), z_enable_command("savemap", *i!=0));
 bool z_savemap(const char *mname, stream *&file = mapdata)
 {
     if(!file) return false;
+
+    string fname, vname;
+    validmapname(vname, mname, NULL, "");
+    // if mapname was modified it means it was not OK
+    size_t vlen = strlen(vname);
+    if(vlen != strlen(mname)) return false;
+    size_t plen = strlen(mappath);
+    if(plen+vlen+4 > sizeof(fname)-1) return false; // too long
+    memcpy(fname, mappath, plen);
+    int slash = 0;
+    if(plen && mappath[plen-1] != '/')
+    {
+        if(plen+1+vlen+4 > sizeof(fname)-1) return false; // too long
+        fname[plen] = '/';
+        slash = 1;
+    }
+    memcpy(&fname[plen+slash], vname, vlen);
+    memcpy(&fname[plen+slash+vlen], ".ogz", 4);
+    fname[plen+slash+vlen+4] = '\0';
+
     int len = (int)min(file->size(), stream::offset(INT_MAX));
     if(len <= 0 && len > 64<<20) return false;
     uchar *data = new uchar[len];
@@ -23,9 +43,7 @@ bool z_savemap(const char *mname, stream *&file = mapdata)
     file->seek(0, SEEK_SET);
     file->read(data, len);
     delete file;
-    string fname;
-    if(mappath[0]) formatstring(fname, "%s/%s.ogz", mappath, mname);
-    else formatstring(fname, "%s.ogz", mname);
+
     file = openrawfile(path(fname), "w+b");
     if(file)
     {
