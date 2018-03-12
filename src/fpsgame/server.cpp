@@ -2756,7 +2756,7 @@ namespace server
             if(smode) smode->leavegame(ci, true);
             ci->state.timeplayed += lastmillis - ci->state.lasttimeplayed;
             savescore(ci);
-            sendf(-1, 1, "ri2", N_CDIS, n);
+            sendf(!ci->spy ? -1 : n, 1, "ri2", N_CDIS, n);
             clients.removeobj(ci);
             aiman::removeai(ci);
             if(!numclients(-1, false, true) && !numspies(-1, false, true)) noclients(); // bans clear when server empties
