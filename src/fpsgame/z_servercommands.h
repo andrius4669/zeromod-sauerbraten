@@ -89,6 +89,12 @@ static void z_initservcommands()
     }
 }
 
+static z_servcmdinfo *z_servcmd_find(const char *cmd)
+{
+    loopv(z_servcommands) if(!strcasecmp(z_servcommands[i].name, cmd)) return &z_servcommands[i];
+    return NULL;
+}
+
 void z_servcmd_set_privilege(const char *cmd, int privilege)
 {
     if(!z_initedservcommands) z_initservcommands();

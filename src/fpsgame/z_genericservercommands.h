@@ -156,7 +156,9 @@ void z_servcmd_achat(int argc, char **argv, int sender)
 {
     if(argc <= 1) { z_servcmd_pleasespecifymessage(sender); return; }
     clientinfo *ci = getinfo(sender);
-    loopv(clients) if(clients[i]->state.aitype==AI_NONE && (clients[i]->local || clients[i]->privilege >= PRIV_ADMIN))
+    z_servcmdinfo *c = z_servcmd_find(argv[0]);
+    int priv = c ? c->privilege : PRIV_ADMIN;
+    loopv(clients) if(clients[i]->state.aitype==AI_NONE && (clients[i]->local || clients[i]->privilege >= priv))
     {
         sendf(clients[i]->clientnum, 1, "ris", N_SERVMSG, tempformatstring("\f6achat: \f7%s: \f0%s", colorname(ci), argv[1]));
     }
