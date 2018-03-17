@@ -147,7 +147,21 @@ static void z_clearentpatches(int n = 0)
     {
         z_entpatch &ep = z_entpatches.last();
         if(s_undoentpatches && (!ep.mapname[0] || !strcmp(ep.mapname, smapname)))
-            z_patchent(ep.i, ments.inrange(ep.i) ? ments[ep.i] : emptyent);
+        {
+            size_t i = ep.i;
+            z_patchent(i, ments.inrange(i) ? ments[i] : emptyent);
+            if(sents.inrange(i))
+            {
+                int type = ments.inrange(i) ? ments[i].type : NOTUSED;
+                sents[i].type = type;
+                bool canspawn = canspawnitem(type);
+                if(canspawn ? !sents[i].spawned : (sents[i].spawned || sents[i].spawntime))
+                {
+                    sents[i].spawntime = canspawn ? 1 : 0;
+                    sents[i].spawned = false;
+                }
+            }
+        }
         z_entpatches.drop();
     }
     z_sendpatchpacket(NULL, s_patchreliable > 0);
@@ -177,19 +191,35 @@ VAR(s_patchadd, 0, 1, 1); // whether to add patch to list or not
 
 void s_patchent(char *name, int *id, float *x, float *y, float *z, int *type, int *a1, int *a2, int *a3, int *a4, int *a5)
 {
+    int i = *id;
+    int typ = *type;
+
     z_entpatch &ep = z_entpatches.add();
     copystring(ep.mapname, name);
-    ep.i = *id;
+    ep.i = i;
     ep.e.o.x = *x;
     ep.e.o.y = *y;
     ep.e.o.z = *z;
-    ep.e.type = *type;
+    ep.e.type = typ;
     ep.e.attr1 = *a1;
     ep.e.attr2 = *a2;
     ep.e.attr3 = *a3;
     ep.e.attr4 = *a4;
     ep.e.attr5 = *a5;
     ep.e.reserved = 0;
+
+    bool canspawn = canspawnitem(typ);
+    if(sents.inrange(i) || canspawn)
+    {
+        const server_entity se = { NOTUSED, 0, false };
+        while(sents.length() <= i) sents.add(se);
+        sents[i].type = typ;
+        if(canspawn ? !sents[i].spawned : (sents[i].spawned || sents[i].spawntime))
+        {
+            sents[i].spawntime = canspawn ? 1 : 0;
+            sents[i].spawned = false;
+        }
+    }
 
     if(s_autosendpatch && (!*name || !strcmp(name, smapname)))
     {
