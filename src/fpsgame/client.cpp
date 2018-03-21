@@ -1244,6 +1244,8 @@ namespace game
 
     extern int deathscore;
 
+    VARP(antirename, 0, 0, 1);
+
     void parsemessages(int cn, fpsent *d, ucharbuf &p)
     {
         static char text[MAXTRANS];
@@ -1418,6 +1420,12 @@ namespace game
                     if(!text[0]) copystring(text, "unnamed");
                     if(strcmp(text, d->name))
                     {
+                        if(d == player1 && antirename)
+                        {
+                            conoutf("server tried to rename to %s, rejecting", colorname(d, text));
+                            addmsg(N_SWITCHNAME, "rs", player1->name);
+                            break;
+                        }
                         if(!isignored(d->clientnum)) conoutf("%s is now known as %s", colorname(d), colorname(d, text));
                         copystring(d->name, text, MAXNAMELEN+1);
                     }
