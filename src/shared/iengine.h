@@ -440,6 +440,8 @@ extern void cleanragdoll(dynent *d);
 #define MAXTRANS 5000                  // max amount of data to swallow in 1 go
 
 extern int maxclients;
+extern volatile bool quitserver;
+extern bool quitwhenempty;
 
 enum { DISC_NONE = 0, DISC_EOP, DISC_LOCAL, DISC_KICK, DISC_MSGERR, DISC_IPBAN, DISC_PRIVATE, DISC_MAXCLIENTS, DISC_TIMEOUT, DISC_OVERFLOW, DISC_PASSWORD, DISC_NUM,
        DISC_ENET_TIMEOUT, DISC_ENET_ERROR, DISC_NUM2 };

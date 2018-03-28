@@ -183,3 +183,9 @@ void z_servcmd_reqauth(int argc, char **argv, int sender)
     else loopv(clients) if(clients[i]->state.aitype==AI_NONE) sendf(clients[i]->clientnum, 1, "ris", N_REQAUTH, authdesc);
 }
 SCOMMANDA(reqauth, PRIV_ADMIN, z_servcmd_reqauth, 2);
+
+static void z_quitwhenempty_trigger(int type)
+{
+    if(quitwhenempty) quitserver = true;
+}
+Z_TRIGGER(z_quitwhenempty_trigger, Z_TRIGGER_NOCLIENTS);

@@ -5,6 +5,8 @@
 
 volatile bool reloadcfg = false, quitserver = false;
 
+bool quitwhenempty = false;
+
 #define LOGSTRLEN 512
 
 static FILE *logfile = NULL;
@@ -1068,6 +1070,9 @@ void signalhandler(int signum)
         case SIGUSR1:
             reloadcfg = true;
             break;
+        case SIGUSR2:
+            quitwhenempty = true;
+            break;
     }
 }
 #endif
@@ -1100,6 +1105,7 @@ void rundedicatedserver()
     signal(SIGINT,  signalhandler);
     signal(SIGHUP,  signalhandler);
     signal(SIGUSR1, signalhandler);
+    signal(SIGUSR2, signalhandler);
     for(;;)
     {
         if(quitserver) { stopdedicatedserver(); exit(EXIT_SUCCESS); }
