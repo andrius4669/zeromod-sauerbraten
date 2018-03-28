@@ -43,13 +43,13 @@ static void z_servcmd_servname(int argc, char **argv, int sender)
     if(argc < 2)
     {
         memset(userserverdesc, 0, sizeof(userserverdesc));
-        sendservmsgf("%s unset servname", colorname(getinfo(sender)));
+        sendservmsgf("%s unset serverdesc", colorname(getinfo(sender)));
     }
     else
     {
         if(serverdescuserfilter) filtertext(userserverdesc, argv[1]);
         else copystring(userserverdesc, argv[1]);
-        sendservmsgf("%s set servname to %s", colorname(getinfo(sender)), userserverdesc);
+        sendservmsgf("%s set serverdesc to %s", colorname(getinfo(sender)), userserverdesc);
     }
     z_serverdesc_recompute();
     z_serverdesc_broadcast();
