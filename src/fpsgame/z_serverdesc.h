@@ -2,7 +2,7 @@
 static string userserverdesc;
 static string computedserverdesc[2]; // 0 - unfiltered, 1 - filtered
 
-SVAR(serverdesctmpl, "%s"); // template to use with user settable stuff
+SVARF(serverdesctmpl, "%s", z_serverdescchanged()); // template to use with user settable stuff
 VAR(serverdescfilter, 0, 0, 1); // whether stuff sent to serverlist is filtered
 VAR(serverdescuserfilter, 0, 1, 1); // whether user settable stuff is filtered
 
@@ -11,8 +11,10 @@ static inline const char *z_serverdesc(bool shouldfilter)
     return computedserverdesc[shouldfilter && serverdescfilter];
 }
 
-static void z_serverdesc_recompute()
+static bool z_serverdesc_recompute()
 {
+    string oldcomputed;
+    memcpy(oldcomputed, computedserverdesc[0], sizeof(oldcomputed));
     if(!userserverdesc[0]) copystring(computedserverdesc[0], serverdesc);
     else
     {
@@ -24,6 +26,7 @@ static void z_serverdesc_recompute()
         z_format(computedserverdesc[0], sizeof(computedserverdesc[0]), serverdesctmpl, tmp);
     }
     filtertext(computedserverdesc[1], computedserverdesc[0]);
+    return strcmp(computedserverdesc[0], oldcomputed) != 0;
 }
 
 static void z_serverdesc_broadcast()
@@ -51,8 +54,7 @@ static void z_servcmd_servname(int argc, char **argv, int sender)
         else copystring(userserverdesc, argv[1]);
         sendservmsgf("%s set serverdesc to %s", colorname(getinfo(sender)), userserverdesc);
     }
-    z_serverdesc_recompute();
-    z_serverdesc_broadcast();
+    if(z_serverdesc_recompute()) z_serverdesc_broadcast();
 }
 SCOMMANDAH(servname, ZC_DISABLED | PRIV_AUTH, z_servcmd_servname, 1);
 SCOMMANDAH(servdesc, ZC_DISABLED | PRIV_AUTH, z_servcmd_servname, 1);
@@ -62,8 +64,7 @@ SCOMMANDA(serverdesc, ZC_DISABLED | PRIV_AUTH, z_servcmd_servname, 1);
 
 static void z_serverdescchanged()
 {
-    z_serverdesc_recompute();
-    z_serverdesc_broadcast();
+    if(z_serverdesc_recompute()) z_serverdesc_broadcast();
 }
 
 static void z_serverdesc_trigger(int type)
