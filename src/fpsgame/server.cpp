@@ -686,7 +686,7 @@ namespace server
     VAR(restrictpausegame, 0, 1, 1);
     VAR(restrictgamespeed, 0, 1, 1);
 
-    SVAR(serverdesc, "");
+    SVARF(serverdesc, "", z_serverdescchanged());
     SVAR(serverpass, "");
     SVAR(adminpass, "");
     VARF(publicserver, 0, 0, 2, {
@@ -1622,11 +1622,11 @@ namespace server
         }
 
         uchar operator[](int msg) const { return msg >= 0 && msg < NUMMSG ? msgmask[msg] : 0; }
-    } msgfilter(-1, N_CONNECT, N_SERVINFO, N_INITCLIENT, N_WELCOME, N_MAPCHANGE, N_SERVMSG, N_DAMAGE, N_HITPUSH, N_SHOTFX, N_EXPLODEFX, N_DIED, N_SPAWNSTATE, N_FORCEDEATH, N_TEAMINFO, N_ITEMACC, N_ITEMSPAWN, N_TIMEUP, N_CDIS, N_CURRENTMASTER, N_PONG, N_RESUME, N_BASESCORE, N_BASEINFO, N_BASEREGEN, N_ANNOUNCE, N_SENDDEMOLIST, N_SENDDEMO, N_DEMOPLAYBACK, N_SENDMAP, N_DROPFLAG, N_SCOREFLAG, N_RETURNFLAG, N_RESETFLAG, N_INVISFLAG, N_CLIENT, N_AUTHCHAL, N_INITAI, N_EXPIRETOKENS, N_DROPTOKENS, N_STEALTOKENS, N_DEMOPACKET, -2, N_REMIP, N_NEWMAP, N_GETMAP, N_SENDMAP, N_CLIPBOARD, -3, N_EDITENT, N_EDITF, N_EDITT, N_EDITM, N_FLIP, N_COPY, N_PASTE, N_ROTATE, N_REPLACE, N_DELCUBE, N_EDITVAR,
+    } msgfilter(-1, N_SERVINFO, N_INITCLIENT, N_WELCOME, N_MAPCHANGE, N_SERVMSG, N_DAMAGE, N_HITPUSH, N_SHOTFX, N_EXPLODEFX, N_DIED, N_SPAWNSTATE, N_FORCEDEATH, N_TEAMINFO, N_ITEMACC, N_ITEMSPAWN, N_TIMEUP, N_CDIS, N_CURRENTMASTER, N_PONG, N_RESUME, N_BASESCORE, N_BASEINFO, N_BASEREGEN, N_ANNOUNCE, N_SENDDEMOLIST, N_SENDDEMO, N_DEMOPLAYBACK, N_SENDMAP, N_DROPFLAG, N_SCOREFLAG, N_RETURNFLAG, N_RESETFLAG, N_INVISFLAG, N_CLIENT, N_AUTHCHAL, N_INITAI, N_EXPIRETOKENS, N_DROPTOKENS, N_STEALTOKENS, N_DEMOPACKET, -2, N_REMIP, N_NEWMAP, N_GETMAP, N_SENDMAP, N_CLIPBOARD, -3, N_EDITENT, N_EDITF, N_EDITT, N_EDITM, N_FLIP, N_COPY, N_PASTE, N_ROTATE, N_REPLACE, N_DELCUBE, N_EDITVAR,
 #ifndef OLDPROTO
                 N_EDITVSLOT, N_UNDO, N_REDO,
 #endif
-                -4, N_POS, -5, N_TELEPORT, N_JUMPPAD, N_ITEMPICKUP, NUMMSG),
+                -4, N_CONNECT, N_POS, -5, N_TELEPORT, N_JUMPPAD, N_ITEMPICKUP, NUMMSG),
       connectfilter(-1, N_CONNECT, -2, N_AUTHANS, -3, N_PING, -4, N_AUTHTRY, NUMMSG);
 
     int checktype(int type, clientinfo *ci)
@@ -2697,7 +2697,7 @@ namespace server
 
     void sendservinfo(clientinfo *ci)
     {
-        sendf(ci->clientnum, 1, "ri5ss", N_SERVINFO, ci->clientnum, PROTOCOL_VERSION, ci->sessionid, serverpass[0] ? 1 : 0, serverdesc, serverauth);
+        sendf(ci->clientnum, 1, "ri5ss", N_SERVINFO, ci->clientnum, PROTOCOL_VERSION, ci->sessionid, serverpass[0] ? 1 : 0, z_serverdesc(false), serverauth);
     }
 
     void noclients()
@@ -3952,6 +3952,16 @@ namespace server
             }
 #endif
 
+            case N_CONNECT:
+                // can happen because we abuse N_SERVINFO
+                // discard everything
+                getstring(text, p); // playername
+                (void) getint(p); // playermodel
+                getstring(text, p); // hashed password
+                getstring(text, p); // authdesc
+                getstring(text, p); // authname
+                break;
+
             case N_SOUND:
                 if(z_allowsound(ci, cq, getint(p))) { QUEUE_AI; QUEUE_MSG; }
                 break;
@@ -4036,7 +4046,7 @@ namespace server
             putint(p, gamespeed);
         }
         sendstring(smapname, p);
-        sendstring(serverdesc, p);
+        sendstring(z_serverdesc(true), p);
         sendserverinforeply(p);
     }
 
@@ -4054,5 +4064,6 @@ namespace server
     #include "z_slay.h"
     #include "z_spy.h"
     #include "z_talkbot.h"
+    #include "z_serverdesc.h"
 }
 
