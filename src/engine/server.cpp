@@ -550,8 +550,8 @@ void checkserversockets()        // reply all server info requests
     ENET_SOCKETSET_ADD(readset, pongsock);
     loopv(mss) if(mss[i].mastersock != ENET_SOCKET_NULL)
     {
-        ENetSocket &mastersock = mss[i].mastersock;
-        int &masterconnected = mss[i].masterconnected;
+        ENetSocket mastersock = mss[i].mastersock;
+        int masterconnected = mss[i].masterconnected;
         maxsock = max(maxsock, mastersock);
         ENET_SOCKETSET_ADD(readset, mastersock);
         if(!masterconnected) ENET_SOCKETSET_ADD(writeset, mastersock);
@@ -562,7 +562,11 @@ void checkserversockets()        // reply all server info requests
         ENET_SOCKETSET_ADD(readset, lansock);
     }
 #ifndef WIN32
-    if(serveracceptstdin) ENET_SOCKETSET_ADD(readset, STDIN_FILENO);
+    if(serveracceptstdin)
+    {
+        maxsock = max(maxsock, STDIN_FILENO);
+        ENET_SOCKETSET_ADD(readset, STDIN_FILENO);
+    }
 #endif
     if(enet_socketset_select(maxsock, &readset, &writeset, 0) <= 0) return;
 
@@ -1097,7 +1101,12 @@ void rundedicatedserver()
 			DispatchMessage(&msg);
 		}
 		if(quitserver) { stopdedicatedserver(); exit(EXIT_SUCCESS); }
-		if(reloadcfg) { reloadcfg = false; logoutf("reloading server configuration"); execfile("server-init.cfg", false); }
+		if(reloadcfg)
+		{
+			reloadcfg = false;
+			logoutf("reloading server configuration");
+			execfile("server-init.cfg", false);
+		}
 		serverslice(true, 5);
 	}
 #else
@@ -1109,7 +1118,12 @@ void rundedicatedserver()
     for(;;)
     {
         if(quitserver) { stopdedicatedserver(); exit(EXIT_SUCCESS); }
-        if(reloadcfg) { reloadcfg = false; logoutf("reloading server configuration"); execfile("server-init.cfg", false); }
+        if(reloadcfg)
+        {
+            reloadcfg = false;
+            logoutf("reloading server configuration");
+            execfile("server-init.cfg", false);
+        }
         serverslice(true, 5);
     }
 #endif
@@ -1201,11 +1215,13 @@ void startlistenserver(int *usemaster)
     allowupdatemaster = *usemaster>0 ? 1 : 0;
     if(mss.length() > 1)
     {
+        // ignore setting when there are multiple masterservers set up
         allowupdatemaster = 0;
         loopv(mss) if(mss[i].allowupdatemaster) { allowupdatemaster = 1; break; }
     }
     else if(mss.empty())
     {
+        // allowupdatemaster true is default
         if(allowupdatemaster) mss.add();
     }
     else mss[0].allowupdatemaster = allowupdatemaster;
