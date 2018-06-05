@@ -175,20 +175,20 @@ ICOMMAND(s_setteam, "isi", (int *cn, char *newteam, int *mode),
     string team;
     filtertext(team, newteam, false, false, MAXTEAMLEN);
     clientinfo *ci = getinfo(*cn);
-    if(!m_teammode || !team[0] || !ci || !ci->connected || !strcmp(ci->team, team) || ci->spy) return;
+    if(!m_teammode || !team[0] || !ci || !ci->connected || !strcmp(ci->team, team)) return;
     if((!smode || smode->canchangeteam(ci, ci->team, team)) && addteaminfo(team))
     {
         if(ci->state.state==CS_ALIVE) suicide(ci);
         copystring(ci->team, team, MAXTEAMLEN+1);
     }
     aiman::changeteam(ci);
-    sendf(-1, 1, "riisi", N_SETTEAM, ci->clientnum, ci->team, *mode);
+    sendf(!ci->spy ? -1 : ci->ownernum, 1, "riisi", N_SETTEAM, ci->clientnum, ci->team, *mode);
 });
 
 ICOMMAND(s_getteam, "i", (int *cn),
 {
     clientinfo *ci = getinfo(*cn);
-    result(ci ? ci->team : "");
+    result(m_teammode && ci ? ci->team : "");
 });
 
 ICOMMAND(s_listteam, "sbb", (char *team, int *spec, int *bots),
@@ -196,7 +196,7 @@ ICOMMAND(s_listteam, "sbb", (char *team, int *spec, int *bots),
     string cn;
     vector<char> buf;
 
-    loopv(clients) if(!strcmp(clients[i]->team, team))
+    if(m_teammode && team[0]) loopv(clients) if(!strcmp(clients[i]->team, team))
     {
         if(clients[i]->state.state==CS_SPECTATOR && *spec <= 0)
             continue;
@@ -219,7 +219,7 @@ ICOMMAND(s_listteams, "bb", (int *spec, int *bots),
     vector<const char *> teams;
     vector<char> buf;
 
-    loopv(clients)
+    if(m_teammode) loopv(clients)
     {
         const char *team = clients[i]->team;
         if(!team[0]) continue;
@@ -247,7 +247,7 @@ ICOMMAND(s_countteam, "sbb", (char *team, int *spec, int *bots),
 {
     int count = 0;
 
-    loopv(clients) if(!strcmp(clients[i]->team, team))
+    if(m_teammode && team[0]) loopv(clients) if(!strcmp(clients[i]->team, team))
     {
         if(clients[i]->state.state==CS_SPECTATOR && *spec <= 0)
             continue;
