@@ -3,6 +3,9 @@
 #endif
 #define Z_PROTECTTEAMSCORES_H
 
+// 0 - allow all
+// 1 - don't allow players to take points they didn't earn
+// 2 - simpler/stupider checking using frags counter. not recommended.
 VAR(protectteamscores, 0, 0, 2);
 
 static void z_pruneteaminfos(hashset<teaminfo> *ti)

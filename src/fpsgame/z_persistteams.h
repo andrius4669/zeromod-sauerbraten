@@ -29,7 +29,7 @@ SCOMMANDA(persist, PRIV_MASTER, z_servcmd_persistteams, 1);
 
 static int z_checkstandardteam(const char *team, const char * const *teamnames)
 {
-    loopi(2) if(!strcmp(team, teamnames[i])) return i+1;
+    loopi(2) if(teamnames[i] && !strcmp(team, teamnames[i])) return i+1;
     return 0;
 }
 
@@ -47,7 +47,8 @@ static void autoteam()
             // need some special magic with ctf mode, as it doesn't allow custom teams
             string sttnamebufs[2] = { {0}, {0} };
             char * const sttnames[2] = { sttnamebufs[0], sttnamebufs[1] };
-            for(int i = 0; i < remaining && !*sttnames[0] && !*sttnames[1]; ++i) if(clients[i]->team[0])
+            // pre-fill masks with normal names, if possible
+            for(int i = 0; i < remaining && (!*sttnames[0] || !*sttnames[1]); ++i) if(clients[i]->team[0])
             {
                 int s = z_checkstandardteam(clients[i]->team, teamnames);
                 if(s > 0 && !*sttnames[s-1]) copystring(sttnames[s-1], teamnames[s-1], MAXTEAMLEN+1);

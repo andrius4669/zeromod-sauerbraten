@@ -33,6 +33,7 @@
     VAR(extinfoip, 0, 0, 1);
 
     VAR(extinfo_enable, 0, 1, 1);           // enable extinfo functionality
+    VAR(extinfo_showname, 0, 1, 1);         // show names of clients
     VAR(extinfo_showpriv, 0, 1, 2);         // show privileges of clients
     VAR(extinfo_showspy, 0, 0, 1);          // show spy clients
     VAR(extinfo_ident, 0, 0, 1);            // enable mod identification
@@ -45,7 +46,7 @@
         putint(q, EXT_PLAYERSTATS_RESP_STATS); // send player stats following
         putint(q, ci->clientnum); //add player id
         putint(q, ci->ping);
-        sendstring(ci->name, q);
+        sendstring(extinfo_showname ? ci->name : "", q);
         sendstring(ci->team, q);
         putint(q, ci->state.frags);
         putint(q, (m_ctf || m_collect) ? ci->state.flags : 0);

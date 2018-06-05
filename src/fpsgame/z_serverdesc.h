@@ -36,7 +36,7 @@ static void z_serverdesc_broadcast()
         clientinfo &ci = *clients[i];
         if(ci.state.aitype == AI_NONE)
         {
-            sendf(ci.clientnum, 1, "ri5ss", N_SERVINFO, ci.clientnum, PROTOCOL_VERSION, ci.clientnum, 0, z_serverdesc(false), serverauth);
+            sendf(ci.clientnum, 1, "ri5ss", N_SERVINFO, ci.clientnum, PROTOCOL_VERSION, ci.sessionid, 0, z_serverdesc(false), serverauth);
         }
     }
 }

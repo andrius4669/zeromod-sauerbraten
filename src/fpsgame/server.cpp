@@ -2282,7 +2282,9 @@ namespace server
     }
 
     #include "z_awards.h"
+
     VAR(serverintermission, 1, 10, 3600);
+
     void checkintermission()
     {
         if(gamemillis >= gamelimit && !interm)
