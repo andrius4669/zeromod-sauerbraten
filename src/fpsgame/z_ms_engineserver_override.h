@@ -11,6 +11,7 @@ struct msinfo
     int masterport;
     ENetSocket mastersock;
     int lastupdatemaster, lastconnectmaster, masterconnecting, masterconnected;
+    int reconnectdelay;
     // NOTE: masterconnected is also reused for tracking last registration input from masterserver, after it's been connected
     vector<char> masterout, masterin;
     int masteroutpos, masterinpos;
@@ -26,7 +27,7 @@ struct msinfo
     int banmode;
 
     msinfo(): masterport(server::masterport()), mastersock(ENET_SOCKET_NULL),
-        lastupdatemaster(0), lastconnectmaster(0), masterconnecting(0), masterconnected(0),
+        lastupdatemaster(0), lastconnectmaster(0), masterconnecting(0), masterconnected(0), reconnectdelay(0),
         masteroutpos(0), masterinpos(0), allowupdatemaster(true), masternum(-1),
         masterauthpriv(-1), masterauthpriv_allow(false), networkident(NULL),
         whitelistauth(NULL), banmessage(NULL), minauthpriv(0), maxauthpriv(3), banmode(1)
@@ -90,6 +91,12 @@ struct msinfo
             mastersock = connectmaster(false);
             if(mastersock == ENET_SOCKET_NULL) return false;
             lastconnectmaster = masterconnecting = totalmillis ? totalmillis : 1;
+            if(!reconnectdelay) reconnectdelay = 2000;
+            else
+            {
+                reconnectdelay += reconnectdelay/2;
+                if(reconnectdelay > 5*60*1000) reconnectdelay = 5*60*1000;
+            }
         }
 
         if(masterout.length() >= 4096) return false;
@@ -120,12 +127,14 @@ struct msinfo
 
             if(!strncmp(input, "failreg", cmdlen))
             {
-                masterconnected = totalmillis ? totalmillis : 1;
+                //masterconnected = totalmillis ? totalmillis : 1;
                 conoutf(CON_ERROR, "master server (%s) registration failed: %s", mastername, args);
+                disconnectmaster();
             }
             else if(!strncmp(input, "succreg", cmdlen))
             {
                 masterconnected = totalmillis ? totalmillis : 1;
+                reconnectdelay = 0;
                 conoutf("master server (%s) registration succeeded", mastername);
             }
             else server::processmasterinput(masternum, input, cmdlen, args);
@@ -197,7 +206,7 @@ struct msinfo
     void updatemasterserver()
     {
         extern int serverport;
-        if(!masterconnected && lastconnectmaster && totalmillis-lastconnectmaster <= 5*60*1000) return;
+        if(!masterconnected && lastconnectmaster && totalmillis-lastconnectmaster <= reconnectdelay) return;
         if(masterconnected && lastupdatemaster && lastupdatemaster-masterconnected > 0 && totalmillis-lastupdatemaster >= 5*60*1000) disconnectmaster();
         if(mastername[0] && allowupdatemaster)
         {
@@ -239,6 +248,7 @@ SVARF(mastername, server::defaultmaster(),
     if(!mss.inrange(currmss)) addms();
     mss[currmss].disconnectmaster();
     mss[currmss].lastconnectmaster = 0;
+    mss[currmss].reconnectdelay = 0;
     copystring(mss[currmss].mastername, mastername);
 });
 
@@ -247,6 +257,7 @@ VARF(masterport, 1, server::masterport(), 0xFFFF,
     if(!mss.inrange(currmss)) addms();
     mss[currmss].disconnectmaster();
     mss[currmss].lastconnectmaster = 0;
+    mss[currmss].reconnectdelay = 0;
     mss[currmss].masterport = masterport;
 });
 
