@@ -258,20 +258,26 @@ cube2font: shared/cube2font.o
 	$(CXX) $(CXXFLAGS) -o cube2font shared/cube2font.o `freetype-config --libs` -lz
 
 install_client: client
-	cp sauer_client	../bin_unix/$(PLATFORM_PREFIX)_client
+	cp sauer_client	../bin_unix/$(PLATFORM_PREFIX)_client.new
 ifneq (,$(STRIP))
-	$(STRIP) ../bin_unix/$(PLATFORM_PREFIX)_client
+	$(STRIP) ../bin_unix/$(PLATFORM_PREFIX)_client.new
 endif
+	$(MV) -f ../bin_unix/$(PLATFORM_PREFIX)_client.new ../bin_unix/$(PLATFORM_PREFIX)_client
+
 install_server: server
-	cp sauer_server ../bin_unix/$(PLATFORM_PREFIX)_server
+	cp sauer_server ../bin_unix/$(PLATFORM_PREFIX)_server.new
 ifneq (,$(STRIP))
-	$(STRIP) ../bin_unix/$(PLATFORM_PREFIX)_server
+	$(STRIP) ../bin_unix/$(PLATFORM_PREFIX)_server.new
 endif
+	$(MV) -f ../bin_unix/$(PLATFORM_PREFIX)_server.new ../bin_unix/$(PLATFORM_PREFIX)_server
+
 install_master: master
-	cp sauer_master ../bin_unix/$(PLATFORM_PREFIX)_master
+	cp sauer_master ../bin_unix/$(PLATFORM_PREFIX)_master.new
 ifneq (,$(STRIP))
-	$(STRIP) ../bin_unix/$(PLATFORM_PREFIX)_master
+	$(STRIP) ../bin_unix/$(PLATFORM_PREFIX)_master.new
 endif
+	$(MV) -f ../bin_unix/$(PLATFORM_PREFIX)_master.new ../bin_unix/$(PLATFORM_PREFIX)_master
+
 install: install_client install_server
 endif
 
