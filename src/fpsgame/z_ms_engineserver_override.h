@@ -130,6 +130,7 @@ struct msinfo
                 //masterconnected = totalmillis ? totalmillis : 1;
                 conoutf(CON_ERROR, "master server (%s) registration failed: %s", mastername, args);
                 disconnectmaster();
+                return;
             }
             else if(!strncmp(input, "succreg", cmdlen))
             {
