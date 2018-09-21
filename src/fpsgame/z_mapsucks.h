@@ -41,9 +41,9 @@ void z_mapsucks(clientinfo *ci)
         {
             { 'C', "%s", (const void *)colorname(ci) },
             { 'c', "%s", (const void *)ci->name },
-            { 'n', "%d", (const void *)(long)ci->clientnum },
-            { 'z', "%d", (const void *)(long)msips.length() },
-            { 'l', "%d", (const void *)(long)needvotes },
+            { 'n', "%d", (const void *)(intptr_t)ci->clientnum },
+            { 'z', "%d", (const void *)(uintptr_t)msips.length() },
+            { 'l', "%d", (const void *)(intptr_t)needvotes },
             { 0, NULL, NULL }
         };
         string buf;

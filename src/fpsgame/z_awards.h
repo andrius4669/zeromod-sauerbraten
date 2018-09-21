@@ -353,31 +353,31 @@ void z_awards()
     z_formattemplate ft[] =
     {
         { 'F', "%s", F.getbuf() },
-        { 'f', "%d", (const void *)(long)f },
+        { 'f', "%d", (const void *)(intptr_t)f },
         { 'P', "%s", P.getbuf() },
         { 'p', "%s", ps },
         { 'A', "%s", A.getbuf() },
-        { 'a', "%d", (const void *)(long)a },
+        { 'a', "%d", (const void *)(intptr_t)a },
         { 'D', "%s", D.getbuf() },
-        { 'd', "%d", (const void *)(long)d },
+        { 'd', "%d", (const void *)(intptr_t)d },
         { 'T', "%s", T.getbuf() },
-        { 't', "%d", (const void *)(long)t },
+        { 't', "%d", (const void *)(intptr_t)t },
         { 'L', "%s", L.getbuf() },
-        { 'l', "%d", (const void *)(long)l },
+        { 'l', "%d", (const void *)(intptr_t)l },
         { 'S', "%s", S.getbuf() },
-        { 's', "%d", (const void *)(long)s },
+        { 's', "%d", (const void *)(intptr_t)s },
         { 'W', "%s", W.getbuf() },
-        { 'w', "%d", (const void *)(long)w },
+        { 'w', "%d", (const void *)(intptr_t)w },
         { 'R', "%s", R.getbuf() },
-        { 'r', "%d", (const void *)(long)r },
+        { 'r', "%d", (const void *)(intptr_t)r },
         { 'G', "%s", G.getbuf() },
-        { 'g', "%d", (const void *)(long)g },
+        { 'g', "%d", (const void *)(intptr_t)g },
         { 'O', "%s", O.getbuf() },
-        { 'o', "%d", (const void *)(long)o },
+        { 'o', "%d", (const void *)(intptr_t)o },
         { 'E', "%s", E.getbuf() },
-        { 'e', "%d", (const void *)(long)e },
+        { 'e', "%d", (const void *)(intptr_t)e },
         { 'C', "%s", C.getbuf() },
-        { 'c', "%d", (const void *)(long)c },
+        { 'c', "%d", (const void *)(intptr_t)c },
         { 0,   NULL, NULL }
     };
 
@@ -435,19 +435,19 @@ static inline void z_putstats(char (&msg)[MAXSTRLEN], clientinfo *ci)
     z_formattemplate ft[] =
     {
         { 'C', "%s", colorname(ci) },
-        { 'f', "%d", (const void *)(long)gs.frags },                            // frags
+        { 'f', "%d", (const void *)(intptr_t)gs.frags },                            // frags
         { 'p', "%s", ps },                                                      // kpd
-        { 'a', "%d", (const void *)(long)(gs.damage*100/max(gs.shotdamage,1)) },// acc
-        { 'd', "%d", (const void *)(long)gs.damage },                           // damage done
-        { 't', "%d", (const void *)(long)gs.teamkills },                        // teamkills
-        { 'l', "%d", (const void *)(long)gs.deaths },                           // deaths
-        { 's', "%d", (const void *)(long)gs.suicides },                         // suicides
-        { 'w', "%d", (const void *)(long)(gs.shotdamage-gs.damage) },           // damage wasted
-        { 'r', "%d", (const void *)(long)gs.maxstreak },                        // max streak
-        { 'g', "%d", (const void *)(long)gs.flags },                            // scored/time in own bases
-        { 'o', "%d", (const void *)(long)gs.stolen },                           // stolen/taken/time in enemy bases
-        { 'e', "%d", (const void *)(long)gs.returned },                         // returned/time in neutral bases/time protected flag
-        { 'c', "%d", (const void *)(long)(gs.stolen+gs.returned) },             // time in non own bases
+        { 'a', "%d", (const void *)(intptr_t)(gs.damage*100/max(gs.shotdamage,1)) },// acc
+        { 'd', "%d", (const void *)(intptr_t)gs.damage },                           // damage done
+        { 't', "%d", (const void *)(intptr_t)gs.teamkills },                        // teamkills
+        { 'l', "%d", (const void *)(intptr_t)gs.deaths },                           // deaths
+        { 's', "%d", (const void *)(intptr_t)gs.suicides },                         // suicides
+        { 'w', "%d", (const void *)(intptr_t)(gs.shotdamage-gs.damage) },           // damage wasted
+        { 'r', "%d", (const void *)(intptr_t)gs.maxstreak },                        // max streak
+        { 'g', "%d", (const void *)(intptr_t)gs.flags },                            // scored/time in own bases
+        { 'o', "%d", (const void *)(intptr_t)gs.stolen },                           // stolen/taken/time in enemy bases
+        { 'e', "%d", (const void *)(intptr_t)gs.returned },                         // returned/time in neutral bases/time protected flag
+        { 'c', "%d", (const void *)(intptr_t)(gs.stolen+gs.returned) },             // time in non own bases
         { 0, 0, 0 }
     };
 

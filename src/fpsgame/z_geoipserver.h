@@ -103,7 +103,7 @@ void z_geoip_show(clientinfo *ci)
     {
         { 'C', "%s", (const void *)colorname(ci) },
         { 'c', "%s", (const void *)ci->name },
-        { 'n', "%d", (const void *)(long)ci->clientnum },
+        { 'n', "%d", (const void *)(intptr_t)ci->clientnum },
         { 'L', "%s", (const void *)NULL },
         { 0, NULL, NULL }
     };
@@ -182,7 +182,7 @@ void z_geoip_print_query(char *msg, size_t len, clientinfo *ci, bool ispriv)
                 {
                     { 'C', "%s", (const void *)colorname(ci) },
                     { 'c', "%s", (const void *)ci->name },
-                    { 'n', "%d", (const void *)(long)ci->clientnum },
+                    { 'n', "%d", (const void *)(intptr_t)ci->clientnum },
                     { 'L', "%s", (const void *)buf.getbuf() },
                     { 0, NULL, NULL }
                 };
@@ -201,7 +201,7 @@ void z_geoip_print_query(char *msg, size_t len, clientinfo *ci, bool ispriv)
                 {
                     { 'C', "%s", (const void *)colorname(ci) },
                     { 'c', "%s", (const void *)ci->name },
-                    { 'n', "%d", (const void *)(long)ci->clientnum },
+                    { 'n', "%d", (const void *)(intptr_t)ci->clientnum },
                     { 0, NULL, NULL }
                 };
                 z_format(msg, len, geoip_style_local_query, ft);
@@ -255,7 +255,7 @@ void z_servcmd_geoip(int argc, char **argv, int sender)
             {
                 { 'C', "%s", (const void *)colorname(ci) },
                 { 'c', "%s", (const void *)ci->name },
-                { 'n', "%d", (const void *)(long)ci->clientnum },
+                { 'n', "%d", (const void *)(intptr_t)ci->clientnum },
                 { 0, NULL, NULL }
             };
             z_format(msg, sizeof(msg), geoip_style_failed_query, ft);

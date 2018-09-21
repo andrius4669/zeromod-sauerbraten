@@ -114,7 +114,7 @@ static void z_newrecord(clientinfo *ci, int time)
         {
             { 'C', "%s", (const void *)colorname(ci) },
             { 'c', "%s", (const void *)ci->name },
-            { 'n', "%d", (const void *)(long)ci->clientnum },
+            { 'n', "%d", (const void *)(intptr_t)ci->clientnum },
             { 't', "%s", (const void *)formatmillisecs(time) },
             { 'O', "%s", (const void *)r.name },
             { 'o', "%s", (const void *)formatmillisecs(r.time) },
@@ -135,7 +135,7 @@ static void z_newrecord(clientinfo *ci, int time)
         {
             { 'C', "%s", (const void *)colorname(ci) },
             { 'c', "%s", (const void *)ci->name },
-            { 'n', "%d", (const void *)(long)ci->clientnum },
+            { 'n', "%d", (const void *)(intptr_t)ci->clientnum },
             { 't', "%s", (const void *)formatmillisecs(time) },
             { 'O', "%s", (const void *)"" },
             { 'o', "%s", (const void *)"" },

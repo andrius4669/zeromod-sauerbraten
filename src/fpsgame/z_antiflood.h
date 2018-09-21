@@ -41,7 +41,7 @@ static int z_warnantiflood(int afwait, int cn, const char *typestr)
     z_formattemplate ft[] =
     {
         { 'T', "%s", typestr },
-        { 'w', "%d", (const void *)(long)afwait },
+        { 'w', "%d", (const void *)(intptr_t)afwait },
         { 0,   NULL, NULL }
     };
     string buf;

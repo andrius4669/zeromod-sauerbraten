@@ -248,7 +248,7 @@ struct raceservmode: servmode
         const char *fs = racemode_placestrings.inrange(n) ? racemode_placestrings[n] : racemode_placestrings.last();
         z_formattemplate tmp[] =
         {
-            { 'p', "%d", (const void *)(long)(n+1) },
+            { 'p', "%d", (const void *)(intptr_t)(n+1) },
             { 0, NULL, NULL }
         };
         z_format(buf, sizeof(buf), fs, tmp);
@@ -347,9 +347,9 @@ struct raceservmode: servmode
             {
                 { 'C', "%s", (const void *)colorname(ci) },
                 { 'c', "%s", (const void *)ci->name },
-                { 'n', "%d", (const void *)(long)ci->clientnum },
+                { 'n', "%d", (const void *)(intptr_t)ci->clientnum },
                 { 'P', "%s", (const void *)placename(available_place) },
-                { 'p', "%d", (const void *)(long)(available_place+1) },
+                { 'p', "%d", (const void *)(intptr_t)(available_place+1) },
                 { 't', "%s", (const void *)formatmillisecs(racemillis) },
                 { 0, NULL, NULL }
             };
@@ -414,9 +414,9 @@ struct raceservmode: servmode
                     {
                         { 'C', "%s", (const void *)colorname(ci) },
                         { 'c', "%s", (const void *)ci->name },
-                        { 'n', "%d", (const void *)(long)ci->clientnum },
+                        { 'n', "%d", (const void *)(intptr_t)ci->clientnum },
                         { 'P', "%s", (const void *)placename(i) },
-                        { 'p', "%d", (const void *)(long)(i+1) },
+                        { 'p', "%d", (const void *)(intptr_t)(i+1) },
                         { 't', "%s", (const void *)formatmillisecs(race_winners[i].racemillis) },
                         { 0, NULL, NULL }
                     };
@@ -676,11 +676,11 @@ struct raceservmode: servmode
 
             z_formattemplate style_tmp[] =
             {
-                { 'p', "%d", (const void *)(long)(i+1) },
+                { 'p', "%d", (const void *)(intptr_t)(i+1) },
                 { 'P', "%s", (const void *)placename(i) },
                 { 'C', "%s", (const void *)colorname(ci) },
                 { 'c', "%s", (const void *)ci->name },
-                { 'n', "%d", (const void *)(long)ci->clientnum },
+                { 'n', "%d", (const void *)(intptr_t)ci->clientnum },
                 { 't', "%s", (const void *)formatmillisecs(race_winners[i].racemillis) },
                 { 0, NULL, NULL }
             };
