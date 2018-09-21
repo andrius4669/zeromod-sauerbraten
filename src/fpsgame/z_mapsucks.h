@@ -60,7 +60,7 @@ void z_mapsucks(clientinfo *ci)
 
                 z_formattemplate ft[] =
                 {
-                    { 't', "%d", (const void *)(long)mapsucks_time },
+                    { 't', "%d", (const void *)(intptr_t)mapsucks_time },
                     { 0, NULL, NULL }
                 };
                 string buf;
