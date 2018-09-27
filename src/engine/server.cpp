@@ -49,10 +49,25 @@ void logoutf(const char *fmt, ...)
     va_end(args);
 }
 
+VAR(logtimestamp, 0, 0, 2);
 
 static void writelog(FILE *file, const char *buf)
 {
     static uchar ubuf[512];
+
+    if(logtimestamp)
+    {
+        time_t ts;
+        time(&ts);
+        struct tm *gts = gmtime(&ts);
+        strftime((char *)ubuf, sizeof(ubuf),
+            logtimestamp == 1
+                ? "@%Y-%m-%d_%H:%M:%S "
+                : "@%Y-%m-%dT%H:%M:%S ",
+            gts);
+        fputs((char *)ubuf, file);
+    }
+
     size_t len = strlen(buf), carry = 0;
     while(carry < len)
     {
