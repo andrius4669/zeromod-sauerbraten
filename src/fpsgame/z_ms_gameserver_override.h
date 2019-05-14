@@ -233,4 +233,8 @@ void processmasterinput(int m, const char *cmd, int cmdlen, const char *args)
             case 'n': case 'N': masterauthpriv_set(m, PRIV_NONE); break;
         }
     }
+    else
+    {
+        logoutf("unknown response from master (%s): %s", getmastername(m), cmd);
+    }
 }
