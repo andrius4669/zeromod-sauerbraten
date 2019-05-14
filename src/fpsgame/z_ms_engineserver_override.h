@@ -37,6 +37,15 @@ struct msinfo
     }
     ~msinfo() { disconnectmaster(); delete[] networkident; delete[] whitelistauth; delete[] banmessage; }
 
+    const char *fullname()
+    {
+        static char *mn = NULL; // this won't bite us?
+        if(masterport == server::masterport()) return mastername;
+        if(!mn) mn = new char[MAXSTRLEN];
+        nformatstring(mn, MAXSTRLEN, "%s:%d", mastername, masterport);
+        return mn;
+    }
+
     void disconnectmaster()
     {
         if(mastersock != ENET_SOCKET_NULL)
@@ -75,12 +84,12 @@ struct msinfo
             enet_socket_set_option(sock, ENET_SOCKOPT_KEEPALIVE, 1);
             if(wait)
             {
-                if(!connectwithtimeout(sock, mastername, masteraddress)) return sock;
+                if(!connectwithtimeout(sock, fullname(), masteraddress)) return sock;
             }
             else if(!enet_socket_connect(sock, &masteraddress)) return sock;
         }
         enet_socket_destroy(sock);
-        if(isdedicatedserver()) logoutf("could not connect to master server (%s)", mastername);
+        if(isdedicatedserver()) logoutf("could not connect to master server (%s)", fullname());
         return ENET_SOCKET_NULL;
     }
 
@@ -128,7 +137,7 @@ struct msinfo
             if(!strncmp(input, "failreg", cmdlen))
             {
                 //masterconnected = totalmillis ? totalmillis : 1;
-                conoutf(CON_ERROR, "master server (%s) registration failed: %s", mastername, args);
+                conoutf(CON_ERROR, "master server (%s) registration failed: %s", fullname(), args);
                 disconnectmaster();
                 return;
             }
@@ -136,7 +145,7 @@ struct msinfo
             {
                 masterconnected = totalmillis ? totalmillis : 1;
                 reconnectdelay = 0;
-                conoutf("master server (%s) registration succeeded", mastername);
+                conoutf("master server (%s) registration succeeded", fullname());
             }
             else server::processmasterinput(masternum, input, cmdlen, args);
 
@@ -162,7 +171,7 @@ struct msinfo
     {
         if(masterconnecting && totalmillis - masterconnecting >= 60000)
         {
-            logoutf("could not connect to master server (%s)", mastername);
+            logoutf("could not connect to master server (%s)", fullname());
             disconnectmaster();
         }
         if(masterout.empty() || !masterconnected) return;
@@ -302,12 +311,8 @@ int findauthmaster(const char *desc, int old)
 
 const char *getmastername(int m)
 {
-    static char *mn = NULL;
     if(!mss.inrange(m)) return "";
-    if(mss[m].masterport == server::masterport()) return mss[m].mastername;
-    if(!mn) mn = new char[MAXSTRLEN];
-    nformatstring(mn, MAXSTRLEN, "%s:%d", mss[m].mastername, mss[m].masterport);
-    return mn;
+    return mss[m].fullname();
 }
 
 const char *getmasterauth(int m) { return mss.inrange(m) ? mss[m].masterauth : ""; }

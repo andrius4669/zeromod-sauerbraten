@@ -199,7 +199,7 @@ void masterconnected(int m)
 {
     if(m >= 0)
     {
-        if(isdedicatedserver()) logoutf("master server %s connected", getmastername(m));
+        if(isdedicatedserver()) logoutf("master server (%s) connected", getmastername(m));
         // clear gbans on connect (not on disconnect) to prevent ms outages from clearing all bans
         cleargbans(m);
     }
@@ -208,7 +208,7 @@ void masterconnected(int m)
 
 void masterdisconnected(int m)
 {
-    if(m >= 0 && isdedicatedserver()) logoutf("master server %s disconnected", getmastername(m));
+    if(m >= 0 && isdedicatedserver()) logoutf("master server (%s) disconnected", getmastername(m));
     if(m < 0) cleargbans(-1);
     loopvrev(clients)
     {
