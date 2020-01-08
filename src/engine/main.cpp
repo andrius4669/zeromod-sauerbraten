@@ -113,10 +113,13 @@ void writeinitcfg()
     f->printf("scr_h %d\n", scr_h);
     f->printf("depthbits %d\n", depthbits);
     f->printf("fsaa %d\n", fsaa);
-    extern int soundchans, soundfreq, soundbufferlen;
+    extern int usesound, soundchans, soundfreq, soundbufferlen;
+    extern char *audiodriver;
+    f->printf("usesound %d\n", usesound);
     f->printf("soundchans %d\n", soundchans);
     f->printf("soundfreq %d\n", soundfreq);
     f->printf("soundbufferlen %d\n", soundbufferlen);
+    if(audiodriver[0]) f->printf("audiodriver %s\n", escapestring(audiodriver));
     delete f;
 }
 

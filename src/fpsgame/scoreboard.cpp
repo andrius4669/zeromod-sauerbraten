@@ -7,10 +7,12 @@ namespace game
     VARP(showservinfo, 0, 1, 1);
     VARP(showclientnum, 0, 0, 1);
     VARP(showpj, 0, 0, 1);
-    VARP(showping, 0, 1, 1);
+    VARP(showping, 0, 1, 2);
     VARP(showspectators, 0, 1, 1);
+    VARP(showspectatorping, 0, 0, 1);
     VARP(highlightscore, 0, 1, 1);
     VARP(showconnecting, 0, 0, 1);
+    VARP(hidefrags, 0, 1, 1);
 
     static hashset<teaminfo> teaminfos;
 
@@ -133,6 +135,17 @@ namespace game
         return numgroups;
     }
 
+    int statuscolor(fpsent *d, int color)
+    {
+        if(d->privilege)
+        {
+            color = d->privilege>=PRIV_ADMIN ? 0xFF8000 : (d->privilege>=PRIV_AUTH ? 0xC040C0 : 0x40FF80);
+            if(d->state==CS_DEAD) color = (color>>1)&0x7F7F7F;
+        }
+        else if(d->state==CS_DEAD) color = 0x606060;
+        return color;
+    }
+
     void renderscoreboard(g3d_gui &g, bool firstpass)
     {
         const ENetAddress *address = connectedpeer();
@@ -226,7 +239,7 @@ namespace game
                 g.pushlist(); // horizontal
             }
 
-            if(!cmode || !cmode->hidefrags())
+            if(!cmode || !cmode->hidefrags() || !hidefrags)
             { 
                 g.pushlist();
                 g.strut(6);
@@ -237,22 +250,18 @@ namespace game
 
             g.pushlist();
             g.text("name", fgcolor);
-            g.strut(13);
+            g.strut(12);
             loopscoregroup(o, 
             {
-                int status = o->state!=CS_DEAD ? 0xFFFFDD : 0x606060;
-                if(o->privilege)
-                {
-                    status = o->privilege>=PRIV_ADMIN ? 0xFF8000 : 0x40FF80;
-                    if(o->state==CS_DEAD) status = (status>>1)&0x7F7F7F;
-                }
-                g.textf("%s ", status, NULL, colorname(o, NULL, "", "", NULL, -1));
+                g.textf("%s ", statuscolor(o, 0xFFFFDD), NULL, colorname(o, NULL, "", "", NULL, -1));
             });
             g.poplist();
 
             if(multiplayer(false) || demoplayback)
             {
-                if(showpj)
+                if(showpj || showping) g.space(1);
+
+                if(showpj && showping <= 1)
                 {
                     g.pushlist();
                     g.strut(6);
@@ -265,7 +274,37 @@ namespace game
                     g.poplist();
                 }
 
-                if(showping)
+                if(showping > 1)
+                {
+                    g.pushlist();
+                    g.strut(6);
+
+                    g.pushlist();
+                    g.text("ping", fgcolor);
+                    g.space(1);
+                    g.spring();
+                    g.text("pj", fgcolor);
+                    g.poplist();
+
+                    loopscoregroup(o,
+                    {
+                        fpsent *p = o->ownernum >= 0 ? getclient(o->ownernum) : o;
+                        if(!p) p = o;
+                        g.pushlist();
+                        if(p->state==CS_LAGGED) g.text("LAG", 0xFFFFDD);
+                        else
+                        {
+                            g.textf("%d", 0xFFFFDD, NULL, p->ping);
+                            g.space(1);
+                            g.spring();
+                            g.textf("%d", 0xFFFFDD, NULL, o->plag);
+                        }
+                        g.poplist();
+
+                    });
+                    g.poplist();
+                }
+                else if(showping)
                 {
                     g.pushlist();
                     g.text("ping", fgcolor);
@@ -311,20 +350,36 @@ namespace game
                 
                 g.pushlist();
                 g.text("spectator", 0xFFFF80, " ");
+                g.strut(12);
                 loopv(spectators) 
                 {
                     fpsent *o = spectators[i];
-                    int status = 0xFFFFDD;
-                    if(o->privilege) status = o->privilege>=PRIV_ADMIN ? 0xFF8000 : 0x40FF80;
                     if(o==player1 && highlightscore)
                     {
                         g.pushlist();
                         g.background(0x808080, 3);
                     }
-                    g.text(colorname(o, NULL, "", "", NULL, -1), status, "spectator");
+                    g.text(colorname(o, NULL, "", "", NULL, -1), statuscolor(o, 0xFFFFDD), "spectator");
                     if(o==player1 && highlightscore) g.poplist();
                 }
                 g.poplist();
+
+                if((multiplayer(false) || demoplayback) && showspectatorping)
+                {
+                    g.space(1);
+                    g.pushlist();
+                    g.text("ping", 0xFFFF80);
+                    g.strut(6);
+                    loopv(spectators)
+                    {
+                        fpsent *o = spectators[i];
+                        fpsent *p = o->ownernum >= 0 ? getclient(o->ownernum) : o;
+                        if(!p) p = o;
+                        if(p->state==CS_LAGGED) g.text("LAG", 0xFFFFDD);
+                        else g.textf("%d", 0xFFFFDD, NULL, p->ping);
+                    }
+                    g.poplist();
+                }
 
                 g.space(1);
                 g.pushlist();
@@ -345,14 +400,12 @@ namespace game
                         g.text("", 0xFFFFDD, "spectator");
                     }
                     fpsent *o = spectators[i];
-                    int status = 0xFFFFDD;
-                    if(o->privilege) status = o->privilege>=PRIV_ADMIN ? 0xFF8000 : 0x40FF80;
                     if(o==player1 && highlightscore)
                     {
                         g.pushlist();
                         g.background(0x808080);
                     }
-                    g.text(colorname(o, NULL, "", "", NULL, -1), status);
+                    g.text(colorname(o, NULL, "", "", NULL, -1), statuscolor(o, 0xFFFFDD));
                     if(o==player1 && highlightscore) g.poplist();
                     if(i+1<spectators.length() && (i+1)%3) g.space(1);
                     else g.poplist();
@@ -406,5 +459,87 @@ namespace game
         scoreboard.show(on);
     }
     ICOMMAND(showscores, "D", (int *down), showscores(*down!=0));
+
+    VARP(hudscore, 0, 0, 1);
+    FVARP(hudscorescale, 1e-3f, 0.5f, 1e3f);
+    VARP(hudscorealign, -1, 1, 1);
+    FVARP(hudscorex, 0, 0.990f, 1);
+    FVARP(hudscorey, 0, 0.350f, 1);
+    HVARP(hudscoreplayercolour, 0, 0x60A0FF, 0xFFFFFF);
+    HVARP(hudscoreenemycolour, 0, 0xFF4040, 0xFFFFFF);
+    VARP(hudscorealpha, 0, 255, 255);
+    VARP(hudscoresep, 0, 40, 1000);
+
+    void drawhudscore(int w, int h)
+    {
+        int numgroups = groupplayers();
+        if(!numgroups) return;
+
+        fpsent *p = followingplayer();
+        if(!p) p = player1;
+        scoregroup *g = groups[0];
+        int score = INT_MIN, score2 = INT_MIN;
+        bool best = false;
+        if(m_teammode)
+        {
+            score = g->score;
+            best = isteam(p->team, g->team);
+            if(numgroups > 1)
+            {
+                if(best) score2 = groups[1]->score;
+                else for(int i = 1; i < groups.length(); ++i) if(isteam(p->team, groups[i]->team)) { score2 = groups[i]->score; break; }
+            }
+        }
+        else
+        {
+            score = g->players[0]->frags;
+            best = p == g->players[0];
+            if(g->players.length() > 1)
+            {
+                if(best) score2 = g->players[1]->frags;
+                else score2 = p->frags;
+            }
+        }
+        if(score == score2 && !best) best = true;
+
+        score = clamp(score, -999, 9999);
+        defformatstring(buf, "%d", score);
+        int tw = 0, th = 0;
+        text_bounds(buf, tw, th);
+
+        string buf2;
+        int tw2 = 0, th2 = 0;
+        if(score2 > INT_MIN)
+        {
+            score2 = clamp(score2, -999, 9999);
+            formatstring(buf2, "%d", score2);
+            text_bounds(buf2, tw2, th2);
+        }
+
+        int fw = 0, fh = 0;
+        text_bounds("00", fw, fh);
+        fw = max(fw, max(tw, tw2));
+
+        vec2 offset = vec2(hudscorex, hudscorey).mul(vec2(w, h).div(hudscorescale));
+        if(hudscorealign == 1) offset.x -= 2*fw + hudscoresep;
+        else if(hudscorealign == 0) offset.x -= (2*fw + hudscoresep) / 2.0f;
+        vec2 offset2 = offset;
+        offset.x += (fw-tw)/2.0f;
+        offset.y -= th/2.0f;
+        offset2.x += fw + hudscoresep + (fw-tw2)/2.0f;
+        offset2.y -= th2/2.0f;
+
+        pushhudmatrix();
+        hudmatrix.scale(hudscorescale, hudscorescale, 1);
+        flushhudmatrix();
+
+        int color = hudscoreplayercolour, color2 = hudscoreenemycolour;
+        if(!best) swap(color, color2);
+
+        draw_text(buf, int(offset.x), int(offset.y), (color>>16)&0xFF, (color>>8)&0xFF, color&0xFF, hudscorealpha);
+        if(score2 > INT_MIN) draw_text(buf2, int(offset2.x), int(offset2.y), (color2>>16)&0xFF, (color2>>8)&0xFF, color2&0xFF, hudscorealpha);
+
+        pophudmatrix();
+    }
 }
 

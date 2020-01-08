@@ -1,7 +1,6 @@
 // serverbrowser.cpp: eihrul's concurrent resolver, and server browser window management
 
 #include "engine.h"
-#include "SDL_thread.h"
 
 struct resolverthread
 {
@@ -529,7 +528,7 @@ void checkpings()
         getstring(text, p);
         filtertext(si->map, text, false);
         getstring(text, p);
-        filtertext(si->sdesc, text);
+        filtertext(si->sdesc, text, true, true);
     }
 }
 

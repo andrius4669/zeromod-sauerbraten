@@ -233,6 +233,11 @@ namespace game
     {
     }
 
+    bool allowthirdperson()
+    {
+        return true;
+    }
+
     bool detachcamera()
     {
         return player1->state==CS_DEAD;
