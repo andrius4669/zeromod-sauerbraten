@@ -20,7 +20,7 @@ void nullifyclientpos(clientinfo &ci)
 
 static inline bool z_isghost(clientinfo *ci)
 {
-    return ci->xi.ghost;
+    return ci->xi.ghost && !m_ctf && !m_capture && !m_collect;
 }
 
 static inline bool z_shouldhidepos(clientinfo *ci)
@@ -60,6 +60,11 @@ void z_servcmd_ghost(int argc, char **argv, int sender)
     clientinfo *ci = getinfo(cn);
     if(!ci) return;
     bool val = !strcasecmp(argv[0], "ghost");
+    if (val && (m_ctf || m_capture || m_collect))
+    {
+        sendf(sender, 1, "ris", N_SERVMSG, "ghost function is not implemented for this gamemode");
+        return;
+    }
     sendf(sender, 1, "ris", N_SERVMSG, tempformatstring("%s %s", val ? "ghosting" : "unghosting", colorname(ci)));
     z_setghost(ci, val);
 }
