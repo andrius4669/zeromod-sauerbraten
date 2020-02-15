@@ -1,3 +1,5 @@
+// rename to server-init.cfg & edit as needed
+
 // basic server configuration script
 // note that some commands are commented out with //, and need to be uncommented and set to a value to work
 
