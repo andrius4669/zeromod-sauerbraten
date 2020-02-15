@@ -351,6 +351,7 @@ struct ctfclientmode : clientmode
     void takeflag(clientinfo *ci, int i, int version)
     {
         if(notgotflags || !flags.inrange(i) || ci->state.state!=CS_ALIVE || !ci->team[0]) return;
+        if(z_isghost(ci)) return;
         flag &f = flags[i];
         if((m_hold ? f.spawnindex < 0 : !ctfflagteam(f.team)) || f.owner>=0 || f.version != version || (f.droptime && f.dropper == ci->clientnum && f.dropcount >= 1)) return;
         int team = ctfteamflag(ci->team);
@@ -1247,7 +1248,15 @@ case N_TAKEFLAG:
 }
 
 case N_INITFLAGS:
-    if(smode==&ctfmode) ctfmode.parseflags(p, (ci->state.state!=CS_SPECTATOR || ci->privilege || ci->local) && !strcmp(ci->clientmap, smapname));
+    if(smode==&ctfmode)
+    {
+        bool commit =
+            (ci->state.state!=CS_SPECTATOR
+                || ci->privilege || ci->local) &&
+            !strcmp(ci->clientmap, smapname) &&
+            !z_isghost(ci);
+        ctfmode.parseflags(p, commit);
+    }
     break;
 
 #else

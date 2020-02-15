@@ -20,7 +20,7 @@ void nullifyclientpos(clientinfo &ci)
 
 static inline bool z_isghost(clientinfo *ci)
 {
-    return ci->xi.ghost && !m_ctf && !m_capture && !m_collect;
+    return ci->xi.ghost && !m_capture && !m_collect;
 }
 
 static inline bool z_shouldhidepos(clientinfo *ci)
