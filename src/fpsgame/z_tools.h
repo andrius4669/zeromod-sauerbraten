@@ -200,3 +200,5 @@ extern void race_maploaded(clientinfo *ci);
 
 static void z_serverdescchanged();
 static inline const char *z_serverdesc(bool shouldfilter);
+
+static inline bool z_isghost(clientinfo *ci);
