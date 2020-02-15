@@ -621,6 +621,11 @@ struct fpsent : dynent, fpsstate
         stopattacksound();
         lastnode = -1;
     }
+
+    int respawnwait(int secs, int delay = 0)
+    {
+        return max(0, secs - (::lastmillis - lastpain - delay)/1000);
+    }
 };
 
 struct teamscore
@@ -691,7 +696,7 @@ namespace game
         virtual void respawned(fpsent *d) {}
         virtual void setup() {}
         virtual void checkitems(fpsent *d) {}
-        virtual int respawnwait(fpsent *d) { return 0; }
+        virtual int respawnwait(fpsent *d, int delay = 0) { return 0; }
         virtual void pickspawn(fpsent *d) { findplayerspawn(d); }
         virtual void senditems(packetbuf &p) {}
         virtual void removeplayer(fpsent *d) {}
