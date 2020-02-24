@@ -18,9 +18,14 @@ void nullifyclientpos(clientinfo &ci)
     p.put(0); p.put(0); // veldir
 }
 
+static inline bool z_allowghost()
+{
+	return !m_capture && !m_collect;
+}
+
 static inline bool z_isghost(clientinfo *ci)
 {
-    return ci->xi.ghost && !m_capture && !m_collect;
+    return ci->xi.ghost && z_allowghost();
 }
 
 static inline bool z_shouldhidepos(clientinfo *ci)
@@ -60,7 +65,7 @@ void z_servcmd_ghost(int argc, char **argv, int sender)
     clientinfo *ci = getinfo(cn);
     if(!ci) return;
     bool val = !strcasecmp(argv[0], "ghost");
-    if (val && (m_ctf || m_capture || m_collect))
+    if (val && !z_allowghost())
     {
         sendf(sender, 1, "ris", N_SERVMSG, "ghost function is not implemented for this gamemode");
         return;
