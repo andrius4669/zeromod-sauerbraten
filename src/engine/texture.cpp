@@ -2026,6 +2026,7 @@ const struct slottex
     {"g", TEX_GLOW},
     {"s", TEX_SPEC},
     {"z", TEX_DEPTH},
+    {"a", TEX_ALPHA},
     {"e", TEX_ENVMAP}
 };
 
@@ -2192,6 +2193,22 @@ static void mergedepth(ImageData &c, ImageData &z)
     );
 }
 
+static void mergealpha(ImageData &c, ImageData &s)
+{
+    if(s.bpp < 3)
+    {
+        readwritergbatex(c, s,
+            dst[3] = src[0];
+        );
+    }
+    else
+    {
+        readwritergbatex(c, s,
+            dst[3] = src[3];
+        );
+    }
+}
+
 static void addname(vector<char> &key, Slot &slot, Slot::Tex &t, bool combined = false, const char *prefix = NULL)
 {
     if(combined) key.add('&');
@@ -2210,7 +2227,7 @@ static void texcombine(Slot &s, int index, Slot::Tex &t, bool forceload = false)
         case TEX_DIFFUSE:
         case TEX_NORMAL:
         {
-            int i = findtextype(s, t.type==TEX_DIFFUSE ? (1<<TEX_SPEC) : (1<<TEX_DEPTH));
+            int i = findtextype(s, t.type==TEX_DIFFUSE ? (s.texmask&(1<<TEX_SPEC) ? 1<<TEX_SPEC : 1<<TEX_ALPHA) : (s.texmask&(1<<TEX_DEPTH) ? 1<<TEX_DEPTH : 1<<TEX_ALPHA));
             if(i<0) break;
             texmask |= 1<<s.sts[i].type;
             s.sts[i].combined = index;
@@ -2240,6 +2257,7 @@ static void texcombine(Slot &s, int index, Slot::Tex &t, bool forceload = false)
                 {
                     case TEX_SPEC: mergespec(ts, as); break;
                     case TEX_DEPTH: mergedepth(ts, as); break;
+                    case TEX_ALPHA: mergealpha(ts, as); break;
                 }
                 break; // only one combination
             }
@@ -3407,12 +3425,14 @@ enum
     IMG_BMP = 0,
     IMG_TGA = 1,
     IMG_PNG = 2,
+    IMG_JPG = 3,
     NUMIMG
 };
- 
+
+VARP(screenshotquality, 0, 97, 100);
 VARP(screenshotformat, 0, IMG_PNG, NUMIMG-1);
 
-const char *imageexts[NUMIMG] = { ".bmp", ".tga", ".png" };
+const char *imageexts[NUMIMG] = { ".bmp", ".tga", ".png", ".jpg" };
 
 int guessimageformat(const char *filename, int format = IMG_BMP)
 {
@@ -3440,7 +3460,10 @@ void saveimage(const char *filename, int format, ImageData &image, bool flip = f
             stream *f = openfile(filename, "wb");
             if(f)
             {
-                SDL_SaveBMP_RW(s, f->rwops(), 1);
+                switch(format) {
+                    case IMG_JPG: IMG_SaveJPG_RW(s, f->rwops(), 1, screenshotquality); break;
+                    default: SDL_SaveBMP_RW(s, f->rwops(), 1); break;
+                }
                 delete f;
             }
             SDL_FreeSurface(s);
@@ -3457,17 +3480,17 @@ bool loadimage(const char *filename, ImageData &image)
     return true;
 }
 
-SVARP(screenshotdir, "");
+SVARP(screenshotdir, "screenshot");
 
 void screenshot(char *filename)
 {
     static string buf;
-    int format = -1;
+    int format = -1, dirlen = 0;
     copystring(buf, screenshotdir);
     if(screenshotdir[0])
     {
-        int len = strlen(buf);
-        if(buf[len] != '/' && buf[len] != '\\' && len+1 < (int)sizeof(buf)) { buf[len] = '/'; buf[len+1] = '\0'; }
+        dirlen = strlen(buf);
+        if(buf[dirlen] != '/' && buf[dirlen] != '\\' && dirlen+1 < (int)sizeof(buf)) { buf[dirlen++] = '/'; buf[dirlen] = '\0'; }
         const char *dir = findfile(buf, "w");
         if(!fileexists(dir, "w")) createdir(dir);
     }
@@ -3478,13 +3501,30 @@ void screenshot(char *filename)
     }
     else
     {
-        defformatstring(name, "screenshot_%d", totalmillis);
-        concatstring(buf, name);
+        string sstime;
+        time_t t = time(NULL);
+        size_t len = strftime(sstime, sizeof(sstime), "%Y-%m-%d_%H.%M.%S", localtime(&t));
+        sstime[min(len, sizeof(sstime)-1)] = '\0';
+        concatstring(buf, sstime);
+
+        const char *map = game::getclientmap(), *ssinfo = game::getscreenshotinfo();
+        if(map && map[0])
+        {
+            concatstring(buf, "_");
+            concatstring(buf, map);
+        }
+        if(ssinfo && ssinfo[0])
+        {
+            concatstring(buf, "_");
+            concatstring(buf, ssinfo);
+        }
+
+        for(char *s = &buf[dirlen]; *s; s++) if(iscubespace(*s) || *s == '/' || *s == '\\') *s = '-';
     }
     if(format < 0)
     {
         format = screenshotformat;
-        concatstring(buf, imageexts[format]);         
+        concatstring(buf, imageexts[format]);
     }
 
     ImageData image(screenw, screenh, 3);
