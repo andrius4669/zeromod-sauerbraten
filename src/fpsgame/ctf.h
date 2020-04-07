@@ -17,11 +17,7 @@ struct ctfclientmode : clientmode
     static const int FLAGRADIUS = 16;
     static const int FLAGLIMIT = 10;
     static const int MAXHOLDSPAWNS = 100;
-#ifndef OLDPROTO
-    static const int HOLDSECS = 15;
-#else
     static const int HOLDSECS = 20;
-#endif
     static const int HOLDFLAGS = 1;
     static const int HOLDDEATHPENALTY = 5;
     static const int RESPAWNSECS = 5;
@@ -74,6 +70,22 @@ struct ctfclientmode : clientmode
         	return spawnloc;
         }
 #endif
+
+        bool hasowner() const
+        {
+#ifdef SERVMODE
+            return owner>=0;
+#else
+            return !!owner;
+#endif
+        }
+
+        int holdcounter() const
+        {
+            if(!holdtime) return 0;
+            if(!hasowner() && droptime && droptime >= holdtime) return max((droptime - holdtime) - (lastmillis - droptime), 0);
+            return lastmillis - holdtime;
+        }
     };
 
     struct holdspawn
@@ -138,7 +150,7 @@ struct ctfclientmode : clientmode
         f.owntime = owntime;
         if(f.holdtime && f.team == ownteam)
         {
-            if(f.droptime && f.droptime < owntime) f.holdtime += owntime - f.droptime;
+            if(f.droptime && f.droptime < owntime) f.holdtime += 2*(owntime - f.droptime);
             f.holdtime = min(f.holdtime, owntime);
         }
         else
@@ -203,10 +215,11 @@ struct ctfclientmode : clientmode
     void deadflag(int i)
     {
         flag &f = flags[i];
-        if (f.holdtime)
+        if(f.holdtime)
         {
+            int limit = !f.hasowner() && f.droptime && f.droptime >= f.holdtime ? f.droptime : lastmillis;
             f.holdtime += HOLDDEATHPENALTY*1000;
-            if(f.holdtime >= lastmillis) f.holdtime = 0;
+            if(f.holdtime >= limit) f.holdtime = 0;
         }
     }
 
@@ -467,6 +480,17 @@ struct ctfclientmode : clientmode
                     putint(p, int(f.droploc.z*DMF));
                 }
             }
+#ifndef OLDPROTO
+            if(m_hold)
+            {
+                if(!f.team || !f.holdtime) putint(p, -1);
+                else
+                {
+                    putint(p, f.team);
+                    putint(p, f.holdcounter() / 100);
+                }
+            }
+#endif
         }
     }
 
@@ -548,7 +572,7 @@ struct ctfclientmode : clientmode
                     pushhudmatrix();
                     hudmatrix.scale(2, 2, 1);
                     flushhudmatrix();
-                    draw_textf("%d", (x + HICON_SIZE + HICON_SPACE)/2, HICON_TEXTY/2, max(HOLDSECS - (lastmillis - f.holdtime)/1000, 0));
+                    draw_textf("%d", (x + HICON_SIZE + HICON_SPACE)/2, HICON_TEXTY/2, max(HOLDSECS - f.holdcounter()/1000, 0));
                     pophudmatrix();
                 }
                 break;
@@ -667,6 +691,18 @@ struct ctfclientmode : clientmode
                         MDL_DYNSHADOW | MDL_CULL_VFC | MDL_CULL_OCCLUDED | (f.droptime || f.owner ? MDL_LIGHT : 0),
                         NULL, NULL, 0, 0, 0.3f + (f.vistime ? 0.7f*min((lastmillis - f.vistime)/1000.0f, 1.0f) : 0.0f));
 
+
+            if(m_hold && canaddparticles() && f.team && f.holdtime)
+            {
+                int counter = f.holdcounter();
+                if(counter > 0)
+                {
+                    vec above = vec(pos).addz(3.0f);
+                    abovemodel(above, flagname);
+                    defformatstring(msg, "%d", max(HOLDSECS - counter / 1000, 0));
+                    particle_textcopy(above, msg, PART_TEXT, 1, f.team == ctfteamflag(player1->team) ? 0x6496FF : 0xFF4B19, 4.0f);
+                }
+            }
             if(m_protect && canaddparticles() && f.owner && insidebase(f, f.owner->feetpos()))
             {
                 particle_flare(pos, f.spawnloc, 0, PART_LIGHTNING, strcmp(f.owner->team, player1->team) ? 0xFF2222 : 0x2222FF, 1.0f);
@@ -756,13 +792,20 @@ struct ctfclientmode : clientmode
         int numflags = getint(p);
         loopi(numflags)
         {
-            int version = getint(p), spawn = getint(p), owner = getint(p), invis = getint(p), dropped = 0;
+            int version = getint(p), spawn = getint(p), owner = getint(p), invis = getint(p), dropped = 0, holdteam = -1, holdtime = 0;
             vec droploc(0, 0, 0);
             if(owner<0)
             {
                 dropped = getint(p);
                 if(dropped) loopk(3) droploc[k] = getint(p)/DMF;
             }
+#ifndef OLDPROTO
+            if(m_hold)
+            {
+                holdteam = getint(p);
+                if(holdteam >= 0) holdtime = getint(p)*100;
+            }
+#endif
             if(p.overread()) break;
             if(commit && flags.inrange(i))
             {
@@ -771,11 +814,16 @@ struct ctfclientmode : clientmode
                 f.spawnindex = spawn;
                 if(m_hold) spawnflag(f);
                 f.owner = owner>=0 ? (owner==player1->clientnum ? player1 : newclient(owner)) : NULL;
-                f.owntime = owner>=0 ? lastmillis : 0;
+                f.owntime = owner>=0 ? lastmillis - (m_hold ? holdtime : 0) : 0;
                 if(m_hold)
                 {
+#ifdef OLDPROTO
                     f.holdtime = f.owntime;
                     f.team = ctfteamflag(f.owner->team);
+#else
+                    if(holdteam >= 0) { f.team = holdteam; f.holdtime = lastmillis - holdtime; }
+                    else { f.team = 0; f.holdtime = 0; }
+#endif
                 }
                 f.droptime = dropped ? lastmillis : 0;
                 f.droploc = dropped ? droploc : f.spawnloc;
@@ -1005,51 +1053,26 @@ struct ctfclientmode : clientmode
         return m_efficiency || !m_protect ? d->respawnwait(RESPAWNSECS, delay) : 0;
     }
 
-    bool pickholdspawn(fpsent *d)
-    {
-        vector<extentity *> spawns;
+    float rateholdspawn(const extentity &e)
+    {   // avoid spawning too far away from active flag
+        float minflagdist = 1e16f;
         loopv(flags)
         {
-            flag &f = flags[i];
+            const flag &f = flags[i];
             if(f.spawnindex < 0 || (!f.owner && (!f.droptime || f.droploc.x < 0))) continue;
-            const vec &goal = f.owner ? f.owner->o : f.droploc;
-            extentity *flagspawns[7];
-            int numflagspawns = 0;
-            memset(flagspawns, 0, sizeof(flagspawns));
-            loopvj(entities::ents)
-            {
-                extentity *e = entities::ents[j];
-                if(e->type != PLAYERSTART || e->attr2 != 0) continue;
-                float dist = e->o.dist(goal);
-                loopk(numflagspawns)
-                {
-                    float sdist = flagspawns[k]->o.dist(goal);
-                    if(dist >= sdist) continue;
-                    swap(e, flagspawns[k]);
-                    dist = sdist;
-                }
-                if(numflagspawns < int(sizeof(flagspawns)/sizeof(flagspawns[0]))) flagspawns[numflagspawns++] = e;
-            }
-            loopk(numflagspawns) spawns.add(flagspawns[k]);
+            minflagdist = min(minflagdist, e.o.dist(f.owner ? f.owner->o : f.droploc));
         }
-        if(spawns.empty()) return false;
-        int pick = rnd(spawns.length());
-        d->pitch = 0;
-        d->roll = 0;
-        loopv(spawns)
-        {
-            int attempt = (pick + i)%spawns.length();
-            d->o = spawns[attempt]->o;
-            d->yaw = spawns[attempt]->attr1;
-            if(entinmap(d, true)) return true;
-        }
-        return false;
+        return minflagdist < 1e16f ? proximityscore(minflagdist, 400.0f, 800.0f) : 1.0f;
     }
 
-    void pickspawn(fpsent *d)
+    float ratespawn(fpsent *d, const extentity &e)
     {
-        if(!m_hold || !pickholdspawn(d))
-            findplayerspawn(d, -1, m_hold ? 0 : ctfteamflag(d->team));
+        return m_hold ? rateholdspawn(e) : 1.0f;
+    }
+
+    int getspawngroup(fpsent *d)
+    {
+        return m_hold ? 0 : ctfteamflag(d->team);
     }
 
 	bool aihomerun(fpsent *d, ai::aistate &b)

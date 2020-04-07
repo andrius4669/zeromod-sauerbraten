@@ -118,11 +118,11 @@ static struct gamemodeinfo
     { "insta ctf", M_NOITEMS | M_INSTA | M_CTF | M_TEAM, "Instagib Capture The Flag: Capture \fs\f3the enemy flag\fr and bring it back to \fs\f1your flag\fr to score points for \fs\f1your team\fr. You spawn with full rifle ammo and die instantly from one shot. There are no items." },
     { "protect", M_CTF | M_PROTECT | M_TEAM, "Protect The Flag: Touch \fs\f3the enemy flag\fr to score points for \fs\f1your team\fr. Pick up \fs\f1your flag\fr to protect it. \fs\f1Your team\fr loses points if a dropped flag resets. Collect items for ammo." },
     { "insta protect", M_NOITEMS | M_INSTA | M_CTF | M_PROTECT | M_TEAM, "Instagib Protect The Flag: Touch \fs\f3the enemy flag\fr to score points for \fs\f1your team\fr. Pick up \fs\f1your flag\fr to protect it. \fs\f1Your team\fr loses points if a dropped flag resets. You spawn with full rifle ammo and die instantly from one shot. There are no items." },
-    { "hold", M_CTF | M_HOLD | M_TEAM, "Hold The Flag: Hold \fs\f7the flag\fr for 15 seconds to score points for \fs\f1your team\fr. Collect items for ammo." },
-    { "insta hold", M_NOITEMS | M_INSTA | M_CTF | M_HOLD | M_TEAM, "Instagib Hold The Flag: Hold \fs\f7the flag\fr for 15 seconds to score points for \fs\f1your team\fr. You spawn with full rifle ammo and die instantly from one shot. There are no items." },
+    { "hold", M_CTF | M_HOLD | M_TEAM, "Hold The Flag: Hold \fs\f7the flag\fr for 20 seconds to score points for \fs\f1your team\fr. Collect items for ammo." },
+    { "insta hold", M_NOITEMS | M_INSTA | M_CTF | M_HOLD | M_TEAM, "Instagib Hold The Flag: Hold \fs\f7the flag\fr for 20 seconds to score points for \fs\f1your team\fr. You spawn with full rifle ammo and die instantly from one shot. There are no items." },
     { "effic ctf", M_NOITEMS | M_EFFICIENCY | M_CTF | M_TEAM, "Efficiency Capture The Flag: Capture \fs\f3the enemy flag\fr and bring it back to \fs\f1your flag\fr to score points for \fs\f1your team\fr. You spawn with all weapons and armour. There are no items." },
     { "effic protect", M_NOITEMS | M_EFFICIENCY | M_CTF | M_PROTECT | M_TEAM, "Efficiency Protect The Flag: Touch \fs\f3the enemy flag\fr to score points for \fs\f1your team\fr. Pick up \fs\f1your flag\fr to protect it. \fs\f1Your team\fr loses points if a dropped flag resets. You spawn with all weapons and armour. There are no items." },
-    { "effic hold", M_NOITEMS | M_EFFICIENCY | M_CTF | M_HOLD | M_TEAM, "Efficiency Hold The Flag: Hold \fs\f7the flag\fr for 15 seconds to score points for \fs\f1your team\fr. You spawn with all weapons and armour. There are no items." },
+    { "effic hold", M_NOITEMS | M_EFFICIENCY | M_CTF | M_HOLD | M_TEAM, "Efficiency Hold The Flag: Hold \fs\f7the flag\fr for 20 seconds to score points for \fs\f1your team\fr. You spawn with all weapons and armour. There are no items." },
     { "collect", M_COLLECT | M_TEAM, "Skull Collector: Frag \fs\f3the enemy team\fr to drop \fs\f3skulls\fr. Collect them and bring them to \fs\f3the enemy base\fr to score points for \fs\f1your team\fr or steal back \fs\f1your skulls\fr. Collect items for ammo." },
     { "insta collect", M_NOITEMS | M_INSTA | M_COLLECT | M_TEAM, "Instagib Skull Collector: Frag \fs\f3the enemy team\fr to drop \fs\f3skulls\fr. Collect them and bring them to \fs\f3the enemy base\fr to score points for \fs\f1your team\fr or steal back \fs\f1your skulls\fr. You spawn with full rifle ammo and die instantly from one shot. There are no items." },
     { "effic collect", M_NOITEMS | M_EFFICIENCY | M_COLLECT | M_TEAM, "Efficiency Skull Collector: Frag \fs\f3the enemy team\fr to drop \fs\f3skulls\fr. Collect them and bring them to \fs\f3the enemy base\fr to score points for \fs\f1your team\fr or steal back \fs\f1your skulls\fr. You spawn with all weapons and armour. There are no items." }
@@ -135,6 +135,7 @@ static struct gamemodeinfo
 #define m_check(mode, flag)    (m_valid(mode) && gamemodes[(mode) - STARTGAMEMODE].flags&(flag))
 #define m_checknot(mode, flag) (m_valid(mode) && !(gamemodes[(mode) - STARTGAMEMODE].flags&(flag)))
 #define m_checkall(mode, flag) (m_valid(mode) && (gamemodes[(mode) - STARTGAMEMODE].flags&(flag)) == (flag))
+#define m_checkonly(mode, flag, exclude) (m_valid(mode) && (gamemodes[(mode) - STARTGAMEMODE].flags&((flag)|(exclude))) == (flag))
 
 #define m_noitems      (m_check(gamemode, M_NOITEMS))
 #define m_noammo       (m_check(gamemode, M_NOAMMO|M_NOITEMS))
@@ -142,8 +143,10 @@ static struct gamemodeinfo
 #define m_tactics      (m_check(gamemode, M_TACTICS))
 #define m_efficiency   (m_check(gamemode, M_EFFICIENCY))
 #define m_capture      (m_check(gamemode, M_CAPTURE))
+#define m_capture_only (m_checkonly(gamemode, M_CAPTURE, M_REGEN))
 #define m_regencapture (m_checkall(gamemode, M_CAPTURE | M_REGEN))
 #define m_ctf          (m_check(gamemode, M_CTF))
+#define m_ctf_only     (m_checkonly(gamemode, M_CTF, M_PROTECT | M_HOLD))
 #define m_protect      (m_checkall(gamemode, M_CTF | M_PROTECT))
 #define m_hold         (m_checkall(gamemode, M_CTF | M_HOLD))
 #define m_collect      (m_check(gamemode, M_COLLECT))
@@ -697,7 +700,8 @@ namespace game
         virtual void setup() {}
         virtual void checkitems(fpsent *d) {}
         virtual int respawnwait(fpsent *d, int delay = 0) { return 0; }
-        virtual void pickspawn(fpsent *d) { findplayerspawn(d); }
+        virtual int getspawngroup(fpsent *d) { return 0; }
+        virtual float ratespawn(fpsent *d, const extentity &e) { return 1.0f; }
         virtual void senditems(packetbuf &p) {}
         virtual void removeplayer(fpsent *d) {}
         virtual void died(fpsent *victim, fpsent *actor) {}
@@ -738,12 +742,14 @@ namespace game
     extern void teamsound(fpsent *d, int n, const vec *loc = NULL);
     extern fpsent *pointatplayer();
     extern fpsent *hudplayer();
-    extern fpsent *followingplayer();
+    extern fpsent *followingplayer(fpsent *fallback = NULL);
     extern void stopfollowing();
     extern void clientdisconnected(int cn, bool notify = true);
     extern void clearclients(bool notify = true);
     extern void startgame();
-    extern void spawnplayer(fpsent *);
+    extern float proximityscore(float x, float lower, float upper);
+    extern void pickgamespawn(fpsent *d);
+    extern void spawnplayer(fpsent *d);
     extern void deathstate(fpsent *d, bool restore = false);
     extern void damaged(int damage, fpsent *d, fpsent *actor, bool local = true);
     extern void killed(fpsent *d, fpsent *actor);
