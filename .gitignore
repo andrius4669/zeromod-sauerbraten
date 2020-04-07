@@ -1,0 +1,6 @@
+*.o
+*.a
+*.h.gch
+src/sauer_*
+bin_unix/native_*
+GeoLite2-City.mmdb
