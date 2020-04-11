@@ -119,11 +119,11 @@ teamkillkick "?capture" 10 30
 // language used in maxminddb lookups
 // geoip_mmdb_lang "en"
 
-// path to country database
+// path to legacy country database (deprecated, use mmdb instead)
 // geoip_country ""
 // geoip_country "GeoIP.dat"
 
-// path to city database
+// path to legacy city database (deprecated, use mmdb instead)
 // geoip_city ""
 // geoip_city "GeoLiteCity.dat"
 
