@@ -217,6 +217,7 @@ static void z_init_geoip()
     if (geoip_mmdb_poll && z_mmdb && z_mmdb_state &&
         z_didfilechange(geoip_mmdb, z_mmdb_state))
     {
+        logoutf("NOTICE: geoip_mmdb changed, reloading");
         z_close_mmdb();
     }
 
