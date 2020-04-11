@@ -9,8 +9,19 @@
 
 
 #ifdef USE_MMDB
+
 #include "maxminddb.h"
 static MMDB_s *z_mmdb = NULL;
+
+struct z_geoipfilestate
+{
+	char *fname;
+	time_t mtime;
+
+    ~z_geoipfilestate() { DELETEA(fname); }
+};
+struct z_geoipfilestate *z_mmdb_state = NULL;
+
 #endif
 
 
@@ -21,10 +32,77 @@ static GeoIP *z_gi = NULL, *z_gic = NULL;
 #endif
 
 
+static const char *z_findfile(const char *fname, const char *mode)
+{
+    if (!fname[0] || fname[0] == '/' || fname[0] == '.') return fname;
+    return findfile(fname, mode);
+}
+
+
+static void z_reset_geoip();
+static void z_reset_mmdb(bool);
+
+
+// whether setting any of database-related fields should trigger database reload.
+// reload may cause noticeable lag
+// 0 - don't reload everytime
+// 1 - reload everything everytime
+// 2 - if mdate changed
+VAR(geoip_reload, 0, 2, 2);
+
+VARF(geoip_enable, 0, 0, 1, { if(geoip_reload || !geoip_enable) z_reset_geoip(); });
+SVARF(geoip_mmdb, "", { if(geoip_reload) z_reset_mmdb(geoip_reload == 1); });
+
+
 #ifdef USE_MMDB
-static void z_reset_mmdb() { if(z_mmdb) { MMDB_close(z_mmdb); free(z_mmdb); z_mmdb = NULL; } }
+
+static struct z_geoipfilestate *z_newfilestate(const char *foundname)
+{
+    struct stat res;
+    if(stat(foundname, &res) == 0)
+    {
+        return new z_geoipfilestate{
+            .fname = newstring(foundname),
+            .mtime = res.st_mtime,
+        };
+    }
+    return NULL;
+}
+
+static bool z_didfilechange(const char *fname, struct z_geoipfilestate *fs)
+{
+    const char *found = z_findfile(fname, "rb");
+    if (strcmp(fs->fname, found) != 0) return true;
+    struct stat res;
+    if(stat(found, &res) == 0 && fs->mtime == res.st_mtime)
+    {
+        return false;
+    }
+    return true;
+}
+
+static void z_close_mmdb()
+{
+    MMDB_close(z_mmdb);
+    free(z_mmdb);
+    z_mmdb = NULL;
+
+    DELETEP(z_mmdb_state);
+}
+
+static void z_reset_mmdb(bool force)
+{
+    if(z_mmdb)
+    {
+        if (!force && *geoip_mmdb && z_mmdb_state)
+        {
+            if (!z_didfilechange(geoip_mmdb, z_mmdb_state)) return;
+        }
+        z_close_mmdb();
+    }
+}
 #else
-static inline void z_reset_mmdb() {}
+static inline void z_reset_mmdb(bool force) {}
 #endif
 
 #ifdef USE_GEOIP
@@ -41,14 +119,12 @@ static inline void z_reset_geoip_city() {}
 
 static void z_reset_geoip()
 {
-    z_reset_mmdb();
+    z_reset_mmdb(!geoip_enable || geoip_reload == 1);
     z_reset_geoip_country();
     z_reset_geoip_city();
 }
 
-VAR(geoip_reload, 0, 1, 1); // whether setting any of database-related fields should trigger database reload. reload may cause noticeable lag
-VARF(geoip_enable, 0, 0, 1, { if(geoip_reload || !geoip_enable) z_reset_geoip(); });
-SVARF(geoip_mmdb, "", { if(geoip_reload) z_reset_mmdb(); });
+VAR(geoip_mmdb_poll, 0, 0, 1);
 SVAR(geoip_mmdb_lang, "en");
 SVARF(geoip_country, "", { if(geoip_reload) z_reset_geoip_country(); });
 SVARF(geoip_city, "", { if(geoip_reload) z_reset_geoip_city(); });
@@ -138,11 +214,18 @@ static void z_init_geoip()
 
 #ifdef USE_MMDB
 
+    if (geoip_mmdb_poll && z_mmdb && z_mmdb_state &&
+        z_didfilechange(geoip_mmdb, z_mmdb_state))
+    {
+        z_close_mmdb();
+    }
+
     if(!z_mmdb && *geoip_mmdb)
     {
-        const char *found = findfile(geoip_mmdb, "rb");
+        const char *found = z_findfile(geoip_mmdb, "rb");
         if(found)
         {
+            z_mmdb_state = z_newfilestate(found);
             z_mmdb = (MMDB_s *)calloc(1, sizeof(MMDB_s));
             if(z_mmdb)
             {
@@ -188,7 +271,7 @@ static void z_init_geoip()
     #endif
     if(!z_gi && *geoip_country)
     {
-        const char *found = findfile(geoip_country, "rb");
+        const char *found = z_findfile(geoip_country, "rb");
         if(found) z_gi = GeoIP_open(found, GEOIP_COUNTRY_OPENMODE);
         if(z_gi) GeoIP_set_charset(z_gi, GEOIP_CHARSET_UTF8);
         else logoutf("WARNING: could not open geoip country database \"%s\"", geoip_country);
@@ -199,7 +282,7 @@ static void z_init_geoip()
     #endif
     if(!z_gic && *geoip_city)
     {
-        const char *found = findfile(geoip_city, "rb");
+        const char *found = z_findfile(geoip_city, "rb");
         if(found) z_gic = GeoIP_open(found, GEOIP_CITY_OPENMODE);
         if(z_gic) GeoIP_set_charset(z_gic, GEOIP_CHARSET_UTF8);
         else logoutf("WARNING: could not open geoip city database \"%s\"", geoip_city);
