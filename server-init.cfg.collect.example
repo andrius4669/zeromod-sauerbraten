@@ -110,11 +110,18 @@ teamkillkick "?capture" 10 30
 // geoip_enable 0
 
 // if 0 doesn't drop database when its path is set
-// geoip_reload 1
+// if 1 always drops database when its path is set
+// if 2 checks if path or database itself changed (using mtime)
+// geoip_reload 2
 
 // path to geoip2 database
 // geoip_mmdb ""
 // geoip_mmdb "GeoLite2-City.mmdb"
+// geoip_mmdb "/usr/share/GeoIP/GeoLite2-City.mmdb"
+
+// if 1 then re-checks if database is changed before every lookup (on client connect)
+// may incur small penalty on every connect which may be even visible if server is on weak machine so disabled by default
+// geoip_mmdb_poll 0
 
 // language used in maxminddb lookups
 // geoip_mmdb_lang "en"
