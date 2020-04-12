@@ -148,6 +148,7 @@ static void addban(int m, const char *name)
             string buf;
             old->print(buf);
             logoutf("WARNING: gban[%d]: %s conflicts with existing %s", m, name, buf);
+            // TODO remove more narrow one
         }
     }
     else

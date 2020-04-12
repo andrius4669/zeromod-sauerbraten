@@ -96,7 +96,9 @@ struct gbaninfo
     // host byte order
     bool check(uint ip) const { return (ip | (first ^ last)) == last; }
 
-    bool includes(const gbaninfo &b) const
+    // if specified ban has less or equal bit count
+    // does NOT check if prefixes are equal tho
+    bool isnotlessnarrowthan(const gbaninfo &b) const
     {
         return ((first ^ last) | (b.first ^ b.last)) == (first ^ last);
     }
