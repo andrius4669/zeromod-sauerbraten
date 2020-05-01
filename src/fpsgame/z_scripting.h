@@ -170,6 +170,8 @@ ICOMMAND(s_numclients, "bbbb", (int *exclude, int *nospec, int *noai, int *priv)
 ICOMMAND(s_addai, "ib", (int *skill, int *limit), intret(aiman::addai(*skill, *limit) ? 1 : 0));
 ICOMMAND(s_delai, "", (), intret(aiman::deleteai() ? 1 : 0));
 
+ICOMMAND(s_m_teammode, "", (), intret(m_teammode ? 1 : 0));
+
 ICOMMAND(s_setteam, "isi", (int *cn, char *newteam, int *mode),
 {
     string team;
