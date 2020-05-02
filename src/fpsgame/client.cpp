@@ -2151,12 +2151,12 @@ namespace game
     }
     COMMAND(listdemos, "");
 
-    void sendmap()
+    void sendmap(bool nolms)
     {
         if(!m_edit || (player1->state==CS_SPECTATOR && remote && !player1->privilege)) { conoutf(CON_ERROR, "\"sendmap\" only works in coop edit mode"); return; }
-        conoutf("sending map...");
+        conoutf("sending map%s...", nolms ? "" : " (with lightmaps)");
         defformatstring(mname, "sendmap_%d", lastmillis);
-        save_world(mname, true);
+        save_world(mname, nolms);
         defformatstring(fname, "packages/base/%s.ogz", mname);
         stream *map = openrawfile(path(fname), "rb");
         if(map)
@@ -2174,7 +2174,8 @@ namespace game
         else conoutf(CON_ERROR, "could not read map");
         remove(findfile(fname, "rb"));
     }
-    COMMAND(sendmap, "");
+    ICOMMAND(sendmap, "", (), sendmap(true));
+    ICOMMAND(sendmaplights, "", (), sendmap(false));
 
     void gotoplayer(const char *arg)
     {
