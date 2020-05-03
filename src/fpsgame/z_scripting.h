@@ -170,7 +170,24 @@ ICOMMAND(s_numclients, "bbbb", (int *exclude, int *nospec, int *noai, int *priv)
 ICOMMAND(s_addai, "ib", (int *skill, int *limit), intret(aiman::addai(*skill, *limit) ? 1 : 0));
 ICOMMAND(s_delai, "", (), intret(aiman::deleteai() ? 1 : 0));
 
-ICOMMAND(s_m_teammode, "", (), intret(m_teammode ? 1 : 0));
+
+ICOMMAND(s_m_noitems,      "", (), intret(m_noitems      ? 1 : 0));
+ICOMMAND(s_m_noammo,       "", (), intret(m_noammo       ? 1 : 0));
+ICOMMAND(s_m_insta,        "", (), intret(m_insta        ? 1 : 0));
+ICOMMAND(s_m_tactics,      "", (), intret(m_tactics      ? 1 : 0));
+ICOMMAND(s_m_efficiency,   "", (), intret(m_efficiency   ? 1 : 0));
+ICOMMAND(s_m_capture,      "", (), intret(m_capture      ? 1 : 0));
+ICOMMAND(s_m_capture_only, "", (), intret(m_capture_only ? 1 : 0));
+ICOMMAND(s_m_regencapture, "", (), intret(m_regencapture ? 1 : 0));
+ICOMMAND(s_m_ctf,          "", (), intret(m_ctf          ? 1 : 0));
+ICOMMAND(s_m_ctf_only,     "", (), intret(m_ctf_only     ? 1 : 0));
+ICOMMAND(s_m_protect,      "", (), intret(m_protect      ? 1 : 0));
+ICOMMAND(s_m_hold,         "", (), intret(m_hold         ? 1 : 0));
+ICOMMAND(s_m_collect,      "", (), intret(m_collect      ? 1 : 0));
+ICOMMAND(s_m_teammode,     "", (), intret(m_teammode     ? 1 : 0));
+ICOMMAND(s_m_overtime,     "", (), intret(m_overtime     ? 1 : 0));
+ICOMMAND(s_m_edit,         "", (), intret(m_edit         ? 1 : 0));
+
 
 ICOMMAND(s_setteam, "isi", (int *cn, char *newteam, int *mode),
 {
