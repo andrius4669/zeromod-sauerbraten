@@ -229,6 +229,7 @@ struct vec
     {
         return vec(((color>>16)&0xFF)*(1.0f/255.0f), ((color>>8)&0xFF)*(1.0f/255.0f), (color&0xFF)*(1.0f/255.0f));
     }
+    int tohexcolor() const { return (int(::clamp(r, 0.0f, 1.0f)*255)<<16)|(int(::clamp(g, 0.0f, 1.0f)*255)<<8)|int(::clamp(b, 0.0f, 1.0f)*255); }
 };
 
 inline vec2::vec2(const vec &v) : x(v.x), y(v.y) {}
@@ -824,6 +825,10 @@ struct matrix4x3
     void translate(float x, float y, float z) { translate(vec(x, y, z)); }
     void translate(const vec &p, float scale) { translate(vec(p).mul(scale)); }
 
+    void posttranslate(const vec &p) { d.add(p); }
+    void posttranslate(float x, float y, float z) { posttranslate(vec(x, y, z)); }
+    void posttranslate(const vec &p, float scale) { d.madd(p, scale); }
+
     void accumulate(const matrix4x3 &m, float k)
     {
         a.madd(m.a, k);
@@ -1329,6 +1334,7 @@ struct bvec
     {
         return bvec((color>>16)&0xFF, (color>>8)&0xFF, color&0xFF);
     }
+    int tohexcolor() const { return (int(r)<<16)|(int(g)<<8)|int(b); }
 };
 
 struct bvec4
