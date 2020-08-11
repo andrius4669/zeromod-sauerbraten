@@ -267,6 +267,8 @@ namespace game
     {
     }
 
+    int maxsoundradius(int n) { return 500; }
+
     void writegamedata(vector<char> &extras) {}
     void readgamedata (vector<char> &extras) {}
 

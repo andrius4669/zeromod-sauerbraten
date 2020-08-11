@@ -461,11 +461,6 @@ bool shouldgrab = false, grabinput = false, minimized = false, canrelativemouse 
 
 void inputgrab(bool on)
 {
-#if 0
-    logoutf(
-        "input grab on:%d canrelativemouse:%d userelativemouse:%d",
-        int(on), int(canrelativemouse), int(userelativemouse));
-#endif
     if(on)
     {
         SDL_ShowCursor(SDL_FALSE);
@@ -474,18 +469,10 @@ void inputgrab(bool on)
             if(SDL_SetRelativeMouseMode(SDL_TRUE) >= 0)
             {
                 SDL_SetWindowGrab(screen, SDL_TRUE);
-#if 0
-                SDL_bool g = SDL_GetWindowGrab(screen);
-                if (!g) logoutf(
-                    "input grab failed: not grabbed");
-#endif
                 relativemouse = true;
             }
             else
             {
-#if 0
-                logoutf("input grab failed set relative");
-#endif
                 SDL_SetWindowGrab(screen, SDL_FALSE);
                 canrelativemouse = false;
                 relativemouse = false;

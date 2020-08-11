@@ -21,10 +21,8 @@ PFNGLCOPYTEXSUBIMAGE3DPROC glCopyTexSubImage3D_ = NULL;
 
 PFNGLCOMPRESSEDTEXIMAGE3DPROC    glCompressedTexImage3D_    = NULL;
 PFNGLCOMPRESSEDTEXIMAGE2DPROC    glCompressedTexImage2D_    = NULL;
-PFNGLCOMPRESSEDTEXIMAGE1DPROC    glCompressedTexImage1D_    = NULL;
 PFNGLCOMPRESSEDTEXSUBIMAGE3DPROC glCompressedTexSubImage3D_ = NULL;
 PFNGLCOMPRESSEDTEXSUBIMAGE2DPROC glCompressedTexSubImage2D_ = NULL;
-PFNGLCOMPRESSEDTEXSUBIMAGE1DPROC glCompressedTexSubImage1D_ = NULL;
 PFNGLGETCOMPRESSEDTEXIMAGEPROC   glGetCompressedTexImage_   = NULL;
 
 PFNGLDRAWRANGEELEMENTSPROC glDrawRangeElements_ = NULL;
@@ -259,10 +257,8 @@ void gl_checkextensions()
 
     glCompressedTexImage3D_ =     (PFNGLCOMPRESSEDTEXIMAGE3DPROC)     getprocaddress("glCompressedTexImage3D");
     glCompressedTexImage2D_ =     (PFNGLCOMPRESSEDTEXIMAGE2DPROC)     getprocaddress("glCompressedTexImage2D");
-    glCompressedTexImage1D_ =     (PFNGLCOMPRESSEDTEXIMAGE1DPROC)     getprocaddress("glCompressedTexImage1D");
     glCompressedTexSubImage3D_ =  (PFNGLCOMPRESSEDTEXSUBIMAGE3DPROC)  getprocaddress("glCompressedTexSubImage3D");
     glCompressedTexSubImage2D_ =  (PFNGLCOMPRESSEDTEXSUBIMAGE2DPROC)  getprocaddress("glCompressedTexSubImage2D");
-    glCompressedTexSubImage1D_ =  (PFNGLCOMPRESSEDTEXSUBIMAGE1DPROC)  getprocaddress("glCompressedTexSubImage1D");
     glGetCompressedTexImage_ =    (PFNGLGETCOMPRESSEDTEXIMAGEPROC)    getprocaddress("glGetCompressedTexImage");
 
     glDrawRangeElements_ =        (PFNGLDRAWRANGEELEMENTSPROC)        getprocaddress("glDrawRangeElements");
@@ -1343,7 +1339,7 @@ void drawglare()
     pushfogcolor(vec(0, 0, 0));
 
     glClearColor(0, 0, 0, 1);
-    glClear((skyboxglare ? 0 : GL_COLOR_BUFFER_BIT) | GL_DEPTH_BUFFER_BIT);
+    glClear((skyboxglare && !shouldclearskyboxglare() ? 0 : GL_COLOR_BUFFER_BIT) | GL_DEPTH_BUFFER_BIT);
 
     rendergeom();
 
@@ -1501,7 +1497,7 @@ void drawreflection(float z, bool refract, int fogdepth, const bvec &col)
 
 int drawtex = 0;
 
-void drawcubemap(int size, const vec &o, float yaw, float pitch, const cubemapside &side)
+void drawcubemap(int size, const vec &o, float yaw, float pitch, const cubemapside &side, bool onlysky)
 {
     drawtex = DRAWTEX_ENVMAP;
 
@@ -1521,8 +1517,6 @@ void drawcubemap(int size, const vec &o, float yaw, float pitch, const cubemapsi
 
     setfog(fogmat);
 
-    glClear(GL_DEPTH_BUFFER_BIT);
-
     int farplane = worldsize*2;
 
     projmatrix.perspective(90.0f, 1.0f, nearplane, farplane);
@@ -1536,31 +1530,37 @@ void drawcubemap(int size, const vec &o, float yaw, float pitch, const cubemapsi
     }
     setcamprojmatrix();
 
-    glEnable(GL_CULL_FACE);
-    glEnable(GL_DEPTH_TEST);
-
     xtravertsva = xtraverts = glde = gbatches = 0;
 
     visiblecubes();
 
-    if(limitsky()) drawskybox(farplane, true);
+    if(onlysky) drawskybox(farplane, false, true);
+    else
+    {
+        glClear(GL_DEPTH_BUFFER_BIT);
 
-    rendergeom();
+        glEnable(GL_CULL_FACE);
+        glEnable(GL_DEPTH_TEST);
 
-    if(!limitsky()) drawskybox(farplane, false);
+        if(limitsky()) drawskybox(farplane, true);
 
-//    queryreflections();
+        rendergeom();
 
-    rendermapmodels();
-    renderalphageom();
+        if(!limitsky()) drawskybox(farplane, false);
 
-//    drawreflections();
+//      queryreflections();
 
-//    renderwater();
-//    rendermaterials();
+        rendermapmodels();
+        renderalphageom();
 
-    glDisable(GL_DEPTH_TEST);
-    glDisable(GL_CULL_FACE);
+//      drawreflections();
+
+//      renderwater();
+//      rendermaterials();
+
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_CULL_FACE);
+    }
 
     camera1 = oldcamera;
     drawtex = 0;

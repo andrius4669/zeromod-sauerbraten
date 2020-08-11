@@ -907,7 +907,7 @@ enum
 	MENU_OPENCONSOLE = 0,
 	MENU_SHOWCONSOLE,
 	MENU_HIDECONSOLE,
-    MENU_RELOADCFG,
+	MENU_RELOADCFG,
 	MENU_EXIT
 };
 
@@ -947,9 +947,9 @@ static LRESULT CALLBACK handlemessages(HWND hWnd, UINT uMsg, WPARAM wParam, LPAR
 					ShowWindow(conwindow, SW_HIDE);
 					ModifyMenu(appmenu, 0, MF_BYPOSITION|MF_STRING, MENU_SHOWCONSOLE, "Show Console");
 					break;
-                case MENU_RELOADCFG:
-                    reloadcfg = true;
-                    break;
+				case MENU_RELOADCFG:
+					reloadcfg = true;
+					break;
 				case MENU_EXIT:
 					PostMessage(hWnd, WM_CLOSE, 0, 0);
 					break;
@@ -1097,7 +1097,7 @@ void rundedicatedserver()
 		MSG msg;
 		while(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
 		{
-            if(msg.message == WM_QUIT) { quitserver = true; break; }
+			if(msg.message == WM_QUIT) { quitserver = true; break; }
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}

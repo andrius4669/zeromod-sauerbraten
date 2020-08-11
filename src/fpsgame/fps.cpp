@@ -294,21 +294,26 @@ namespace game
     float ratespawn(dynent *d, const extentity &e)
     {
         fpsent *p = (fpsent *)d;
-        float maxrange = m_noitems && (!cmode || m_ctf_only) ? 160.0f : 400.0f;
+        vec loc = vec(e.o).addz(p->eyeheight);
+        float maxrange = !m_noitems ? 400.0f : (cmode ? 300.0f : 110.0f);
         float minplayerdist = maxrange;
         loopv(players)
         {
             const fpsent *o = players[i];
-            if(o->state != CS_ALIVE || o == p || isteam(o->team, p->team)) continue;
+            if(o == p)
+            {
+                if(m_noitems || (o->state != CS_ALIVE && lastmillis - o->lastpain > 3000)) continue;
+            }
+            else if(o->state != CS_ALIVE || isteam(o->team, p->team)) continue;
 
-            vec dir = vec(o->o).sub(e.o);
+            vec dir = vec(o->o).sub(loc);
             float dist = dir.squaredlen();
             if(dist >= minplayerdist*minplayerdist) continue;
             dist = sqrtf(dist);
             dir.mul(1/dist);
 
             // scale actual distance if not in line of sight
-            if(raycube(e.o, dir, dist) < dist) dist *= 1.5f;
+            if(raycube(loc, dir, dist) < dist) dist *= 1.5f;
             minplayerdist = min(minplayerdist, dist);
         }
         float rating = 1.0f - proximityscore(minplayerdist, 80.0f, maxrange);
@@ -899,7 +904,7 @@ namespace game
         flushhudmatrix();
 
         defformatstring(health, "%d", d->state==CS_DEAD ? 0 : d->health);
-        bvec healthcolor = bvec::hexcolor(healthcolors && !m_insta ? (d->state==CS_DEAD ? 0x808080 : (d->health<=25 ? 0xFF0000 : (d->health<=50 ? 0xFF8000 : 0xFFFFFF))) : 0xFFFFFF);
+        bvec healthcolor = bvec::hexcolor(healthcolors && !m_insta ? (d->state==CS_DEAD ? 0x808080 : (d->health<=25 ? 0xFF0000 : (d->health<=50 ? 0xFF8000 : (d->health<=100 ? 0xFFFFFF : 0x40C0FF)))) : 0xFFFFFF);
         draw_text(health, (HICON_X + HICON_SIZE + HICON_SPACE)/2, HICON_TEXTY/2, healthcolor.r, healthcolor.g, healthcolor.b);
         if(d->state!=CS_DEAD)
         {
@@ -1143,6 +1148,26 @@ namespace game
             color.y = color.y*(1-t) + t;
         }
 #endif
+    }
+
+    int maxsoundradius(int n)
+    {
+        switch(n)
+        {
+            case S_JUMP:
+            case S_LAND:
+            case S_WEAPLOAD:
+            case S_ITEMAMMO:
+            case S_ITEMHEALTH:
+            case S_ITEMARMOUR:
+            case S_ITEMPUP:
+            case S_ITEMSPAWN:
+            case S_NOAMMO:
+            case S_PUPOUT:
+                return 340;
+            default:
+                return 500;
+        }
     }
 
     bool serverinfostartcolumn(g3d_gui *g, int i)
