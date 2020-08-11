@@ -2,5 +2,6 @@
 *.a
 *.h.gch
 src/sauer_*
+src/.svn
 bin_unix/native_*
 GeoLite2-City.mmdb
