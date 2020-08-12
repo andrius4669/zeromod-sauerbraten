@@ -1,10 +1,17 @@
 CXXFLAGS= -O3 -fomit-frame-pointer -ffast-math
 override CXXFLAGS+= -Wall -fsigned-char -fno-exceptions -fno-rtti
 
-ifndef NEWPROTO
+# default
+PROTO=collect
+# override
+-include config.mk
+
+ifeq ($(PROTO),collect)
   override CXXFLAGS+= -DOLDPROTO
-else
+else ifeq ($(PROTO),svn)
   override CXXFLAGS+= -UOLDPROTO
+else
+  $(error PROTO not understod)
 endif
 
 PLATFORM= $(shell uname -s | tr '[:lower:]' '[:upper:]')
