@@ -187,7 +187,8 @@ namespace server
     {
         uint ip;
         string name;
-        int maxhealth, frags, flags, deaths, suicides, teamkills, shotdamage, explosivedamage, damage, hits, misses, shots;
+        int frags, flags, deaths, teamkills, shotdamage, damage;
+        int maxhealth, suicides, explosivedamage, hits, misses, shots;
         int timeplayed;
         float effectiveness;
         int stolen, returned, maxstreak;
