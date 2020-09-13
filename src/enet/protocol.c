@@ -625,7 +625,7 @@ enet_protocol_handle_send_fragment (ENetHost * host, ENetPeer * peer, const ENet
                fragmentLength);
 
         if (startCommand -> fragmentsRemaining <= 0)
-          enet_peer_dispatch_incoming_reliable_commands (peer, channel);
+          enet_peer_dispatch_incoming_reliable_commands (peer, channel, NULL);
     }
 
     return 0;
@@ -743,7 +743,7 @@ enet_protocol_handle_send_unreliable_fragment (ENetHost * host, ENetPeer * peer,
                fragmentLength);
 
         if (startCommand -> fragmentsRemaining <= 0)
-          enet_peer_dispatch_incoming_unreliable_commands (peer, channel);
+          enet_peer_dispatch_incoming_unreliable_commands (peer, channel, NULL);
     }
 
     return 0;
@@ -888,9 +888,9 @@ enet_protocol_handle_acknowledge (ENetHost * host, ENetEvent * event, ENetPeer *
         ENET_TIME_DIFFERENCE (host -> serviceTime, peer -> packetThrottleEpoch) >= peer -> packetThrottleInterval)
     {
         peer -> lastRoundTripTime = peer -> lowestRoundTripTime;
-        peer -> lastRoundTripTimeVariance = ENET_MAX (peer -> highestRoundTripTimeVariance, (peer -> lowestRoundTripTime + 23) / 24);
+        peer -> lastRoundTripTimeVariance = ENET_MAX (peer -> highestRoundTripTimeVariance, (peer -> lowestRoundTripTime + 15) / 16);
         peer -> lowestRoundTripTime = peer -> roundTripTime;
-        peer -> highestRoundTripTimeVariance = peer -> roundTripTimeVariance;
+        peer -> highestRoundTripTimeVariance = ENET_MAX (peer -> roundTripTimeVariance, 2);
         peer -> packetThrottleEpoch = host -> serviceTime;
     }
 

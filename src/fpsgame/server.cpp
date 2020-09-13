@@ -678,14 +678,15 @@ namespace server
     vector<demofile> demos;
 
     bool demonextmatch = false;
-    VAR(serverrecorddemo, 0, 0, 1);
     bool demonextmatch_set = false;
+
     stream *demotmp = NULL, *demorecord = NULL, *demoplayback = NULL;
     int nextplayback = 0, demomillis = 0;
 
     VAR(maxdemos, 0, 5, 25);
     VAR(maxdemosize, 0, 16, 31);
     VAR(restrictdemos, 0, 1, 1);
+    VAR(autorecorddemo, 0, 0, 1);
 
     VAR(restrictpausegame, 0, 1, 1);
     VAR(restrictgamespeed, 0, 1, 1);
@@ -702,6 +703,19 @@ namespace server
 		}
 	});
     SVAR(servermotd, "");
+
+    // old alias
+    VARF(serverrecorddemo, 0, 0, 1, autorecorddemo = serverrecorddemo);
+
+    static inline bool demonextmatch_get()
+    {
+        if (!demonextmatch_set)
+        {
+            demonextmatch = autorecorddemo;
+            demonextmatch_set = true;
+        }
+        return demonextmatch;
+    }
 
     struct teamkillkick
     {
@@ -1088,7 +1102,7 @@ namespace server
         loopi(sizeof(team)/sizeof(team[0]))
         {
             addteaminfo(teamnames[i]);
-            loopvj(team[i])
+            if(!persistteams) loopvj(team[i])
             {
                 clientinfo *ci = team[i][j];
                 if(!strcmp(ci->team, teamnames[i])) continue;
@@ -2065,6 +2079,9 @@ namespace server
                 putint(p, oi->state.state);
                 putint(p, oi->state.frags);
                 putint(p, oi->state.flags);
+#ifndef OLDPROTO
+                putint(p, oi->state.deaths);
+#endif
                 putint(p, oi->state.quadmillis);
                 sendstate(oi->state, p);
             }
@@ -2090,8 +2107,13 @@ namespace server
     void sendresume(clientinfo *ci)
     {
         gamestate &gs = ci->state;
+#ifndef OLDPROTO
+        sendf(-1, 1, "ri3i4i6vi", N_RESUME, ci->clientnum, gs.state,
+            gs.frags, gs.flags, gs.deaths, gs.quadmillis,
+#else
         sendf(-1, 1, "ri3i9vi", N_RESUME, ci->clientnum,
             gs.state, gs.frags, gs.flags, gs.quadmillis,
+#endif
             gs.lifesequence,
             gs.health, gs.maxhealth,
             gs.armour, gs.armourtype,
@@ -2195,11 +2217,10 @@ namespace server
         {
             if(clients.length()) setupdemoplayback();
         }
-        else if(demonextmatch_set ? demonextmatch : serverrecorddemo)
+        else if(demonextmatch_get())
         {
-            demonextmatch = false;
-            demonextmatch_set = false;
             setupdemorecord();
+            demonextmatch = autorecorddemo!=0;
         }
 
         if(smode) smode->setup();
