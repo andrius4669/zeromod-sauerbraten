@@ -903,6 +903,14 @@ namespace server
         return n;
     }
 
+    int actualclientslen()
+    {
+        int n = 0;
+        // count connected peers. there can be talkbots
+        loopv(clients) if(clients[i]->state.aitype == AI_NONE) ++n;
+        return n;
+    }
+
     bool duplicatename(clientinfo *ci, const char *name)
     {
         if(!name) name = ci->name;
@@ -1970,7 +1978,7 @@ namespace server
 
     bool hasmap(clientinfo *ci)
     {
-        return (m_edit && (clients.length() > 0 || ci->local)) ||
+        return (m_edit && (actualclientslen() > 0 || ci->local)) ||
                (smapname[0] && (!m_timed || gamemillis < gamelimit || (ci->state.state==CS_SPECTATOR && !ci->privilege && !ci->local) || numclients(ci->clientnum, true, true, true)));
     }
 
@@ -2068,7 +2076,7 @@ namespace server
             putint(p, 1);
             sendf(-1, 1, "ri3x", N_SPECTATOR, ci->clientnum, 1, ci->clientnum);
         }
-        if(!ci || clients.length()>1)
+        if(!ci || actualclientslen()>1)
         {
             putint(p, N_RESUME);
             loopv(clients)
@@ -2216,7 +2224,7 @@ namespace server
 
         if(m_demo)
         {
-            if(clients.length()) setupdemoplayback();
+            if(actualclientslen()) setupdemoplayback();
         }
         else if(demonextmatch_get())
         {
@@ -2435,8 +2443,12 @@ namespace server
             if(fragvalue>0)
             {
                 int friends = 0, enemies = 0; // note: friends also includes the fragger
-                if(m_teammode) loopv(clients) if(strcmp(clients[i]->team, actor->team)) enemies++; else friends++;
-                else { friends = 1; enemies = clients.length()-1; }
+                if(m_teammode) loopv(clients) if(clients[i]->state.state != CS_SPECTATOR)
+                {
+                    if(strcmp(clients[i]->team, actor->team)) enemies++;
+                    else friends++;
+                }
+                else { friends = 1; enemies = numclients(-1, true, false)-1; }
                 actor->state.effectiveness += fragvalue*friends/float(max(enemies, 1));
             }
             teaminfo *t = m_teammode ? teaminfos.access(actor->team) : NULL;
@@ -2719,7 +2731,7 @@ namespace server
 
         z_checksleep();
 
-        shouldstep = clients.length() > 0;
+        shouldstep = actualclientslen() > 0;
     }
 
     void forcespectator(clientinfo *ci)
@@ -2749,7 +2761,7 @@ namespace server
         if((m_edit && z_autosendmap < 2) || !smapname[0]) return;
         vector<crcinfo> crcs;
         int total = 0, unsent = 0, invalid = 0;
-        if(mcrc) crcs.add(crcinfo(mcrc, clients.length() + 1));
+        if(mcrc) crcs.add(crcinfo(mcrc, actualclientslen() + 1));
         loopv(clients)
         {
             clientinfo *ci = clients[i];
@@ -3254,7 +3266,7 @@ namespace server
                     else
                     {
                         connected(ci);
-                        if(serverautomaster && clients.length()<=1) setmaster(ci, true, "", NULL, NULL, serverautomaster>1 ? PRIV_AUTH : PRIV_MASTER, true);
+                        if(serverautomaster && actualclientslen()<=1) setmaster(ci, true, "", NULL, NULL, serverautomaster>1 ? PRIV_AUTH : PRIV_MASTER, true);
                     }
                     break;
                 }
