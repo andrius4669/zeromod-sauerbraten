@@ -2443,10 +2443,13 @@ namespace server
             if(fragvalue>0)
             {
                 int friends = 0, enemies = 0; // note: friends also includes the fragger
-                if(m_teammode) loopv(clients) if(clients[i]->state.state != CS_SPECTATOR)
+                if(m_teammode)
                 {
-                    if(strcmp(clients[i]->team, actor->team)) enemies++;
-                    else friends++;
+                    loopv(clients) if(clients[i]->state.state != CS_SPECTATOR)
+                    {
+                        if(strcmp(clients[i]->team, actor->team)) enemies++;
+                        else friends++;
+                    }
                 }
                 else { friends = 1; enemies = numclients(-1, true, false)-1; }
                 actor->state.effectiveness += fragvalue*friends/float(max(enemies, 1));

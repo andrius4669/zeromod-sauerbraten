@@ -32,11 +32,13 @@ static GeoIP *z_gi = NULL, *z_gic = NULL;
 #endif
 
 
+#if defined(USE_MMDB) || defined(USE_GEOIP)
 static const char *z_findfile(const char *fname, const char *mode)
 {
     if (!fname[0] || fname[0] == '/' || fname[0] == '.') return fname;
     return findfile(fname, mode);
 }
+#endif
 
 
 static void z_reset_geoip();

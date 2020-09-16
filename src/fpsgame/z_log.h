@@ -194,10 +194,10 @@ static inline void z_log_servcmd(clientinfo *ci, const char *cmd)
     logoutf("servcmd: %s (%d): %s", ci->name, ci->clientnum, cmd);
 }
 
-VAR(discmsg_privacy, 0, 0, 1);          // avoid broadcasting clients' ips to unauthorized clients
-VAR(discmsg_verbose, 0, 1, 2);          // (only applies for not connected clients) whether show disc msg (2 - force)
-VAR(discmsg_showip_admin, 0, 1, 1);     // whether we should treat master or admin as authorized client
-VAR(discmsg_showip_kicker, 0, 0, 1);    // whether we should treat kicker specially
+VAR(discmsg_privacy, 0, 1, 1);          // avoid broadcasting clients' ips to unauthorized clients
+VAR(discmsg_verbose, 0, 0, 2);          // (only applies for not connected clients) whether show disc msg (2 - force)
+VAR(discmsg_showip_admin, -1, -1, 1);   // whether we should treat master or admin as authorized client (-1 - depending on auth mode)
+VAR(discmsg_showip_kicker, 0, 0, 1);    // whether we should always treat kicker as authorized to see regardless of priv
 
 static void z_discmsg_print(char (&s)[MAXSTRLEN], clientinfo *ci, int n, const char *msg, bool hideip)
 {
@@ -228,10 +228,21 @@ static void z_discmsg_recordmsg(const char *msg)
     recordpacket(1, buf.getbuf(), buf.length());
 }
 
+static int z_discmsg_showip_priv()
+{
+    switch (discmsg_showip_admin)
+    {
+        case 0: return PRIV_MASTER;
+        case 1: return PRIV_ADMIN;
+        case -1: return mastermask&MM_AUTOAPPROVE ? PRIV_ADMIN : PRIV_MASTER;
+    }
+    assert(0);
+}
+
 static bool z_discmsg_canseeip(clientinfo *ci)
 {
     if(ci == z_log_kickerinfo.ci) return discmsg_showip_kicker || ci->local || z_log_kickerinfo.priv>=(discmsg_showip_admin ? PRIV_ADMIN : PRIV_MASTER);
-    return ci->local || ci->privilege>=(discmsg_showip_admin ? PRIV_ADMIN : PRIV_MASTER);
+    return ci->local || ci->privilege >= z_discmsg_showip_priv();
 }
 
 static void z_discmsg(clientinfo *ci, int n, const char *msg, bool forced)
