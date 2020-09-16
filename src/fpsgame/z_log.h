@@ -232,11 +232,11 @@ static int z_discmsg_showip_priv()
 {
     switch (discmsg_showip_admin)
     {
+        case -1: return mastermask&MM_AUTOAPPROVE ? PRIV_ADMIN : PRIV_MASTER;
         case 0: return PRIV_MASTER;
         case 1: return PRIV_ADMIN;
-        case -1: return mastermask&MM_AUTOAPPROVE ? PRIV_ADMIN : PRIV_MASTER;
     }
-    assert(0);
+    assert(0 && "shouldn't be reached");
 }
 
 static bool z_discmsg_canseeip(clientinfo *ci)
