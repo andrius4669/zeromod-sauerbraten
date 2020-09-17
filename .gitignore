@@ -1,6 +1,7 @@
 *.o
 *.a
 *.h.gch
+src/config.mk
 src/sauer_*
 src/genauthkey
 src/.svn
