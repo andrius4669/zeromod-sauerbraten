@@ -167,6 +167,7 @@ BSDLIBS= -L/usr/local/lib
 endif
 SERVER_LIBS+= $(BSDLIBS)
 CLIENT_LIBS+= $(BSDLIBS)
+GENAUTHKEY_LIBS:= $(SERVER_LIBS) -lsodium
 MASTER_LIBS:= $(SERVER_LIBS)
 GEOIP_USES:=$(shell ./check_geoip.sh $(CXX) $(CXXFLAGS) $(SERVER_INCLUDES) $(BSDLIBS))
 SERVER_INCLUDES+=$(GEOIP_USES)
@@ -197,7 +198,14 @@ MASTER_OBJS= \
 	engine/command-standalone.o \
 	engine/master-standalone.o
 
-SERVER_MASTER_OBJS= $(SERVER_OBJS) $(filter-out $(SERVER_OBJS),$(MASTER_OBJS))
+GENAUTHKEY_OBJS= \
+	shared/tools-standalone.o \
+	shared/stream-standalone.o \
+	engine/genauthkey-standalone.o
+
+SERVER_MASTER_OBJS:= $(SERVER_OBJS)
+SERVER_MASTER_OBJS:= $(SERVER_MASTER_OBJS) $(filter-out $(SERVER_MASTER_OBJS),$(MASTER_OBJS))
+SERVER_MASTER_OBJS:= $(SERVER_MASTER_OBJS) $(filter-out $(SERVER_MASTER_OBJS),$(GENAUTHKEY_OBJS))
 
 ifneq (,$(findstring DARWIN,$(PLATFORM)))
 CLIENT_OBJS+= xcode/macutils.o xcode/main.o xcode/Launcher.o
@@ -214,7 +222,7 @@ default: all
 all: client server
 
 clean:
-	-$(RM) $(CLIENT_PCH) $(CLIENT_OBJS) $(SERVER_MASTER_OBJS) sauer_client sauer_server sauer_master
+	-$(RM) $(CLIENT_PCH) $(CLIENT_OBJS) $(SERVER_MASTER_OBJS) sauer_client sauer_server sauer_master genauthkey
 
 $(filter-out shared/%,$(CLIENT_PCH)): $(filter shared/%,$(CLIENT_PCH))
 
@@ -263,6 +271,9 @@ shared/cube2font.o: shared/cube2font.c
 
 cube2font: shared/cube2font.o
 	$(CXX) $(CXXFLAGS) -o cube2font shared/cube2font.o `freetype-config --libs` -lz
+
+genauthkey: $(GENAUTHKEY_OBJS)
+	$(CXX) $(CXXFLAGS) -o genauthkey $(GENAUTHKEY_OBJS) $(GENAUTHKEY_LIBS)
 
 install_client: client
 	cp sauer_client	../bin_unix/$(PLATFORM_PREFIX)_client.new
