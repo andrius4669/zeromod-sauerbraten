@@ -1,12 +1,7 @@
 // texture.cpp: texture slot management
 
 #include "engine.h"
-
-#ifdef __APPLE__
-  #include "SDL2_image/SDL_image.h"
-#else
-  #include "SDL_image.h"
-#endif
+#include "SDL_image.h"
 
 #ifndef SDL_IMAGE_VERSION_ATLEAST
 #define SDL_IMAGE_VERSION_ATLEAST(X, Y, Z) \
