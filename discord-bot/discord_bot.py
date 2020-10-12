@@ -56,7 +56,7 @@ async def log_to_discord(sauer_log, channel):
             else:
                 await channel.send(newline)
         else:
-            await asyncio.sleep(0.01)
+            await asyncio.sleep(0.1)
 
 
 def break_message(message, fifo, split_length):
