@@ -2,6 +2,10 @@
 
 #include "engine.h"
 
+#ifdef SDL_VIDEO_DRIVER_X11
+#include "SDL_syswm.h"
+#endif
+
 extern void cleargamma();
 
 void cleanup()
@@ -335,9 +339,7 @@ void renderprogress(float bar, const char *text, GLuint tex, bool background)   
 
     clientkeepalive();      // make sure our connection doesn't time out while loading maps etc.
     
-    #ifdef __APPLE__
-    interceptkey(SDLK_UNKNOWN); // keep the event queue awake to avoid 'beachball' cursor
-    #endif
+    SDL_PumpEvents(); // keep the event queue awake to avoid 'beachball' cursor
 
     extern int mesa_swap_bug, curvsync;
     bool forcebackground = progressbackground || (mesa_swap_bug && (curvsync || totalmillis==1));
@@ -459,8 +461,13 @@ VARNP(relativemouse, userelativemouse, 0, 1, 1);
 
 bool shouldgrab = false, grabinput = false, minimized = false, canrelativemouse = true, relativemouse = false;
 
+#ifdef SDL_VIDEO_DRIVER_X11
+VAR(sdl_xgrab_bug, 0, 1, 1);
+#endif
+
 void inputgrab(bool on, bool delay = false)
 {
+    bool wasrelativemouse = relativemouse;
     if(on)
     {
         SDL_ShowCursor(SDL_FALSE);
@@ -490,6 +497,24 @@ void inputgrab(bool on, bool delay = false)
         }
     }
     shouldgrab = delay;
+
+#ifdef SDL_VIDEO_DRIVER_X11
+    if((relativemouse || wasrelativemouse) && sdl_xgrab_bug)
+    {
+        // Workaround for buggy SDL X11 pointer grabbing
+        union { SDL_SysWMinfo info; uchar buf[sizeof(SDL_SysWMinfo) + 128]; };
+        SDL_GetVersion(&info.version);
+        if(SDL_GetWindowWMInfo(screen, &info) && info.subsystem == SDL_SYSWM_X11)
+        {
+            if(relativemouse)
+            {
+                uint mask = ButtonPressMask | ButtonReleaseMask | PointerMotionMask | FocusChangeMask;
+                XGrabPointer(info.info.x11.display, info.info.x11.window, True, mask, GrabModeAsync, GrabModeAsync, info.info.x11.window, None, CurrentTime);
+            }
+            else XUngrabPointer(info.info.x11.display, CurrentTime);
+        }
+    }
+#endif
 }   
 
 bool initwindowpos = false;
@@ -755,14 +780,14 @@ void resetgl()
 
 COMMAND(resetgl, "");
 
-vector<SDL_Event> events;
+static queue<SDL_Event, 32> events;
 
-void pushevent(const SDL_Event &e)
+static inline void pushevent(const SDL_Event &e)
 {
-    events.add(e); 
+    events.add(e);
 }
 
-static bool filterevent(const SDL_Event &event)
+static inline bool filterevent(const SDL_Event &event)
 {
     switch(event.type)
     {
@@ -781,41 +806,74 @@ static bool filterevent(const SDL_Event &event)
     return true;
 }
 
-static inline bool pollevent(SDL_Event &event)
+template <int SIZE> static inline bool pumpevents(queue<SDL_Event, SIZE> &events)
 {
-    while(SDL_PollEvent(&event))
+    while(events.empty())
     {
-        if(filterevent(event)) return true;
+        SDL_PumpEvents();
+        databuf<SDL_Event> buf = events.reserve(events.capacity());
+        int n = SDL_PeepEvents(buf.getbuf(), buf.remaining(), SDL_GETEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT);
+        if(n <= 0) return false;
+        loopi(n) if(filterevent(buf.buf[i])) buf.put(buf.buf[i]);
+        events.addbuf(buf);
     }
-    return false;
+    return true;
+}
+
+static int interceptkeysym = 0;
+
+static int interceptevents(void *data, SDL_Event *event)
+{
+    switch(event->type)
+    {
+        case SDL_MOUSEMOTION: return 0;
+        case SDL_KEYDOWN:
+            if(event->key.keysym.sym == interceptkeysym)
+            {
+                interceptkeysym = -interceptkeysym;
+                return 0;
+            }
+            break;
+    }
+    return 1;
+}
+
+static void clearinterceptkey()
+{
+    SDL_DelEventWatch(interceptevents, NULL);
+    interceptkeysym = 0;
 }
 
 bool interceptkey(int sym)
 {
-    static int lastintercept = SDLK_UNKNOWN;
-    int len = lastintercept == sym ? events.length() : 0;
-    SDL_Event event;
-    while(pollevent(event))
+    if(!interceptkeysym)
     {
-        switch(event.type)
+        interceptkeysym = sym;
+        SDL_FilterEvents(interceptevents, NULL);
+        if(interceptkeysym < 0)
         {
-            case SDL_MOUSEMOTION: break;
-            default: pushevent(event); break;
+            interceptkeysym = 0;
+            return true;
         }
+        SDL_AddEventWatch(interceptevents, NULL);
     }
-    lastintercept = sym;
-    if(sym != SDLK_UNKNOWN) for(int i = len; i < events.length(); i++)
+    else if(abs(interceptkeysym) != sym) interceptkeysym = sym;
+    SDL_PumpEvents();
+    if(interceptkeysym < 0)
     {
-        if(events[i].type == SDL_KEYDOWN && events[i].key.keysym.sym == sym) { events.remove(i); return true; }
+        clearinterceptkey();
+        interceptkeysym = sym;
+        SDL_FilterEvents(interceptevents, NULL);
+        interceptkeysym = 0;
+        return true;
     }
     return false;
 }
 
 static void ignoremousemotion()
 {
-    SDL_Event e;
     SDL_PumpEvents();
-    while(SDL_PeepEvents(&e, 1, SDL_GETEVENT, SDL_MOUSEMOTION, SDL_MOUSEMOTION));
+    SDL_FlushEvent(SDL_MOUSEMOTION);
 }
 
 static void resetmousemotion()
@@ -828,40 +886,25 @@ static void resetmousemotion()
 
 static void checkmousemotion(int &dx, int &dy)
 {
-    loopv(events)
+    while(pumpevents(events))
     {
-        SDL_Event &event = events[i];
-        if(event.type != SDL_MOUSEMOTION)
-        { 
-            if(i > 0) events.remove(0, i); 
-            return; 
-        }
+        SDL_Event &event = events.removing();
+        if(event.type != SDL_MOUSEMOTION) return;
         dx += event.motion.xrel;
         dy += event.motion.yrel;
-    }
-    events.setsize(0);
-    SDL_Event event;
-    while(pollevent(event))
-    {
-        if(event.type != SDL_MOUSEMOTION)
-        {
-            events.add(event);
-            return;
-        }
-        dx += event.motion.xrel;
-        dy += event.motion.yrel;
+        events.remove();
     }
 }
 
 void checkinput()
 {
-    SDL_Event event;
+    if(interceptkeysym) clearinterceptkey();
     //int lasttype = 0, lastbut = 0;
     bool mousemoved = false;
     int focused = 0;
-    while(events.length() || pollevent(event))
+    while(pumpevents(events))
     {
-        if(events.length()) event = events.remove(0);
+        SDL_Event &event = events.remove();
 
         if(focused && event.type!=SDL_WINDOWEVENT) { if(grabinput != (focused>0)) inputgrab(grabinput = focused>0, shouldgrab); focused = 0; }
 
