@@ -58,7 +58,7 @@ endif
 CLIENT_INCLUDES= $(INCLUDES) -Iinclude
 STD_LIBS= -static-libgcc -static-libstdc++
 CLIENT_LIBS= -mwindows $(STD_LIBS) -L$(WINBIN) -L$(WINLIB) -lSDL2 -lSDL2_image -lSDL2_mixer -lzlib1 -lopengl32 -lenet -lws2_32 -lwinmm
-else	
+else
 ifneq (,$(findstring DARWIN,$(PLATFORM)))
 ifneq (,$(findstring CROSS,$(PLATFORM)))
   TOOLCHAINTARGET= $(shell osxcross-conf | grep -m1 "TARGET=" | cut -b24-)
@@ -70,11 +70,11 @@ ifneq (,$(STRIP))
   STRIP= $(TOOLCHAIN)strip
 endif
 endif
-OSXMIN= 10.6
+OSXMIN= 10.9
 override CC+= -arch x86_64 -mmacosx-version-min=$(OSXMIN)
 override CXX+= -arch x86_64 -mmacosx-version-min=$(OSXMIN)
 CLIENT_INCLUDES= $(INCLUDES) -Iinclude
-CLIENT_LIBS= -Fxcode/Frameworks -framework SDL2 -framework SDL2_image
+CLIENT_LIBS= -F../sauerbraten.app/Contents/Frameworks/ -framework SDL2 -framework SDL2_image
 CLIENT_LIBS+= -framework SDL2_mixer -framework CoreAudio -framework AudioToolbox
 CLIENT_LIBS+= -framework AudioUnit -framework OpenGL -framework Cocoa -lz -Lenet -lenet
 else
@@ -86,8 +86,8 @@ ifeq ($(PLATFORM),LINUX)
 CLIENT_LIBS+= -lrt
 else
 ifneq (,$(findstring GNU,$(PLATFORM)))
-CLIENT_LIBS+= -lrt 
-endif         
+CLIENT_LIBS+= -lrt
+endif
 endif
 CLIENT_OBJS= \
 	shared/crypto.o \
@@ -208,7 +208,7 @@ SERVER_MASTER_OBJS:= $(SERVER_MASTER_OBJS) $(filter-out $(SERVER_MASTER_OBJS),$(
 SERVER_MASTER_OBJS:= $(SERVER_MASTER_OBJS) $(filter-out $(SERVER_MASTER_OBJS),$(GENAUTHKEY_OBJS))
 
 ifneq (,$(findstring DARWIN,$(PLATFORM)))
-CLIENT_OBJS+= xcode/macutils.o xcode/main.o xcode/Launcher.o
+CLIENT_OBJS+= xcode/macutils.o
 
 %.o: %.mm
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
@@ -242,7 +242,7 @@ $(SERVER_MASTER_OBJS): CXXFLAGS += $(SERVER_INCLUDES)
 
 ifneq (,$(findstring MINGW,$(PLATFORM)))
 client: $(CLIENT_OBJS)
-	$(WINDRES) -I vcpp -i vcpp/mingw.rc -J rc -o vcpp/mingw.res -O coff 
+	$(WINDRES) -I vcpp -i vcpp/mingw.rc -J rc -o vcpp/mingw.res -O coff
 	$(CXX) $(CXXFLAGS) -o $(WINBIN)/sauerbraten.exe vcpp/mingw.res $(CLIENT_OBJS) $(CLIENT_LIBS)
 
 server: $(SERVER_OBJS)
@@ -259,12 +259,15 @@ install: install_client install_server
 else
 client:	libenet $(CLIENT_OBJS)
 	$(CXX) $(CXXFLAGS) -o sauer_client $(CLIENT_OBJS) $(CLIENT_LIBS)
+ifneq (,$(findstring DARWIN,$(PLATFORM)))
+	install_name_tool -add_rpath @executable_path/../Frameworks sauer_client
+endif
 
 server:	libenet $(SERVER_OBJS)
-	$(CXX) $(CXXFLAGS) -o sauer_server $(SERVER_OBJS) $(SERVER_LIBS)  
-	
+	$(CXX) $(CXXFLAGS) -o sauer_server $(SERVER_OBJS) $(SERVER_LIBS)
+
 master: libenet $(MASTER_OBJS)
-	$(CXX) $(CXXFLAGS) -o sauer_master $(MASTER_OBJS) $(MASTER_LIBS)  
+	$(CXX) $(CXXFLAGS) -o sauer_master $(MASTER_OBJS) $(MASTER_LIBS)
 
 shared/cube2font.o: shared/cube2font.c
 	$(CXX) $(CXXFLAGS) -c -o $@ $< `freetype-config --cflags`
@@ -274,6 +277,12 @@ cube2font: shared/cube2font.o
 
 genauthkey: $(GENAUTHKEY_OBJS)
 	$(CXX) $(CXXFLAGS) -o genauthkey $(GENAUTHKEY_OBJS) $(GENAUTHKEY_LIBS)
+
+ifneq (,$(findstring DARWIN,$(PLATFORM)))
+install: client
+	cp sauer_client ../sauerbraten.app/Contents/MacOS/sauerbraten_universal.new
+	$(MV) -f ../sauerbraten.app/Contents/MacOS/sauerbraten_universal.new ../sauerbraten.app/Contents/MacOS/sauerbraten_universal
+else
 
 install_client: client
 	cp sauer_client	../bin_unix/$(PLATFORM_PREFIX)_client.new
@@ -297,6 +306,9 @@ endif
 	$(MV) -f ../bin_unix/$(PLATFORM_PREFIX)_master.new ../bin_unix/$(PLATFORM_PREFIX)_master
 
 install: install_client install_server
+
+endif
+
 endif
 
 enet/libenet.a:
@@ -655,3 +667,7 @@ fpsgame/server-standalone.o: fpsgame/z_talkbot.h fpsgame/z_serverdesc.h
 engine/master-standalone.o: shared/cube.h shared/tools.h shared/geom.h
 engine/master-standalone.o: shared/ents.h shared/command.h shared/iengine.h
 engine/master-standalone.o: shared/igame.h
+engine/genauthkey-standalone.o: shared/crypto.cpp shared/cube.h
+engine/genauthkey-standalone.o: shared/tools.h shared/geom.h shared/ents.h
+engine/genauthkey-standalone.o: shared/command.h shared/iengine.h
+engine/genauthkey-standalone.o: shared/igame.h
