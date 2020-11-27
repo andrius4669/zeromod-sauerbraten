@@ -1,15 +1,19 @@
 #!/bin/sh
+cd $(dirname "$0")
 while [ -n "$1" ]; do
  case "$1" in
   clean)
-   xcodebuild -project src/xcode/sauerbraten.xcodeproj clean -configuration Release
+   xcodebuild -project sauerbraten.xcodeproj clean -configuration Release
    ;;
   all)
-   xcodebuild -project src/xcode/sauerbraten.xcodeproj -configuration Release -alltargets
+   xcodebuild -project sauerbraten.xcodeproj -configuration Release -alltargets
    ;;
   install)
-   cp -v src/xcode/build/Release/sauerbraten.app/Contents/MacOS/sauerbraten sauerbraten.app/Contents/MacOS/sauerbraten_universal
-   chmod +x sauerbraten.app/Contents/MacOS/sauerbraten_universal
+   cp -v build/Release/sauerbraten.app/Contents/MacOS/sauerbraten ../../sauerbraten.app/Contents/MacOS/sauerbraten_universal
+   chmod +x ../sauerbraten.app/Contents/MacOS/sauerbraten_universal
+   ;;
+  package)
+   exec ./package.sh
    ;;
  esac
  shift
