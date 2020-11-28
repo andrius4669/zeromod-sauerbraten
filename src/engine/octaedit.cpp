@@ -2801,7 +2801,7 @@ COMMAND(editmat, "ss");
 
 extern int menudistance, menuautoclose;
 
-VARP(texguiwidth, 1, 15, 1000);
+VARP(texguiwidth, 1, 16, 1000);
 VARP(texguiheight, 1, 8, 1000);
 VARP(texguitime, 0, 15, 1000);
 

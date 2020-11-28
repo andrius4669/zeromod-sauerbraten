@@ -1119,6 +1119,11 @@ namespace server
                 sendf(-1, 1, "riisi", N_SETTEAM, ci->clientnum, teamnames[i], -1);
             }
         }
+        if(persistteams) loopv(clients)
+        {
+            clientinfo *ci = clients[i];
+            if(ci->team[0]) addteaminfo(ci->team);
+        }
     }
 #endif
 
