@@ -676,6 +676,29 @@ void setsvarchecked(ident *id, const char *val)
     }
 }
 
+ICOMMAND(set, "rt", (ident *id, tagval *v),
+{
+    switch(id->type)
+    {
+        case ID_ALIAS:
+            if(id->index < MAXARGS) setarg(*id, *v); else setalias(*id, *v);
+            v->type = VAL_NULL;
+            break;
+        case ID_VAR:
+            setvarchecked(id, forceint(*v));
+            break;
+        case ID_FVAR:
+            setfvarchecked(id, forcefloat(*v));
+            break;
+        case ID_SVAR:
+            setsvarchecked(id, forcestr(*v));
+            break;
+        default:
+            debugcode("cannot redefine builtin %s with an alias", id->name);
+            break;
+    }
+});
+
 bool addcommand(const char *name, identfun fun, const char *args)
 {
     uint argmask = 0;
@@ -1325,11 +1348,30 @@ static void compilestatements(vector<uint> &code, const char *&p, int rettype, i
                 if(idname) 
                 {
                     id = newident(idname, IDF_UNKNOWN);
-                    if(!id || id->type != ID_ALIAS) { compilestr(code, idname, idlen, true); id = NULL; }
+                    if(id) switch(id->type)
+                    {
+                        case ID_ALIAS:
+                            if(!(more = compilearg(code, p, VAL_ANY))) compilestr(code);
+                            code.add((id->index < MAXARGS ? CODE_ALIASARG : CODE_ALIAS)|(id->index<<8));
+                            goto endcommand;
+                        case ID_VAR:
+                            if(!(more = compilearg(code, p, VAL_INT))) compileint(code);
+                            code.add(CODE_IVAR1|(id->index<<8));
+                            goto endcommand;
+                        case ID_FVAR:
+                            if(!(more = compilearg(code, p, VAL_FLOAT))) compilefloat(code);
+                            code.add(CODE_FVAR1|(id->index<<8));
+                            goto endcommand;
+                        case ID_SVAR:
+                            if(!(more = compilearg(code, p, VAL_STR))) compilestr(code);
+                            code.add(CODE_SVAR1|(id->index<<8));
+                            goto endcommand;
+                    }
+                    compilestr(code, idname, idlen, true);
                     delete[] idname;
                 }
                 if(!(more = compilearg(code, p, VAL_ANY))) compilestr(code);
-                code.add(id && idname ? (id->index < MAXARGS ? CODE_ALIASARG : CODE_ALIAS)|(id->index<<8) : CODE_ALIASU);
+                code.add(CODE_ALIASU);
                 goto endstatement;
         }
         numargs = 0;
@@ -1432,6 +1474,7 @@ static void compilestatements(vector<uint> &code, const char *&p, int rettype, i
                     }
                     break;
             }        
+        endcommand:
             delete[] idname;
         }
     endstatement:
@@ -1547,8 +1590,17 @@ void printvar(ident *id)
         case ID_VAR: printvar(id, *id->storage.i); break;
         case ID_FVAR: printfvar(id, *id->storage.f); break;
         case ID_SVAR: printsvar(id, *id->storage.s); break;
+        case ID_ALIAS:
+            switch(id->valtype)
+            {
+                case VAL_INT: printvar(id, id->getint()); break;
+                case VAL_FLOAT: printfvar(id, id->getfloat()); break;
+                default: printsvar(id, id->getstr()); break;
+            }
+            break;
     }
 }
+ICOMMAND(printvar, "r", (ident *id), printvar(id));
 
 typedef void (__cdecl *comfun)();
 typedef void (__cdecl *comfun1)(void *);
