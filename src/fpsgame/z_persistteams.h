@@ -35,6 +35,8 @@ static int z_checkstandardteam(const char *team, const char * const *teamnames)
 
 static void autoteam()
 {
+    if(smode && smode->autoteam()) return;
+
     static const char * const teamnames[2] = {"good", "evil"};
     vector<clientinfo *> team[2];
     float teamrank[2] = {0, 0};
