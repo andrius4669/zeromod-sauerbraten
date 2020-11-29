@@ -29,8 +29,17 @@ SCOMMANDA(persist, PRIV_MASTER, z_servcmd_persistteams, 1);
 
 static int z_checkstandardteam(const char *team, const char * const *teamnames)
 {
-    loopi(2) if(teamnames[i] && !strcmp(team, teamnames[i])) return i+1;
-    return 0;
+    loopi(2) if(!strcmp(team, teamnames[i])) return i;
+    return -1;
+}
+
+// calculates rank and sets timeplayed to -1 to disable later selection
+static float z_rankplayer(clientinfo *ci)
+{
+    float rank = ci->state.state!=CS_SPECTATOR ? ci->state.effectiveness/max(ci->state.timeplayed, 1) : -1;
+    if(smode && smode->hidefrags()) rank = 1;
+    ci->state.timeplayed = -1;
+    return rank;
 }
 
 static void autoteam()
@@ -44,48 +53,50 @@ static void autoteam()
 
     if(z_persistteams == 1)
     {
-        if(m_ctf)
+        // XXX use smode->canchangeteam()?
+        if(m_ctf || m_collect)
         {
-            // need some special magic with ctf mode, as it doesn't allow custom teams
+            // need some special magic with ctf/collect modes, as they don't allow non-standard teams
             string sttnamebufs[2] = { {0}, {0} };
             char * const sttnames[2] = { sttnamebufs[0], sttnamebufs[1] };
-            // pre-fill masks with normal names, if possible
-            for(int i = 0; i < remaining && (!*sttnames[0] || !*sttnames[1]); ++i) if(clients[i]->team[0])
+            // pre-fill masks with standard names, if possible
+            loopi(2) loopvj(clients) if(!strcmp(clients[j]->team, teamnames[i]))
             {
-                int s = z_checkstandardteam(clients[i]->team, teamnames);
-                if(s > 0 && !*sttnames[s-1]) copystring(sttnames[s-1], teamnames[s-1], MAXTEAMLEN+1);
+                copystring(sttnames[i], teamnames[i], MAXTEAMLEN+1);
+                break;
             }
             loopv(clients) if(clients[i]->team[0])
             {
                 clientinfo *ci = clients[i];
                 int s = z_checkstandardteam(ci->team, sttnames);
-                if(!s)
+                if(s < 0)
                 {
-                    if(!*sttnames[0]) { copystring(sttnames[0], ci->team, MAXTEAMLEN+1); s = 1; }
-                    else if(!*sttnames[1]) { copystring(sttnames[1], ci->team, MAXTEAMLEN+1); s = 2; }
-                    else continue;
+                    loopi(2) if(!sttnames[i][0])
+                    {
+                        copystring(sttnames[i], ci->team, MAXTEAMLEN+1);
+                        s = i;
+                        break;
+                    }
+                    if(s < 0) continue;
                 }
-                float rank = ci->state.state!=CS_SPECTATOR ? ci->state.effectiveness/max(ci->state.timeplayed, 1) : -1;
-                if(smode && smode->hidefrags()) rank = 1;
-                ci->state.timeplayed = -1;
-                team[s-1].add(ci);
-                if(rank > 0) teamrank[s-1] += rank;
+                float rank = z_rankplayer(ci);
+                team[s].add(ci);
+                if(rank > 0) teamrank[s] += rank;
                 remaining--;
             }
         }
         else
         {
+            // for everyone who have teams, just use these
             loopv(clients) if(clients[i]->team[0])
             {
                 clientinfo *ci = clients[i];
                 int s = z_checkstandardteam(ci->team, teamnames);
-                float rank = ci->state.state!=CS_SPECTATOR ? ci->state.effectiveness/max(ci->state.timeplayed, 1) : -1;
-                if(smode && smode->hidefrags()) rank = 1;
-                ci->state.timeplayed = -1;
-                if(s > 0)
+                float rank = z_rankplayer(ci);
+                if(s >= 0)
                 {
-                    team[s-1].add(ci);
-                    if(rank > 0) teamrank[s-1] += rank;
+                    team[s].add(ci);
+                    if(rank > 0) teamrank[s] += rank;
                 }
                 else addteaminfo(ci->team);
                 remaining--;
@@ -93,14 +104,14 @@ static void autoteam()
         }
     }
 
-    // makes no sense in ctf mode, as custom teams are not allowed
-    if(z_persistteams == 2 && !m_ctf)
+    // makes no sense in ctf/collect modes, as non-standard teams are not allowed
+    if(z_persistteams == 2 && !m_ctf && !m_collect)
     {
         loopv(clients) if(clients[i]->team[0])
         {
             clientinfo *ci = clients[i];
-            int standard = z_checkstandardteam(ci->team, teamnames);
-            if(standard) continue;
+            int s = z_checkstandardteam(ci->team, teamnames);
+            if(s >= 0) continue;
             addteaminfo(ci->team);
             ci->state.timeplayed = -1;
             remaining--;
