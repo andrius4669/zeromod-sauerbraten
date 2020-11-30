@@ -209,16 +209,6 @@ SERVER_MASTER_OBJS:= $(SERVER_OBJS)
 SERVER_MASTER_OBJS:= $(SERVER_MASTER_OBJS) $(filter-out $(SERVER_MASTER_OBJS),$(MASTER_OBJS))
 SERVER_MASTER_OBJS:= $(SERVER_MASTER_OBJS) $(filter-out $(SERVER_MASTER_OBJS),$(GENAUTHKEY_OBJS))
 
-ifneq (,$(findstring DARWIN,$(PLATFORM)))
-CLIENT_OBJS+= xcode/macutils.o
-
-%.o: %.mm
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
-
-%.o: %.m
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
-endif
-
 default: all
 
 all: client server
