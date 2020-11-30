@@ -524,7 +524,7 @@ namespace game
             showscores(true);
             disablezoom();
 
-            if(identexists("intermission")) execute("intermission");
+            execident("intermission");
         }
     }
 
@@ -655,12 +655,12 @@ namespace game
         disablezoom();
         lasthit = 0;
 
-        if(identexists("mapstart")) execute("mapstart");
+        execident("mapstart");
     }
 
     void loadingmap(const char *name)
     {
-        if(identexists("playsong")) execute("playsong");
+        execident("playsong");
     }
 
     void startmap(const char *name)   // called just after a map load
@@ -1307,7 +1307,7 @@ namespace game
 
     void loadconfigs()
     {
-        if(identexists("playsong")) execute("playsong");
+        execident("playsong");
 
         execfile("auth.cfg", false);
     }
