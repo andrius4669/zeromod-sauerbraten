@@ -358,7 +358,11 @@ static struct itemstat { int add, max, sound; const char *name; int icon, info; 
     {10,    30,    S_ITEMAMMO,   "GL", HICON_GL, GUN_GL},
     {30,    120,   S_ITEMAMMO,   "PI", HICON_PISTOL, GUN_PISTOL},
     {25,    100,   S_ITEMHEALTH, "H",  HICON_HEALTH, -1},
+#ifndef OLDPROTO
     {100,   200,   S_ITEMHEALTH, "MH", HICON_HEALTH, 50},
+#else
+    {10,    1000,  S_ITEMHEALTH, "MH", HICON_HEALTH},
+#endif
     {100,   100,   S_ITEMARMOUR, "GA", HICON_GREEN_ARMOUR, A_GREEN},
     {200,   200,   S_ITEMARMOUR, "YA", HICON_YELLOW_ARMOUR, A_YELLOW},
     {20000, 30000, S_ITEMPUP,    "Q",  HICON_QUAD, -1},
@@ -422,7 +426,11 @@ struct fpsstate
         itemstat &is = itemstats[type-I_SHELLS];
         switch(type)
         {
+#ifndef OLDPROTO
             case I_BOOST: return maxhealth<is.max || health<maxhealth;
+#else
+            case I_BOOST: return maxhealth<is.max;
+#endif
             case I_HEALTH: return health<maxhealth;
             case I_GREENARMOUR:
                 // (100h/100g only absorbs 200 damage)
@@ -440,7 +448,11 @@ struct fpsstate
         switch(type)
         {
             case I_BOOST:
+#ifndef OLDPROTO
                 maxhealth = min(maxhealth+is.info, is.max);
+#else
+                maxhealth = min(maxhealth+is.add, is.max);
+#endif
             case I_HEALTH: // boost also adds to health
                 health = min(health+is.add, maxhealth);
                 break;
