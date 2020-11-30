@@ -8,6 +8,8 @@ PROTO=collect
 
 ifeq ($(PROTO),collect)
   override CXXFLAGS+= -DOLDPROTO
+else ifeq ($(PROTO),2020)
+  override CXXFLAGS+= -UOLDPROTO
 else ifeq ($(PROTO),svn)
   override CXXFLAGS+= -UOLDPROTO
 else
