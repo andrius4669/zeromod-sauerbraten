@@ -3,7 +3,7 @@ static string userserverdesc;
 static string computedserverdesc[2]; // 0 - unfiltered, 1 - filtered
 
 SVARF(serverdesctmpl, "%s", z_serverdescchanged()); // template to use with user settable stuff
-VAR(serverdescfilter, 0, 0, 1); // whether stuff sent to serverlist is filtered
+VAR(serverdescfilter, 0, 1, 1); // whether stuff sent to serverlist is filtered
 VAR(serverdescuserfilter, 0, 1, 1); // whether user settable stuff is filtered
 
 static inline const char *z_serverdesc(bool shouldfilter)

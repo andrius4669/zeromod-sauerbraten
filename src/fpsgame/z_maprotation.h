@@ -20,12 +20,19 @@ SVARF(maprotationmode, "", z_setmrt(maprotationmode));
 // static - next map is current map
 // random - next map is random map from current map rotation slice
 
-VAR(maprotation_norepeat, 0, 0, 9000); // how much old maps we should exclude when using random selection
+VAR(maprotation_norepeat, 0, 10, 9000); // how much old maps we should exclude when using random selection
 
 static vector<char *> z_oldmaps;
 
+struct forcenextmapstruct
+{
+    string map;
+    int mode;
+};
+static forcenextmapstruct *z_forcenextmap = NULL;
+
 // add map to maps history, if it matters
-void z_addmaptohist(const char *mname)
+void z_addmaptohist(const char *mname, int mode)
 {
     int shouldremove = z_oldmaps.length() - max(maprotation_norepeat-1, 0);
     if(shouldremove > 0)
@@ -34,6 +41,11 @@ void z_addmaptohist(const char *mname)
         z_oldmaps.remove(0, shouldremove);
     }
     if(maprotation_norepeat) z_oldmaps.add(newstring(mname));
+
+    if (z_forcenextmap && !strcmp(z_forcenextmap->map, mname) && z_forcenextmap->mode == mode)
+    {
+        DELETEP(z_forcenextmap);
+    }
 }
 
 bool z_nextmaprotation()
@@ -74,13 +86,6 @@ bool z_nextmaprotation()
         return true;
     }
 }
-
-struct forcenextmapstruct
-{
-    string map;
-    int mode;
-};
-static forcenextmapstruct *z_forcenextmap = NULL;
 
 void z_nextmap(clientinfo &ci, const char *map, int mode)
 {
