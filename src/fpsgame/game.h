@@ -472,7 +472,9 @@ struct fpsstate
 
     void respawn()
     {
+#ifndef OLDPROTO
         maxhealth = 100;
+#endif
         health = maxhealth;
         armour = 0;
         armourtype = A_BLUE;

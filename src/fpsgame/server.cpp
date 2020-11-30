@@ -188,7 +188,10 @@ namespace server
         uint ip;
         string name;
         int frags, flags, deaths, teamkills, shotdamage, damage;
-        int maxhealth, suicides, explosivedamage, hits, misses, shots;
+#ifdef OLDPROTO
+        int maxhealth;
+#endif
+        int suicides, explosivedamage, hits, misses, shots;
         int timeplayed;
         float effectiveness;
         int stolen, returned, maxstreak;
@@ -198,7 +201,9 @@ namespace server
 
         void save(gamestate &gs)
         {
+#ifdef OLDPROTO
             maxhealth = gs.maxhealth;
+#endif
             frags = gs.frags;
             flags = gs.flags;
             deaths = gs.deaths;
@@ -220,8 +225,10 @@ namespace server
 
         void restore(gamestate &gs)
         {
+#ifdef OLDPROTO
             if(gs.health==gs.maxhealth) gs.health = maxhealth;
             gs.maxhealth = maxhealth;
+#endif
             gs.frags = frags;
             gs.flags = flags;
             gs.deaths = deaths;
