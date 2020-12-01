@@ -805,6 +805,8 @@ struct ctfclientmode : clientmode
                 holdteam = getint(p);
                 if(holdteam >= 0) holdtime = getint(p)*100;
             }
+#else
+            (void) holdteam;
 #endif
             if(p.overread()) break;
             if(commit && flags.inrange(i))

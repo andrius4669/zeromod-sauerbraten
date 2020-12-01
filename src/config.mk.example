@@ -1,0 +1,6 @@
+# copy to `config.mk` and uncomment one
+# needs `make clean` before recompiling for changes to take effect
+
+#PROTO=2020
+#PROTO=collect
+#PROTO=svn
