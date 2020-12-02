@@ -1316,8 +1316,8 @@ case N_INITFLAGS:
     if(smode==&ctfmode)
     {
         bool commit =
-            (ci->state.state!=CS_SPECTATOR
-                || ci->privilege || ci->local) &&
+            (ci->state.state!=CS_SPECTATOR ||
+                ci->privilege || ci->local) &&
             !strcmp(ci->clientmap, smapname) &&
             !z_isghost(ci);
         ctfmode.parseflags(p, commit);
