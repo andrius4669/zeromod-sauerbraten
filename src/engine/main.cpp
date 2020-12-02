@@ -573,8 +573,14 @@ void screenres(int w, int h)
         {
             if(fullscreendesktop) gl_resize();
             else resetfullscreen();
+            initwindowpos = true;
         } 
-        else SDL_SetWindowSize(screen, scr_w, scr_h);
+        else
+        {
+            SDL_SetWindowSize(screen, scr_w, scr_h);
+            SDL_SetWindowPosition(screen, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+            initwindowpos = false;
+        }
     }
     else
     {
