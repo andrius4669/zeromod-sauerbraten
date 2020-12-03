@@ -15,7 +15,7 @@ if [ $svnrev != $gitrev ]
 then
 	if [ $svnrev -lt $gitrev ]
 	then
-		svn up -r $gitrev --accept mine
+		svn up -r $gitrev --accept mf
 	else
 		echo "error: local repo is at higher revision than git one" >&2
 		exit 1
