@@ -905,17 +905,29 @@ namespace server
         {
             clientinfo *ci = clients[i];
             if(ci->spy) continue;
-            if(ci->clientnum!=exclude && (!nospec || ci->state.state!=CS_SPECTATOR || (priv && (ci->privilege || ci->local))) && (!noai || ci->state.aitype == AI_NONE)) n++;
+            if(ci->clientnum!=exclude &&
+                (!nospec || ci->state.state!=CS_SPECTATOR ||
+                    (priv && (ci->privilege || ci->local))) &&
+                (!noai || ci->state.aitype == AI_NONE))
+            {
+                n++;
+            }
         }
         return n;
     }
 
+    // count connected peers. skip bots and talkbots. include spies.
     int actualclientslen()
     {
         int n = 0;
-        // count connected peers. there can be talkbots
         loopv(clients) if(clients[i]->state.aitype == AI_NONE) ++n;
         return n;
+    }
+
+    // count all clients visible in scoreboard. include bots/talkbots/specs. don't include spies
+    int visibleclientslen()
+    {
+        return numclients(-1, false, false);
     }
 
     bool duplicatename(clientinfo *ci, const char *name)
@@ -2134,7 +2146,7 @@ namespace server
             putint(p, 1);
             sendf(-1, 1, "ri3x", N_SPECTATOR, ci->clientnum, 1, ci->clientnum);
         }
-        if(!ci || actualclientslen()>1)
+        if(!ci || visibleclientslen()>1)
         {
             putint(p, N_RESUME);
             loopv(clients)
@@ -2821,7 +2833,7 @@ namespace server
         if((m_edit && z_autosendmap < 2) || !smapname[0]) return;
         vector<crcinfo> crcs;
         int total = 0, unsent = 0, invalid = 0;
-        if(mcrc) crcs.add(crcinfo(mcrc, actualclientslen() + 1));
+        if(mcrc) crcs.add(crcinfo(mcrc, clients.length() + 1));
         loopv(clients)
         {
             clientinfo *ci = clients[i];
