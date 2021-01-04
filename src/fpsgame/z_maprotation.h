@@ -90,12 +90,17 @@ void z_countmbvotes(vector<int> &votes)
 }
 
 
+VAR(mapbattle_intermission, 1, 20, 3600);
+
 SVAR(mapbattle_style_announce, "mapbattle: %M"); // %M - map list separated by separator
 SVAR(mapbattle_style_announce_map, "%m (%n)"); // how map should look in map list
 SVAR(mapbattle_style_announce_separator, ", ");
 
 void z_mapbattle_announce()
 {
+    // set different intermission than what it was
+    interm = gamemillis + mapbattle_intermission*1000;
+
     vector<char> mapbuf;
     loopv(mapbattleallowlist)
     {

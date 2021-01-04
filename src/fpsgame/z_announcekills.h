@@ -18,6 +18,8 @@ VAR(announcekills_rampage_min, 0, 0, 100);
 VAR(announcekills_numeric, 0, 0, 1);
 VAR(announcekills_numeric_num, 1, 5, 100);
 
+VAR(announcekills_noctf, 0, 1, 1);
+
 
 struct z_multikillstrstruct { int val; char *str; };
 vector<z_multikillstrstruct> z_multikillstrings;
@@ -82,6 +84,16 @@ static const char *z_multikillstr(int i)
     }
 }
 
+static inline bool z_shouldannounce()
+{
+    return announcekills &&
+        (announcekills_rampage ||
+            announcekills_multikill ||
+            announcekills_stopped) &&
+        !m_edit &&
+        (!announcekills_noctf || !m_ctf);
+}
+
 void z_announcekill(clientinfo *actor, clientinfo *victim, int fragval)
 {
     if(fragval > 0)
@@ -92,7 +104,7 @@ void z_announcekill(clientinfo *actor, clientinfo *victim, int fragval)
         actor->state.rampage++;
         if(actor->state.rampage > actor->state.maxstreak) actor->state.maxstreak = actor->state.rampage;
     }
-    if(!announcekills || (!announcekills_rampage && !announcekills_multikill && !announcekills_stopped) || m_edit) return;
+    if(!z_shouldannounce()) return;
     bool showactor = fragval > 0 && actor->state.state==CS_ALIVE;
 
     loopv(clients)  // message may be different for each client
