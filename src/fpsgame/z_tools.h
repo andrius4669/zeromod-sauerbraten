@@ -185,6 +185,8 @@ extern void vote(const char *map, int reqmode, int sender);
 
 extern int showbanreason;
 
+extern int serverintermission;
+
 extern clientinfo *getinfo(int n);
 
 extern const char *privname(int type);

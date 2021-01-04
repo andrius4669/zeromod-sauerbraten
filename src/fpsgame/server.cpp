@@ -3669,6 +3669,7 @@ namespace server
                 Z_ANTIFLOOD(ci, N_TEXT);
                 if(!allowmsg(ci, cq, type)) break;
                 filtertext(text, text, true, true);
+                z_maprotation_ontext(ci, tp);
                 if(cq) z_log_say(cq, tp);
                 if(cq && ci->spy) { sendservmsgf("\fs\f1[\f4spy\f1]\fr %s: \f0%s", cq->name, tp); break; }
                 QUEUE_AI;

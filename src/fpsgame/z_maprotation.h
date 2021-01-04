@@ -91,15 +91,16 @@ void z_countmbvotes(vector<int> &votes)
 
 
 VAR(mapbattle_intermission, 1, 20, 3600);
+VAR(mapbattle_chat, 0, 0, 1);
 
-SVAR(mapbattle_style_announce, "mapbattle: %M"); // %M - map list separated by separator
-SVAR(mapbattle_style_announce_map, "%m (%n)"); // how map should look in map list
+SVAR(mapbattle_style_announce, "^f3mapbattle:^f7 %M"); // %M - map list separated by separator
+SVAR(mapbattle_style_announce_map, "%m ^f0#%n^f7"); // how map should look in map list
 SVAR(mapbattle_style_announce_separator, ", ");
 
 void z_mapbattle_announce()
 {
     // set different intermission than what it was
-    interm = gamemillis + mapbattle_intermission*1000;
+    interm = gamemillis + max(serverintermission, mapbattle_intermission)*1000;
 
     vector<char> mapbuf;
     loopv(mapbattleallowlist)
@@ -125,13 +126,13 @@ void z_mapbattle_announce()
         { 'd', "%s", (const void *)modename(gamemode) },
         { 0, NULL, NULL }
     };
-    string buf;
+    char buf[MAXTRANS];
     z_format(buf, sizeof(buf), mapbattle_style_announce, ft);
     sendservmsg(buf);
 }
 
-SVAR(mapbattle_style_vote, "mapbattle: %c voted for %m (%n); current votes: %V");
-SVAR(mapbattle_style_vote_current, "%m (%n): %v");
+SVAR(mapbattle_style_vote, "^f3mapbattle:^f2 ^f7%c ^f2voted for ^f7%m ^f0#%n^f2; current votes: %V");
+SVAR(mapbattle_style_vote_current, "^fs^f7%m ^f0#%n^f2: ^f3%v^fr");
 SVAR(mapbattle_style_vote_separator, ", ");
 
 bool z_mapbattle_announce_vote(clientinfo *ci)
@@ -180,7 +181,7 @@ bool z_mapbattle_announce_vote(clientinfo *ci)
         { 'V', "%s", (const void *)votebuf.getbuf() },
         { 0, NULL, NULL }
     };
-    string buf;
+    char buf[MAXTRANS];
     z_format(buf, sizeof(buf), mapbattle_style_vote, ft);
     sendservmsg(buf);
 
@@ -302,6 +303,26 @@ void z_servcmd_votemb(int argc, char **argv, int sender)
 #define X(n) SCOMMANDH(n, PRIV_NONE, z_servcmd_votemb)
 X(1); X(2); X(3); X(4); X(5); X(6); X(7); X(8); X(9); X(10);
 #undef X
+
+void z_maprotation_ontext(clientinfo *ci, const char *text)
+{
+    if(!interm || z_maprotationtype != MRT_BATTLE || !mapbattleallowlist.length()) return;
+    if(!mapbattle_chat) return;
+    while(*text == ' ' || *text == '\t') ++text;
+    if(!*text) return;
+    char *end;
+    unsigned long x = strtoul(text, &end, 10);
+    while(*end == ' ' || *end == '\t') ++end;
+    if(*end) return; // wasn't only number
+    int i = int(x) - 1;
+    if(!mapbattleallowlist.inrange(i)) return;
+    if(!ci || (ci->state.state==CS_SPECTATOR && !ci->privilege && !ci->local)) return;
+
+    copystring(ci->mapvote, mapbattleallowlist[i].map);
+    ci->modevote = mapbattleallowlist[i].mode;
+
+    z_mapbattle_announce_vote(ci);
+}
 
 bool z_nextmaprotation()
 {
