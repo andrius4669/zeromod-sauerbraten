@@ -93,8 +93,8 @@ void z_countmbvotes(vector<int> &votes)
 VAR(mapbattle_intermission, 1, 20, 3600);
 VAR(mapbattle_chat, 0, 0, 1);
 
-SVAR(mapbattle_style_announce, "^f3mapbattle:^f7 %M"); // %M - map list separated by separator
-SVAR(mapbattle_style_announce_map, "%m ^f0#%n^f7"); // how map should look in map list
+SVAR(mapbattle_style_announce, "\f3mapbattle:\f7 %M"); // %M - map list separated by separator
+SVAR(mapbattle_style_announce_map, "%m \f0#%n\f7"); // how map should look in map list
 SVAR(mapbattle_style_announce_separator, ", ");
 
 void z_mapbattle_announce()
@@ -131,8 +131,8 @@ void z_mapbattle_announce()
     sendservmsg(buf);
 }
 
-SVAR(mapbattle_style_vote, "^f3mapbattle:^f2 ^f7%c ^f2voted for ^f7%m ^f0#%n^f2; current votes: %V");
-SVAR(mapbattle_style_vote_current, "^fs^f7%m ^f0#%n^f2: ^f3%v^fr");
+SVAR(mapbattle_style_vote, "\f3mapbattle:\f2 \f7%c \f2voted for \f7%m \f0#%n\f2; current votes: %V");
+SVAR(mapbattle_style_vote_current, "\fs\f7%m \f0#%n\f2: \f3%v\fr");
 SVAR(mapbattle_style_vote_separator, ", ");
 
 bool z_mapbattle_announce_vote(clientinfo *ci)
