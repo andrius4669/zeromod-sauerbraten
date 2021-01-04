@@ -2413,6 +2413,7 @@ namespace server
         }
         else
         {
+            if(z_maproatation_onvote(ci)) return;
             sendservmsgf("%s suggests %s on map %s (select map to vote)", colorname(ci), modename(reqmode), map[0] ? map : "[new map]");
             checkvotes();
         }

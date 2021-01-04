@@ -181,6 +181,7 @@ extern void z_setteaminfos(hashset<teaminfo> *&dst, hashset<teaminfo> *src);
 
 
 extern void forcespectator(clientinfo *ci);
+extern void vote(const char *map, int reqmode, int sender);
 
 extern int showbanreason;
 

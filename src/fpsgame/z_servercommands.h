@@ -172,6 +172,7 @@ ICOMMAND(commands_clone, "sV", (tagval *args, int numargs), z_clone_command(args
 
 #define SCOMMANDZ(name, opts, func, args) UNUSED static bool __s_dummy__##name = addservcmd(z_servcmdinfo(#name, func, opts, args))
 #define SCOMMAND(name, opts, func) SCOMMANDZ(name, opts, func, 0)
+#define SCOMMANDH(name, opts, func) SCOMMAND(name, (opts) | ZC_HIDDEN, func)
 #define SCOMMANDA SCOMMANDZ
 #define SCOMMANDAH(name, opts, func, args) SCOMMANDZ(name, (opts) | ZC_HIDDEN, func, args)
 #define SHELP(name, help)

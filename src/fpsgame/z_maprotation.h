@@ -129,7 +129,7 @@ SVAR(mapbattle_style_vote, "mapbattle: %c voted for %m (%n); current votes: %V")
 SVAR(mapbattle_style_vote_current, "%m (%n): %v");
 SVAR(mapbattle_style_vote_separator, ", ");
 
-void z_mapbattle_announce_vote(clientinfo *ci)
+bool z_mapbattle_announce_vote(clientinfo *ci)
 {
     int voted = -1;
     loopv(mapbattleallowlist)
@@ -142,7 +142,7 @@ void z_mapbattle_announce_vote(clientinfo *ci)
         }
     }
     // if voted for something not part of our mapbattle
-    if(voted < 0) return;
+    if(voted < 0) return false;
 
     vector<int> votes;
     z_countmbvotes(votes);
@@ -178,6 +178,8 @@ void z_mapbattle_announce_vote(clientinfo *ci)
     string buf;
     z_format(buf, sizeof(buf), mapbattle_style_vote, ft);
     sendservmsg(buf);
+
+    return true;
 }
 
 void z_maprotation_intermission()
@@ -255,6 +257,46 @@ void z_maprotation_intermission()
         return;
     }
 }
+
+bool z_maproatation_onvote(clientinfo *ci)
+{
+    if(!interm || z_maprotationtype != MRT_BATTLE || !mapbattleallowlist.length())
+    {
+        return false;
+    }
+
+    return z_mapbattle_announce_vote(ci);
+}
+
+SVAR(mapbattle_style_notmapbattle, "currently there is no map battle");
+SVAR(mapbattle_style_outofrange, "map battle vote out of range");
+
+void z_servcmd_votemb(int argc, char **argv, int sender)
+{
+    if(z_maprotationtype != MRT_BATTLE || !mapbattleallowlist.length() || !interm)
+    {
+        sendf(sender, 1, "ris", N_SERVMSG, mapbattle_style_notmapbattle);
+        return;
+    }
+
+    int i = atoi(argv[0]) - 1;
+    if(!mapbattleallowlist.inrange(i))
+    {
+        sendf(sender, 1, "ris", N_SERVMSG, mapbattle_style_outofrange);
+        return;
+    }
+
+    clientinfo *ci = getinfo(sender);
+    if(!ci || (ci->state.state==CS_SPECTATOR && !ci->privilege && !ci->local)) return;
+
+    copystring(ci->mapvote, mapbattleallowlist[i].map);
+    ci->modevote = mapbattleallowlist[i].mode;
+
+    z_mapbattle_announce_vote(ci);
+}
+#define X(n) SCOMMANDH(n, PRIV_NONE, z_servcmd_votemb)
+X(1); X(2); X(3); X(4); X(5); X(6); X(7); X(8); X(9); X(10);
+#undef X
 
 bool z_nextmaprotation()
 {
