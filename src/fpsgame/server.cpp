@@ -2477,6 +2477,7 @@ namespace server
             if(smode) smode->intermission();
             changegamespeed(100);
             interm = gamemillis + serverintermission*1000;
+            z_maprotation_intermission();
         }
     }
 
@@ -2794,6 +2795,7 @@ namespace server
                 interm = -1;
                 if(z_forcenextmap)
                 {
+                    sendpackets(true);
                     changemap(z_forcenextmap->map, z_forcenextmap->mode);
                     DELETEP(z_forcenextmap);
                 }
