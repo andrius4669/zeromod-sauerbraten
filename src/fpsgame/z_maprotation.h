@@ -38,8 +38,10 @@ struct mapvotestruct
 };
 static mapvotestruct *z_forcenextmap = NULL;
 
+VAR(nextmapclear, 0, 1, 2); // 0 - don't, 1 - on same-map change, 2 - on any map change
+
 // add map to maps history, if it matters
-void z_addmaptohist(const char *mname, int mode)
+void z_addmaptohist()
 {
     int shouldremove = z_oldmaps.length() - max(maprotation_norepeat-1, 0);
     if(shouldremove > 0)
@@ -47,9 +49,13 @@ void z_addmaptohist(const char *mname, int mode)
         loopi(shouldremove) delete[] z_oldmaps[i];
         z_oldmaps.remove(0, shouldremove);
     }
-    if(maprotation_norepeat) z_oldmaps.add(newstring(mname));
+    if(maprotation_norepeat) z_oldmaps.add(newstring(smapname));
 
-    if (z_forcenextmap && !strcmp(z_forcenextmap->map, mname) && z_forcenextmap->mode == mode)
+    if (z_forcenextmap &&
+        nextmapclear &&
+        (nextmapclear == 2 ||
+            (!strcmp(z_forcenextmap->map, smapname) &&
+                z_forcenextmap->mode == gamemode)))
     {
         DELETEP(z_forcenextmap);
     }

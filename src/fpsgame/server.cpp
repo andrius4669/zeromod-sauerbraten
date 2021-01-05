@@ -2253,9 +2253,9 @@ namespace server
         gamelimit = ((m_overtime && gamelimit_overtime) ? 1500 : 1000)*servergamelimit;
         interm = 0;
         nextexceeded = 0;
-        z_addmaptohist(s, mode);
-        z_resetcurrentrecord();
         copystring(smapname, s);
+        z_addmaptohist();
+        z_resetcurrentrecord();
         loaditems();
         scores.shrink(0);
         shouldcheckteamkills = false;
