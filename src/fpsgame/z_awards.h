@@ -7,7 +7,7 @@
 VAR(awards, 0, 0, 1);
 
 VAR(awards_splitmessage, 0, 1, 1);
-VAR(awards_max_equal, 0, 3, 5);
+VAR(awards_max_equal, 1, 3, 5);
 
 SVAR(awards_style_clientsseparator, ", ");
 SVAR(awards_style_clientprefix, "\fs\f7");
@@ -258,7 +258,7 @@ static void z_awards_print_best(vector<char> &str, vector<clientinfo *> &best)
         str.put(name, strlen(name));
         str.put(awards_style_clientsuffix, strlen(awards_style_clientsuffix));
         ++n;
-        if(awards_max_equal && n >= awards_max_equal) break;
+        if(n >= awards_max_equal) break;
     }
     if(best.length() == 0) str.put(awards_style_nobody, strlen(awards_style_nobody));
     str.add(0);
