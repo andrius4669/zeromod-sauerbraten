@@ -7,64 +7,72 @@
 VAR(awards, 0, 0, 1);
 
 VAR(awards_splitmessage, 0, 1, 1);
+VAR(awards_max_equal, 0, 3, 5);
 
 SVAR(awards_style_clientsseparator, ", ");
 SVAR(awards_style_clientprefix, "\fs\f7");
 SVAR(awards_style_clientsuffix, "\fr");
+SVAR(awards_style_nobody, "\fs\f4(no one)\fr");
 
-/* some hardcoded defaults. it would be lot easier to put these in server-init.cfg, with concatword */
-static const char awards_style_normal[] = "\f3Awards: "
-                                          "\f6Kills: %F \f2(\f6%f\f2) "
-                                          "\f6KpD: %P \f2(\f6%p\f2) "
-                                          "\f6Acc: %A \f2(\f6%a%%\f2) "
-                                          "\f6Damage: %D \f2(\f6%d\f2)";
+/* some hardcoded defaults */
+static const char awards_style_normal[] =
+    "\f3Awards: "
+        "\f6Kills: %F \f2(\f6%f\f2) "
+        "\f6KpD: %P \f2(\f6%p\f2) "
+        "\f6Acc: %A \f2(\f6%a%%\f2) "
+        "\f6Damage: %D \f2(\f6%d\f2)";
 
-static const char awards_style_protect[] =  "\f3Awards: "
-                                            "\f6Kills: %F \f2(\f6%f\f2) "
-                                            "\f6KpD: %P \f2(\f6%p\f2) "
-                                            "\f6Acc: %A \f2(\f6%a%%\f2) "
-                                            "\f6Damage: %D \f2(\f6%d\f2)\n"
-                                            "\f3Flags: "
-                                            "\f6Scored: %G \f2(\f6%g\f2) "
-                                            "\f6Flag guardian: %E \f2(\f6%e sec\f2)";
+static const char awards_style_protect[] =
+    "\f3Awards: "
+        "\f6Kills: %F \f2(\f6%f\f2) "
+        "\f6KpD: %P \f2(\f6%p\f2) "
+        "\f6Acc: %A \f2(\f6%a%%\f2) "
+        "\f6Damage: %D \f2(\f6%d\f2)\n"
+    "\f3Flags: "
+        "\f6Scored: %G \f2(\f6%g\f2) "
+        "\f6Flag guardian: %E \f2(\f6%e sec\f2)";
 
-static const char awards_style_hold[] = "\f3Awards: "
-                                        "\f6Kills: %F \f2(\f6%f\f2) "
-                                        "\f6KpD: %P \f2(\f6%p\f2) "
-                                        "\f6Acc: %A \f2(\f6%a%%\f2) "
-                                        "\f6Damage: %D \f2(\f6%d\f2)\n"
-                                        "\f3Flags: "
-                                        "\f6Scored: %G \f2(\f6%g\f2) "
-                                        "\f6Taken: %O \f2(\f6%o\f2)";
+static const char awards_style_hold[] =
+    "\f3Awards: "
+        "\f6Kills: %F \f2(\f6%f\f2) "
+        "\f6KpD: %P \f2(\f6%p\f2) "
+        "\f6Acc: %A \f2(\f6%a%%\f2) "
+        "\f6Damage: %D \f2(\f6%d\f2)\n"
+    "\f3Flags: "
+        "\f6Scored: %G \f2(\f6%g\f2) "
+        "\f6Taken: %O \f2(\f6%o\f2)";
 
-static const char awards_style_ctf[] =  "\f3Awards: "
-                                        "\f6Kills: %F \f2(\f6%f\f2) "
-                                        "\f6KpD: %P \f2(\f6%p\f2) "
-                                        "\f6Acc: %A \f2(\f6%a%%\f2) "
-                                        "\f6Damage: %D \f2(\f6%d\f2)\n"
-                                        "\f3Flags: "
-                                        "\f6Scored: %G \f2(\f6%g\f2) "
-                                        "\f6Stolen: %O \f2(\f6%o\f2) "
-                                        "\f6Returned: %E \f2(\f6%e\f2)";
+static const char awards_style_ctf[] =
+    "\f3Awards: "
+        "\f6Kills: %F \f2(\f6%f\f2) "
+        "\f6KpD: %P \f2(\f6%p\f2) "
+        "\f6Acc: %A \f2(\f6%a%%\f2) "
+        "\f6Damage: %D \f2(\f6%d\f2)\n"
+    "\f3Flags: "
+        "\f6Scored: %G \f2(\f6%g\f2) "
+        "\f6Stolen: %O \f2(\f6%o\f2) "
+        "\f6Returned: %E \f2(\f6%e\f2)";
 
-static const char awards_style_collect[] =  "\f3Awards: "
-                                            "\f6Kills: %F \f2(\f6%f\f2) "
-                                            "\f6KpD: %P \f2(\f6%p\f2) "
-                                            "\f6Acc: %A \f2(\f6%a%%\f2) "
-                                            "\f6Damage: %D \f2(\f6%d\f2)\n"
-                                            "\f3Skulls: "
-                                            "\f6Scored: %G \f2(\f6%g\f2) "
-                                            "\f6Stolen: %O \f2(\f6%o\f2) "
-                                            "\f6Returned: %E \f2(\f6%e\f2)";
+static const char awards_style_collect[] =
+    "\f3Awards: "
+        "\f6Kills: %F \f2(\f6%f\f2) "
+        "\f6KpD: %P \f2(\f6%p\f2) "
+        "\f6Acc: %A \f2(\f6%a%%\f2) "
+        "\f6Damage: %D \f2(\f6%d\f2)\n"
+    "\f3Skulls: "
+        "\f6Scored: %G \f2(\f6%g\f2) "
+        "\f6Stolen: %O \f2(\f6%o\f2) "
+        "\f6Returned: %E \f2(\f6%e\f2)";
 
-static const char awards_style_capture[] =  "\f3Awards: "
-                                            "\f6Kills: %F \f2(\f6%f\f2) "
-                                            "\f6KpD: %P \f2(\f6%p\f2) "
-                                            "\f6Acc: %A \f2(\f6%a%%\f2) "
-                                            "\f6Damage: %D \f2(\f6%d\f2)\n"
-                                            "\f3Bases: "
-                                            "\f6Capture leader: %C \f2(\f6%c sec\f2) "
-                                            "\f6Defense dude: %G \f2(\f6%g sec\f2)";
+static const char awards_style_capture[] =
+    "\f3Awards: "
+        "\f6Kills: %F \f2(\f6%f\f2) "
+        "\f6KpD: %P \f2(\f6%p\f2) "
+        "\f6Acc: %A \f2(\f6%a%%\f2) "
+        "\f6Damage: %D \f2(\f6%d\f2)\n"
+    "\f3Bases: "
+        "\f6Capture leader: %C \f2(\f6%c sec\f2) "
+        "\f6Defense dude: %G \f2(\f6%g sec\f2)";
 
 struct z_statsstyle
 {
@@ -206,19 +214,22 @@ static inline const char *z_pickawardstemplate()
 }
 
 
-template<typename T> static bool z_awards_best_stat(vector<clientinfo *> &best, T &bests, T (* func)(clientinfo &))
+static void z_awards_best_stat(vector<clientinfo *> &best, int &bests, int (* func)(clientinfo &))
 {
+    int numclients = 0;
     best.setsize(0);
     loopv(clients) if(!clients[i]->spy && (clients[i]->state.aitype == AI_NONE || clients[i]->state.state != CS_SPECTATOR))
     {
+        ++numclients;
+
+        int s = func(*clients[i]);
         if(best.empty())
         {
             best.add(clients[i]);
-            bests = func(*clients[i]);
+            bests = s;
         }
         else
         {
-            T s = func(*clients[i]);
             if(s == bests) best.add(clients[i]);
             else if(s > bests)
             {
@@ -228,10 +239,15 @@ template<typename T> static bool z_awards_best_stat(vector<clientinfo *> &best, 
             }
         }
     }
-    return best.length();
+
+    // nobody/everybody won. if stat was negative or nil, consider it everbody's loss
+    if(bests <= 0 && best.length() >= min(numclients, awards_max_equal + 1) && awards_style_nobody[0])
+    {
+        best.setsize(0);
+    }
 }
 
-static int z_awards_print_best(vector<char> &str, vector<clientinfo *> &best, int max = 0)
+static void z_awards_print_best(vector<char> &str, vector<clientinfo *> &best)
 {
     int n = 0;
     loopv(best)
@@ -242,10 +258,10 @@ static int z_awards_print_best(vector<char> &str, vector<clientinfo *> &best, in
         str.put(name, strlen(name));
         str.put(awards_style_clientsuffix, strlen(awards_style_clientsuffix));
         ++n;
-        if(max && n >= max) break;
+        if(awards_max_equal && n >= awards_max_equal) break;
     }
+    if(best.length() == 0) str.put(awards_style_nobody, strlen(awards_style_nobody));
     str.add(0);
-    return n;
 }
 
 static int z_client_getfrags        (clientinfo &ci) { return ci.state.frags; }
@@ -264,7 +280,6 @@ static int z_client_getcaptured     (clientinfo &ci) { return ci.state.stolen + 
 
 void z_awards()
 {
-    const int maxnum = 3;
     vector<char> str;
     vector<clientinfo *> best;
 
@@ -278,77 +293,77 @@ void z_awards()
 
     // frags
     vector<char> F; int f = 0;
-    z_awards_best_stat<int>(best, f, z_client_getfrags);
-    z_awards_print_best(F, best, maxnum);
+    z_awards_best_stat(best, f, z_client_getfrags);
+    z_awards_print_best(F, best);
 
     // KpD
     vector<char> P; int p = 0; string ps;
-    z_awards_best_stat<int>(best, p, z_client_getkpd);
-    z_awards_print_best(P, best, maxnum);
+    z_awards_best_stat(best, p, z_client_getkpd);
+    z_awards_print_best(P, best);
     sprintf(ps, "%d.%03d", p/1000, p%1000);
 
     // acc
     vector<char> A; int a = 0;
-    z_awards_best_stat<int>(best, a, z_client_getacc);
-    z_awards_print_best(A, best, maxnum);
+    z_awards_best_stat(best, a, z_client_getacc);
+    z_awards_print_best(A, best);
 
     // damage done
     vector<char> D; int d = 0;
-    z_awards_best_stat<int>(best, d, z_client_getdamage);
-    z_awards_print_best(D, best, maxnum);
+    z_awards_best_stat(best, d, z_client_getdamage);
+    z_awards_print_best(D, best);
 
     // tk
     vector<char> T; int t = 0;
-    z_awards_best_stat<int>(best, t, z_client_getteamkills);
-    z_awards_print_best(T, best, maxnum);
+    z_awards_best_stat(best, t, z_client_getteamkills);
+    z_awards_print_best(T, best);
 
     // deaths
     vector<char> L; int l = 0;
-    z_awards_best_stat<int>(best, l, z_client_getdeaths);
-    z_awards_print_best(L, best, maxnum);
+    z_awards_best_stat(best, l, z_client_getdeaths);
+    z_awards_print_best(L, best);
 
     // suicides
     vector<char> S; int s = 0;
-    z_awards_best_stat<int>(best, s, z_client_getsuicides);
-    z_awards_print_best(S, best, maxnum);
+    z_awards_best_stat(best, s, z_client_getsuicides);
+    z_awards_print_best(S, best);
 
     // damage wasted
     vector<char> W; int w = 0;
-    z_awards_best_stat<int>(best, w, z_client_getdamagewasted);
-    z_awards_print_best(W, best, maxnum);
+    z_awards_best_stat(best, w, z_client_getdamagewasted);
+    z_awards_print_best(W, best);
 
     // maxstreak
     vector<char> R; int r = 0;
-    z_awards_best_stat<int>(best, r, z_client_getmaxstreak);
-    z_awards_print_best(R, best, maxnum);
+    z_awards_best_stat(best, r, z_client_getmaxstreak);
+    z_awards_print_best(R, best);
 
     // ctf/hold/protect: flags scored
     // collect: skulls scored
     // capture: total time in own team bases
     vector<char> G; int g = 0;
-    z_awards_best_stat<int>(best, g, z_client_getflags);
-    z_awards_print_best(G, best, maxnum);
+    z_awards_best_stat(best, g, z_client_getflags);
+    z_awards_print_best(G, best);
 
     // ctf: enemy team flags stolen
     // hold: flags taken
     // collect: skulls stolen from enemy base
     // capture: total time in enemy team bases
     vector<char> O; int o = 0;
-    z_awards_best_stat<int>(best, o, z_client_getstolen);
-    z_awards_print_best(O, best, maxnum);
+    z_awards_best_stat(best, o, z_client_getstolen);
+    z_awards_print_best(O, best);
 
     // ctf: own team flags returned
     // protect: total time held flag
     // collect: own team skulls returned
     // capture: total time in neutral bases
     vector<char> E; int e = 0;
-    z_awards_best_stat<int>(best, e, z_client_getreturned);
-    z_awards_print_best(E, best, maxnum);
+    z_awards_best_stat(best, e, z_client_getreturned);
+    z_awards_print_best(E, best);
 
     // capture: total time in non-own team bases (enemy + neutral)
     vector<char> C; int c = 0;
-    z_awards_best_stat<int>(best, c, z_client_getcaptured);
-    z_awards_print_best(C, best, maxnum);
+    z_awards_best_stat(best, c, z_client_getcaptured);
+    z_awards_print_best(C, best);
 
     z_formattemplate ft[] =
     {
