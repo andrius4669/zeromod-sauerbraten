@@ -241,7 +241,10 @@ static void z_awards_best_stat(vector<clientinfo *> &best, int &bests, int (* fu
     }
 
     // nobody/everybody won. if stat was negative or nil, consider it everbody's loss
-    if(bests <= 0 && best.length() >= min(numclients, awards_max_equal + 1) && awards_style_nobody[0])
+    if(bests <= 0 &&
+        best.length() > 1 &&
+        best.length() >= min(numclients, awards_max_equal + 1) &&
+        awards_style_nobody[0])
     {
         best.setsize(0);
     }
