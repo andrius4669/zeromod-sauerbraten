@@ -7,6 +7,13 @@
 #error "want z_servcmd.h"
 #endif
 
+enum
+{
+    ZS_SLEEPS = 0,
+    ZS_ANNOUNCES,
+    ZS_AUTOSPEC,
+    ZS_NUM
+};
 
 vector<z_sleepstruct> z_sleeps[ZS_NUM];
 
@@ -108,6 +115,34 @@ void s_clearsleep()
     z_clearsleep(z_sleeps[ZS_SLEEPS]);
 }
 COMMAND(s_clearsleep, "");
+
+extern int autospecsecs;
+static void z_autospec_process(void *)
+{
+    z_clearsleep(z_sleeps[ZS_AUTOSPEC]);
+    if(!autospecsecs) return;
+    int mindiff = 10*1000; // 10 secs by default
+    loopv(clients)
+    {
+        if(!m_mp(gamemode) || m_edit || interm) break;
+        clientinfo *ci = clients[i];
+        if(ci->spy || ci->state.aitype != AI_NONE || ci->state.state != CS_DEAD) continue;
+        int diff = totalmillis - ci->state.statemillis;
+        if(diff >= autospecsecs)
+        {
+            forcespectator(ci);
+            continue;
+        }
+        if(diff < 0) continue; // wraparound
+        diff = autospecsecs - diff;
+        if(mindiff > diff) mindiff = diff;
+    }
+    z_addsleep(z_sleeps[ZS_AUTOSPEC], 0, mindiff, false, z_autospec_process, NULL, NULL);
+}
+
+// in seconds
+VARF(autospecsecs, 0, 0, 604800, z_autospec_process(NULL));
+
 
 void s_write(int *cn, char *msg)
 {

@@ -129,8 +129,9 @@ namespace server
         int stolen, returned, maxstreak;
         int lastkill, multikills, rampage;
         hashset<teaminfo> *teaminfos;
+        int statemillis; // totalmillis when state changed to current value
 
-        gamestate() : state(CS_DEAD), editstate(CS_DEAD), lifesequence(0), teaminfos(NULL) {}
+        gamestate() : state(CS_DEAD), editstate(CS_DEAD), lifesequence(0), teaminfos(NULL), statemillis(totalmillis) {}
         ~gamestate() { delete teaminfos; }
 
         bool isalive(int gamemillis)
@@ -157,6 +158,7 @@ namespace server
             lastdeath = 0;
             stolen = returned = maxstreak = 0;
             DELETEP(teaminfos);
+            statemillis = totalmillis;
 
             respawn();
         }
@@ -2125,6 +2127,7 @@ namespace server
             if(smode && !smode->canspawn(ci, true))
             {
                 ci->state.state = CS_DEAD;
+                ci->state.statemillis = totalmillis;
                 putint(p, N_FORCEDEATH);
                 putint(p, ci->clientnum);
                 sendf(-1, 1, "ri2x", N_FORCEDEATH, ci->clientnum, ci->clientnum);
@@ -2532,6 +2535,7 @@ namespace server
             target->position.setsize(0);
             if(smode) smode->died(target, actor);
             ts.state = CS_DEAD;
+            ts.statemillis = totalmillis;
             z_clientdied(target);
             ts.lastdeath = gamemillis;
             if(actor!=target && isteam(actor->team, target->team)) 
@@ -2559,6 +2563,7 @@ namespace server
         ci->position.setsize(0);
         if(smode) smode->died(ci, NULL);
         gs.state = CS_DEAD;
+        gs.statemillis = totalmillis;
         z_clientdied(ci);
         gs.lastdeath = gamemillis;
         gs.respawn();
@@ -2814,6 +2819,7 @@ namespace server
         if(ci->state.state==CS_ALIVE) suicide(ci);
         if(smode) smode->leavegame(ci);
         ci->state.state = CS_SPECTATOR;
+        ci->state.statemillis = totalmillis;
         ci->state.timeplayed += lastmillis - ci->state.lasttimeplayed;
         if(!ci->local && (!ci->privilege || ci->warned)) aiman::removeai(ci);
         sendf(-1, 1, "ri3", N_SPECTATOR, ci->clientnum, 1);
@@ -2898,6 +2904,7 @@ namespace server
     {
         if(shouldspectate(ci)) return;
         ci->state.state = CS_DEAD;
+        ci->state.statemillis = totalmillis;
         ci->state.respawn();
         ci->state.lasttimeplayed = lastmillis;
         aiman::addclient(ci);
@@ -3258,7 +3265,11 @@ namespace server
         ci->connectauth = 0;
         ci->connected = true;
         ci->needclipboard = totalmillis ? totalmillis : 1;
-        if(mastermode>=MM_LOCKED || z_applyspecban(ci, true)) ci->state.state = CS_SPECTATOR;
+        if(mastermode>=MM_LOCKED || z_applyspecban(ci, true))
+        {
+            ci->state.state = CS_SPECTATOR;
+            ci->state.statemillis = totalmillis;
+        }
         ci->state.lasttimeplayed = lastmillis;
 
         const char *worst = m_teammode ? chooseworstteam(NULL, ci) : NULL;
@@ -3508,11 +3519,16 @@ namespace server
                 {
                     ci->state.editstate = ci->state.state;
                     ci->state.state = CS_EDITING;
+                    ci->state.statemillis = totalmillis;
                     ci->events.setsize(0);
                     ci->state.rockets.reset();
                     ci->state.grenades.reset();
                 }
-                else ci->state.state = ci->state.editstate;
+                else
+                {
+                    ci->state.state = ci->state.editstate;
+                    ci->state.statemillis = totalmillis;
+                }
                 QUEUE_MSG;
                 break;
             }
@@ -3581,6 +3597,7 @@ namespace server
                 if(!cq || (cq->state.state!=CS_ALIVE && cq->state.state!=CS_DEAD && cq->state.state!=CS_EDITING) || ls!=cq->state.lifesequence || cq->state.lastspawn<0) break;
                 cq->state.lastspawn = -1;
                 cq->state.state = CS_ALIVE;
+                cq->state.statemillis = totalmillis;
                 cq->state.lastdeath = totalmillis ? totalmillis : 1; // reuse lastdeath to know spawntime
                 cq->state.gunselect = gunselect >= GUN_FIST && gunselect <= GUN_PISTOL ? gunselect : GUN_FIST;
                 cq->exceeded = 0;

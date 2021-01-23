@@ -155,13 +155,6 @@ extern vector<pbaninfo> sbans;
 typedef void (* z_sleepfunc)(void *);
 typedef void (* z_freevalfunc)(void *);
 
-enum
-{
-    ZS_SLEEPS = 0,
-    ZS_ANNOUNCES,
-    ZS_NUM
-};
-
 struct z_sleepstruct
 {
     int delay, millis;
