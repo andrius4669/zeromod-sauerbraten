@@ -128,13 +128,13 @@ static void z_autospec_process(void *)
         clientinfo *ci = clients[i];
         if(ci->spy || ci->state.aitype != AI_NONE || ci->state.state != CS_DEAD) continue;
         int diff = totalmillis - ci->state.statemillis;
-        if(diff >= autospecsecs)
+        if(diff >= autospecsecs*1000)
         {
             forcespectator(ci);
             continue;
         }
         if(diff < 0) continue; // wraparound
-        diff = autospecsecs - diff;
+        diff = autospecsecs*1000 - diff;
         if(mindiff > diff) mindiff = diff;
     }
     z_addsleep(z_sleeps[ZS_AUTOSPEC], 0, mindiff, false, z_autospec_process, NULL, NULL);
