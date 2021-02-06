@@ -2,7 +2,7 @@ CXXFLAGS= -O3 -fomit-frame-pointer -ffast-math
 override CXXFLAGS+= -Wall -fsigned-char -fno-exceptions -fno-rtti
 
 # default
-PROTO=collect
+PROTO=2020
 # override
 -include config.mk
 
