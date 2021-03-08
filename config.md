@@ -1,13 +1,13 @@
 ## Available config options
 
-* logtimestamp <**int**>
-  append timestamp to log lines
+* logtimestamp <**int**> - append timestamp to log lines.
   * 0 (the default) - don't
   * 1 - in `%Y-%m-%d_%H:%M:%S` format
   * 2 - in `%Y-%m-%dT%H:%M:%S` (ISO) format
+* maxclients <**int**> - maximum clients to be allowed to join the server.\
+  defaults to 8. setting to 0 resets to the default.
 
 ```
-engine/server.cpp:VAR(, 0, 0, 2);
 engine/server.cpp:VARF(maxclients, 0, DEFAULTCLIENTS, MAXCLIENTS, { if(!maxclients) maxclients = DEFAULTCLIENTS; });
 engine/server.cpp:VARF(maxdupclients, 0, 0, MAXCLIENTS, { if(serverhost) serverhost->duplicatePeers = maxdupclients ? maxdupclients : MAXCLIENTS; });
 engine/server.cpp:VAR(maxslots, 0, 0, MAXCLIENTS);
