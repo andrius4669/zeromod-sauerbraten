@@ -1,65 +1,80 @@
-## Available config options
+## available config options
 
-* logtimestamp <**int**> - append timestamp to log lines.
-  * 0 (the default) - don't
-  * 1 - in `%Y-%m-%d_%H:%M:%S` format
-  * 2 - in `%Y-%m-%dT%H:%M:%S` (ISO) format
-* maxclients <**int**> - maximum clients to be allowed to join the server.\
-  defaults to 8. setting to 0 resets to the default.
+### engine/server
+* **serverip** <**string**> - IP to bind to. defaults to `"0.0.0.0"`.
+* **serverport** <**int**> - port to bind to. defaults to `28785`.
+* **maxclients** <**int**> - maximum amount of clients to be allowed to join the server.\
+  defaults to `8`. setting to `0` resets to the default.
+* **maxdupclients** <**int**> - max clients from the same IP allowed to connect.
+* **maxslots** <**int**> - maximum enet slots override.
+* **nolansock** <**bool**> - disables listening on separate port for LAN autodetection.
+* **serveruprate** <**int**> - upload speed limit.
+* **logtimestamp** <**select**> - append timestamp to log lines.
+  * `0` (the default) - don't
+  * `1` - in `%Y-%m-%d_%H:%M:%S` format
+  * `2` - in `%Y-%m-%dT%H:%M:%S` (ISO) format
+* **updatemaster** <**bool**> - whether to register to masterserver (if disabled, will still allow to use auth).
+* **mastername** <**string**> - masterserver hostname / IP address.
+* **masterport** <**int**> - masterserver port.
+* **serveracceptstdin** <**bool**> - whether server process should accept cubescript commands from standard input.
+
+### client as server
+* **startlistenserver** <**bool**> - client command to start local server. optional argument which defaults to `0` specifies whether to register to masterserver.
+* **stoplistenserver** - client command to stop local server.
+* **localconnect** - connect to local server.
+
+## fpsgame/server
+* **lockmaprotation** <**select**> - map rotation locking mode.
+  * `0` (the default) - allow selecting map not in map rotation
+  * `1` - allow selecting map not in map rotation only for master
+  * `1` - allow selecting map not in map rotation only for admin
+* **restrictmapvote** <**select**> - map voting restriction mode.
+  * `0` (the default) - allow anyone to vote for the map
+  * `1` - only allow masters to vote for the map
+  * `2` - only allow admins to vote for the map
+* **maprotationreset** - clear map rotation.
+* **maprotation** <**string list (mode list)**> <**string list (map list)**> \[<**string list**> <**string list**>\]... - add map rotations entry.
+* **maxdemos** <**int**> - maximum count of demos to keep.
+* **maxdemosize** <**int**> - maximum demo size, in mebibytes.
+* **restrictdemos** <**bool**> - whether to restrict demo record setting to admin. defaults to `1`.
+* **autorecorddemo** <**bool**> - default of demo record setting. defaults to `0`.
+* **restrictpausegame** <**bool**> - whether to restrict pause game setting to admin. defaults to `1`.
+* **restrictgamespeed** <**bool**> - whether to restrict game speed setting to admin. defaults to `1`.
+* **serverdesc** <**string**> - server description.
+* **serverpass** <**string**> - allow connecting only with this password. empty string (`""`) disables.
+* **adminpass** <**string**> - allow getting admin with this password. empty string (`""`) disables.
+* **publicserver** <**select**> - controls whether or not the server is intended for "public" use.
+  * `0` (the default) - allows `setmaster 1` and locked/private mastermodes (for coop-editing and such)
+  * `1` - can only gain master by "auth" or admin, and doesn't allow locked/private mastermodes
+  * `2` - allows `setmaster 1` but disallows private mastermode (for public coop-editing)
+* **servermotd** <**string**> - message to send to clients after they connect.
+* **teamkillkickreset** - clear teamkillkick rules.
+* **teamkillkick** <**string list (mode list)**> <**int (tk limit)**> \[<**int (ban time in minutes)**>\] - add teamkillkick rule.\
+  ban time defaults to 30 minutes if not specified or `0`; set to negative value to disable ban.
+* **serverauth** <**string**> - set server auth domain (for `sauth`/`sauthkick` client commands).
+* **clearusers** - clear local auth users.
+* **adduser** <**string (name)**> <**string (desc)**> <**string (pubkey)**> <**string (priv)**> - add local auth user.
+* **gamelimit** <**int**> - game limit, in seconds. defaults to `600` (10 minutes).
+* **gamelimit_overtime** <**bool**> - make certain gamemodes 1/2 longer (eg. 15 minutes instead of 10). defaults to `0` as this logic was removed from vanilla server in collect edition.
+* **persistbots** <**bool**> - persist bots when switching maps/modes. defaults to `0`.
+* **serverintermission** <**int**> - intermission time, in seconds. defaults to `10`.
+* **overtime** <**bool**> - enable overtime when scores are tied. defaults to `0`.
+* **modifiedmapspectator** <**switch**> - whether to force clients with modified map to spectator mode.
+  * `0` - no
+  * `1` (the default) - only if server has map file to compare to
+  * `2` - always, even if server doesn't have map file to compare to (in that case it uses majority voting)
+* **maxsendmap** <**int**> - maximum size of sendmap we accept, in mebibytes. defaults to `4`.
+* **serverautomaster** <**switch**> - give master to first client who joins.
+  * `0` (the default) - don't
+  * `1` - give master
+  * `2` - give auth
+* **serverbotlimit** <**int**> - bot limit. the default is `8`.
+* **serverbotbalance** <**bool**> - whether to balance bots. the default is `1`.
+
+* **regenbluearmour** <**bool**> - whether to give blue armour by default in regen capture mode. defaults to `1`.
+* **ctftkpenalty** <**bool**> - whether to penalize teamkill of flag holder in ctf modes. defaults to `1`.
 
 ```
-engine/server.cpp:VARF(maxclients, 0, DEFAULTCLIENTS, MAXCLIENTS, { if(!maxclients) maxclients = DEFAULTCLIENTS; });
-engine/server.cpp:VARF(maxdupclients, 0, 0, MAXCLIENTS, { if(serverhost) serverhost->duplicatePeers = maxdupclients ? maxdupclients : MAXCLIENTS; });
-engine/server.cpp:VAR(maxslots, 0, 0, MAXCLIENTS);
-engine/server.cpp:VARN(updatemaster, allowupdatemaster, 0, 1, 1);
-engine/server.cpp:SVARF(mastername, server::defaultmaster(), disconnectmaster());
-engine/server.cpp:VARF(masterport, 1, server::masterport(), 0xFFFF, disconnectmaster());
-engine/server.cpp:VAR(serveracceptstdin, 0, 0, 1);
-engine/server.cpp:VARF(serveruprate, 0, 0, INT_MAX, { if(serverhost) enet_host_bandwidth_limit(serverhost, 0, serveruprate); });
-engine/server.cpp:SVAR(serverip, "");
-engine/server.cpp:VARF(serverport, 0, server::serverport(), 0xFFFF-1, { if(!serverport) serverport = server::serverport(); });
-engine/server.cpp:VAR(nolansock, 0, 0, 1);
-engine/server.cpp:COMMAND(startlistenserver, "i");
-engine/server.cpp:COMMAND(stoplistenserver, "");
-fpsgame/server.cpp:VAR(regenbluearmour, 0, 1, 1);
-fpsgame/server.cpp:    VAR(lockmaprotation, 0, 0, 2);
-fpsgame/server.cpp:    VAR(restrictmapvote, 0, 0, 2);
-fpsgame/server.cpp:    COMMAND(maprotationreset, "");
-fpsgame/server.cpp:    COMMANDN(maprotation, addmaprotations, "ss2V");
-fpsgame/server.cpp:    VAR(maxdemos, 0, 5, 25);
-fpsgame/server.cpp:    VAR(maxdemosize, 0, 16, 31);
-fpsgame/server.cpp:    VAR(restrictdemos, 0, 1, 1);
-fpsgame/server.cpp:    VAR(autorecorddemo, 0, 0, 1);
-fpsgame/server.cpp:    VAR(restrictpausegame, 0, 1, 1);
-fpsgame/server.cpp:    VAR(restrictgamespeed, 0, 1, 1);
-fpsgame/server.cpp:    SVARF(serverdesc, "", z_serverdescchanged());
-fpsgame/server.cpp:    SVAR(serverpass, "");
-fpsgame/server.cpp:    SVAR(adminpass, "");
-fpsgame/server.cpp:    VARF(publicserver, 0, 0, 2, {
-fpsgame/server.cpp:    SVAR(servermotd, "");
-fpsgame/server.cpp:    VARF(serverrecorddemo, 0, 0, 1, autorecorddemo = serverrecorddemo);
-fpsgame/server.cpp:    COMMAND(teamkillkickreset, "");
-fpsgame/server.cpp:    COMMANDN(teamkillkick, addteamkillkick, "sii");
-fpsgame/server.cpp:    SVARP(demodir, "demo");
-fpsgame/server.cpp:    ICOMMAND(seekdemo, "sN$", (char *t, int *numargs, ident *id),
-fpsgame/server.cpp:    SVAR(serverauth, "");
-fpsgame/server.cpp:    COMMAND(adduser, "ssss");
-fpsgame/server.cpp:    COMMAND(clearusers, "");
-fpsgame/server.cpp:    VAR(server_load_ents, 0, 1, 2);
-fpsgame/server.cpp:    VARN(gamelimit, servergamelimit, 1, 600, 3600); // in seconds
-fpsgame/server.cpp:    VAR(gamelimit_overtime, 0, 0, 1);   // use m_overtime?
-fpsgame/server.cpp:    VAR(persistbots, 0, 0, 1);
-fpsgame/server.cpp:    VAR(serverintermission, 1, 10, 3600);
-fpsgame/server.cpp:    VAR(overtime, 0, 0, 1);
-fpsgame/server.cpp:    VAR(modifiedmapspectator, 0, 1, 2);
-fpsgame/server.cpp:    ICOMMAND(clearipbans, "", (), ipbans.clear());
-fpsgame/server.cpp:    ICOMMAND(ipban, "s", (const char *ipname), ipbans.add(ipname));
-fpsgame/server.cpp:    VAR(maxsendmap, 0, 4, 31);
-fpsgame/server.cpp:    VAR(serverautomaster, 0, 0, 2);
-fpsgame/aiman.h:    VARN(serverbotlimit, botlimit, 0, 8, MAXBOTS);
-fpsgame/aiman.h:    VAR(serverbotbalance, 0, 1, 1);
-fpsgame/ctf.h:VAR(ctftkpenalty, 0, 1, 1);
-fpsgame/ctf.h:ICOMMAND(dropflag, "", (), { ctfmode.trydropflag(); });
 fpsgame/z_announcekills.h:VAR(announcekills, 0, 0, 1);
 fpsgame/z_announcekills.h:VAR(announcekills_teamnames, 0, 1, 1);
 fpsgame/z_announcekills.h:VAR(announcekills_stopped, 0, 1, 1);
