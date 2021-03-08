@@ -71,6 +71,7 @@
 * **serverbotlimit** <**int**> - bot limit. the default is `8`.
 * **serverbotbalance** <**bool**> - whether to balance bots. the default is `1`.
 
+
 * **regenbluearmour** <**bool**> - whether to give blue armour by default in regen capture mode. defaults to `1`.
 * **ctftkpenalty** <**bool**> - whether to penalize teamkill of flag holder in ctf modes. defaults to `1`.
 
