@@ -78,10 +78,10 @@ template<typename T> struct z_avltree
 
     template<typename K> T *find(const K &k)
     {
-        register treenode *p = root;
+        treenode *p = root;
         while(p)
         {
-            register int cmp = p->data.compare(k);
+            int cmp = p->data.compare(k);
             if(cmp < 0) p = p->left;
             else if(cmp > 0) p = p->right;
             else return &p->data;
