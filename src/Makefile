@@ -166,6 +166,8 @@ ifneq (,$(findstring BSD,$(PLATFORM)))
 SERVER_INCLUDES+= -I/usr/local/include
 CLIENT_INCLUDES+= -I/usr/local/include
 BSDLIBS= -L/usr/local/lib
+# OpenBSD's gmake's default CXX is ancient g++ for whatever unholy reason. CC seems to be all-good "cc" though..
+CXX=c++
 endif
 SERVER_LIBS+= $(BSDLIBS)
 CLIENT_LIBS+= $(BSDLIBS)
