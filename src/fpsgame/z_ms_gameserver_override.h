@@ -50,7 +50,7 @@ void authfailed(int m, uint id)
     authfailed(findauth(m, id));
 }
 
-void authsucceeded(int m, uint id, int priv = PRIV_AUTH)
+void authsucceeded(int m, uint id, int priv)
 {
     clientinfo *ci = findauth(m, id);
     if(!ci) return;
