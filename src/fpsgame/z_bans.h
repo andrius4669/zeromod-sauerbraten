@@ -487,7 +487,7 @@ SCOMMANDA(unban, PRIV_MASTER, z_servcmd_unban, 1);
 void z_servcmd_unbanlast(int argc, char **argv, int sender)
 {
     if(bannedips.empty()) { sendf(sender, 1, "ris", N_SERVMSG, "banlist is empty"); return; }
-    int last = -1, lastelapsed;
+    int last = -1, lastelapsed = 0;
     loopvrev(bannedips)
     {
         int elapsed = totalmillis - bannedips[i].time;
