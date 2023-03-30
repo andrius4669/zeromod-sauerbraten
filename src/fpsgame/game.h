@@ -785,7 +785,7 @@ namespace game
 
     // client
     extern bool connected, remote, demoplayback;
-    extern string servinfo;
+    extern string servdesc;
     extern vector<uchar> messages;
 
     extern int parseplayer(const char *arg);

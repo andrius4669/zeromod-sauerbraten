@@ -931,11 +931,11 @@ FVAR(depthoffset, -1e4f, 0.01f, 1e4f);
 
 matrix4 nooffsetmatrix;
 
-void enablepolygonoffset(GLenum type)
+void enablepolygonoffset(GLenum type, float scale)
 {
     if(!depthoffset)
     {
-        glPolygonOffset(polygonoffsetfactor, polygonoffsetunits);
+        glPolygonOffset(polygonoffsetfactor * scale, polygonoffsetunits * scale);
         glEnable(type);
         return;
     }
@@ -943,7 +943,7 @@ void enablepolygonoffset(GLenum type)
     bool clipped = reflectz < 1e15f && reflectclip;
 
     nooffsetmatrix = projmatrix;
-    projmatrix.d.z += depthoffset * (clipped ? noclipmatrix.c.z : projmatrix.c.z);
+    projmatrix.d.z += depthoffset * scale * (clipped ? noclipmatrix.c.z : projmatrix.c.z);
     setcamprojmatrix(false, true);
 }
 
@@ -2075,8 +2075,8 @@ void cleardamagescreen()
 VAR(hidestats, 0, 0, 1);
 VAR(hidehud, 0, 0, 1);
 
-VARP(crosshairsize, 0, 15, 50);
-VARP(cursorsize, 0, 30, 50);
+VARP(crosshairsize, 0, 30, 50);
+VARP(cursorsize, 0, 20, 50);
 VARP(crosshairfx, 0, 1, 1);
 VARP(crosshaircolors, 0, 1, 1);
 
@@ -2090,7 +2090,7 @@ void loadcrosshair(const char *name, int i)
     if(crosshairs[i] == notexture)
     {
         name = game::defaultcrosshair(i);
-        if(!name) name = "data/crosshair.png";
+        if(!name) name = "packages/crosshairs/default.png";
         crosshairs[i] = textureload(name, 3, true);
     }
 }
@@ -2108,7 +2108,7 @@ ICOMMAND(getcrosshair, "i", (int *i),
     if(*i >= 0 && *i < MAXCROSSHAIRS)
     {
         name = crosshairs[*i] ? crosshairs[*i]->name : game::defaultcrosshair(*i);
-        if(!name) name = "data/crosshair.png";
+        if(!name) name = "packages/crosshairs/default.png";
     }
     result(name);
 });

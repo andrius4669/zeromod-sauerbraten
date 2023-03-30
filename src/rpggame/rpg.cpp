@@ -2,7 +2,7 @@
 
 namespace game
 {
-    #define N(n) int stats::pointscale_##n, stats::percentscale_##n; 
+    #define N(n) int stats::pointscale_##n, stats::percentscale_##n;
     RPGSTATNAMES
     #undef N
 
@@ -10,7 +10,7 @@ namespace game
 
     int maptime = 0;
     string mapname = "";
-      
+
     void updateworld()
     {
         if(!maptime) { maptime = lastmillis; return; }
@@ -22,36 +22,36 @@ namespace game
 
     bool connected = false;
 
-    void gameconnect(bool _remote) 
-    { 
-        connected = true; 
+    void gameconnect(bool _remote)
+    {
+        connected = true;
         if(editmode) toggleedit();
     }
 
-    void gamedisconnect(bool cleanup) 
-    { 
-        connected = false; 
+    void gamedisconnect(bool cleanup)
+    {
+        connected = false;
     }
 
-    void changemap(const char *name) 
-    { 
+    void changemap(const char *name)
+    {
         if(!connected) localconnect();
         if(editmode) toggleedit();
-        if(!load_world(name)) emptymap(0, true, name); 
+        if(!load_world(name)) emptymap(0, true, name);
     }
 
-    void forceedit(const char *name) 
-    { 
-        changemap(name); 
+    void forceedit(const char *name)
+    {
+        changemap(name);
     }
 
     ICOMMAND(map, "s", (char *s), changemap(s));
-    
+
     struct rpgmenu : g3d_callback
     {
         int time, tab, which;
         vec pos;
-        
+
         rpgmenu() : time(0), tab(1), which(0), pos(0, 0, 0) {}
 
         void show(int n)
@@ -61,7 +61,7 @@ namespace game
             else
             {
                 time = starttime();
-                pos  = menuinfrontofplayer();        
+                pos  = menuinfrontofplayer();
                 which = n;
             }
         }
@@ -110,13 +110,13 @@ namespace game
         if     (waterlevel>0) playsoundname("free/splash1", d==player1 ? NULL : &d->o);
         else if(waterlevel<0) playsoundname("free/splash2", d==player1 ? NULL : &d->o);
         if     (floorlevel>0) { if(local) playsoundname("aard/jump"); else if(d->type==ENT_AI) playsoundname("aard/jump", &d->o); }
-        else if(floorlevel<0) { if(local) playsoundname("aard/land"); else if(d->type==ENT_AI) playsoundname("aard/land", &d->o); }    
+        else if(floorlevel<0) { if(local) playsoundname("aard/land"); else if(d->type==ENT_AI) playsoundname("aard/land", &d->o); }
     }
 
     void dynentcollide(physent *d, physent *o, const vec &dir) {}
-   
+
     void bounced(physent *d, const vec &surface) {}
- 
+
     void edittrigger(const selinfo &sel, int op, int arg1, int arg2, int arg3, const VSlot *vs) {}
     void vartrigger(ident *id) {}
 
@@ -142,7 +142,7 @@ namespace game
         if(name) playerobj->st_init();
         entities::startmap();
     }
-    
+
     void quad(int x, int y, int xs, int ys)
     {
         gle::defvertex(2);
@@ -154,9 +154,9 @@ namespace game
         gle::attribf(x+xs, y+ys); gle::attribf(1, 1);
         gle::end();
     }
-  
+
     bool needminimap() { return false; }
- 
+
     float abovegameplayhud(int w, int h)
     {
         switch(player1->state)
@@ -167,32 +167,32 @@ namespace game
                 return (h-min(128, h))/float(h);
         }
     }
- 
+
     void gameplayhud(int w, int h)
     {
         pushhudmatrix();
         hudmatrix.scale(0.5f, 0.5f, 1);
         flushhudmatrix();
-        draw_textf("using: %s", 636*2, h*2-256+149, selected ? selected->name : "(none)");       // temp     
+        draw_textf("using: %s", 636*2, h*2-256+149, selected ? selected->name : "(none)");       // temp
         pophudmatrix();
 
         settexture("packages/hud/hud_rpg.png", 3);
-        
+
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         gle::colorf(1, 1, 1);
-        quad(0, h-128, 768, 128);        
+        quad(0, h-128, 768, 128);
         settexture("packages/hud/hbar.png", 3);
         gle::colorf(1, 0, 0, 0.5f);
-        quad(130, h-128+57, 193*playerobj->s_hp/playerobj->eff_maxhp(), 17);        
+        quad(130, h-128+57, 193*playerobj->s_hp/playerobj->eff_maxhp(), 17);
         gle::colorf(0, 0, 1, 0.5f);
-        quad(130, h-128+87, 193*playerobj->s_mana/playerobj->eff_maxmana(), 17);        
+        quad(130, h-128+87, 193*playerobj->s_mana/playerobj->eff_maxmana(), 17);
     }
-   
+
     int clipconsole(int w, int h)
     {
         return 0;
     }
- 
+
     void preload() {}
 
     void renderavatar()
@@ -214,12 +214,12 @@ namespace game
         if(isthirdperson()) renderclient(player1, "ogro", NULL, 0, ANIM_ATTACK1, 300, player1->lastaction, player1->lastpain);
         renderobjects();
     }
-    
+
     void g3d_gamemenus() { g3d_npcmenus(); menu.render(); }
 
     const char *defaultcrosshair(int index)
     {
-        return "data/crosshair.png";
+        return "packages/crosshairs/default.png";
     }
 
     int selectcrosshair(vec &color)
