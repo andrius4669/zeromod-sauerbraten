@@ -713,6 +713,7 @@ namespace server
 		}
 	});
     SVAR(servermotd, "");
+    VAR(specchat, 0, 1, 1);
 
     // old alias
     VARF(serverrecorddemo, 0, 0, 1, autorecorddemo = serverrecorddemo);
@@ -3698,7 +3699,12 @@ namespace server
             case N_SAYTEAM:
             {
                 getstring(text, p);
-                if(!ci || !cq || (cq->state.state!=CS_SPECTATOR && !m_teammode) || !cq->team[0]) break;
+                if(!ci || !cq) break;
+                if(cq->state.state==CS_SPECTATOR)
+                {
+                    if(!specchat && !ci->local && !ci->privilege) break;
+                }
+                else if (!m_teammode || !cq->team[0]) break;
                 Z_ANTIFLOOD(ci, N_SAYTEAM);
                 if(!allowmsg(ci, cq, type)) break;
                 filtertext(text, text, true, true);
@@ -3722,7 +3728,8 @@ namespace server
                 loopv(clients)
                 {
                     clientinfo *t = clients[i];
-                    if(t==cq || t->state.state==CS_SPECTATOR || t->state.aitype != AI_NONE || strcmp(cq->team, t->team)) continue;
+                    if(t==cq || t->state.aitype != AI_NONE) continue;
+                    if(t->state.state==CS_SPECTATOR || strcmp(cq->team, t->team)) continue;
                     sendf(t->clientnum, 1, "riis", N_SAYTEAM, cq->clientnum, text);
                 }
                 z_log_sayteam(cq, text, cq->team);
